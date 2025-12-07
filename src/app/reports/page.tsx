@@ -55,8 +55,14 @@ export default function ReportsPage() {
     organizationId: user?.organizationId || '',
     fromDate: '',
     toDate: '',
-    status: undefined
+    status: undefined,
+    groupId: undefined,
+    studentIds: undefined
   });
+  const [attendanceStudents, setAttendanceStudents] = useState<Array<{id: string, name: string}>>([]);
+  const [allStudents, setAllStudents] = useState<Array<{id: string, name: string}>>([]);
+  const [selectedStudentIds, setSelectedStudentIds] = useState<string[]>([]);
+  const [studentSearchQuery, setStudentSearchQuery] = useState<string>('');
 
   // Состояние для экспорта расписания
   const [isScheduleExportModalOpen, setIsScheduleExportModalOpen] = useState(false);
@@ -159,14 +165,21 @@ export default function ReportsPage() {
           return;
         case 'attendance':
           // Открываем модальное окно для настройки экспорта посещаемости
+          await loadGroups();
+          await loadAllStudents(); // Загружаем всех студентов по умолчанию
           const today = new Date();
           const firstDayOfMonth = new Date(today.getFullYear(), today.getMonth(), 1);
           setAttendanceFilters({
             organizationId: user?.organizationId || '',
             fromDate: firstDayOfMonth.toISOString().split('T')[0],
             toDate: today.toISOString().split('T')[0],
-            status: undefined
+            status: undefined,
+            groupId: undefined,
+            studentIds: undefined
           });
+          setSelectedStudentIds([]);
+          setAttendanceStudents([]); // Очищаем студентов группы, так как по умолчанию показываем всех
+          setStudentSearchQuery('');
           setIsAttendanceExportModalOpen(true);
           return;
         case 'schedules':
@@ -244,6 +257,97 @@ export default function ReportsPage() {
     } catch (error) {
       console.error('Ошибка при загрузке групп:', error);
       showError('Ошибка при загрузке групп');
+    }
+  };
+
+  const loadStudentsForGroup = async (groupId: string) => {
+    if (!user?.organizationId || !groupId) {
+      setAttendanceStudents([]);
+      return;
+    }
+    
+    try {
+      console.log('Загружаем студентов для группы:', groupId); // Для отладки
+      
+      // Попробуем загрузить студентов через API групп
+      const groupResponse = await AuthenticatedApiService.post<{items: Array<{
+        id: string, 
+        name: string,
+        students?: Array<{studentId: string, studentName: string}>
+      }>}>('/Group/get-groups', {
+        pageNumber: 1,
+        pageSize: 100,
+        organizationId: user.organizationId
+      });
+      
+      if (groupResponse && groupResponse.items) {
+        const selectedGroup = groupResponse.items.find(group => group.id === groupId);
+        if (selectedGroup && selectedGroup.students) {
+          console.log('Найдены студенты группы через API групп:', selectedGroup.students.length);
+          const validStudents = selectedGroup.students.filter(student => student.studentId); // Используем studentId вместо id
+          console.log('Валидные студенты:', validStudents);
+          const mappedStudents = validStudents.map(student => ({
+            id: student.studentId, // Маппим studentId в id
+            name: student.studentName || 'Без имени' // Используем studentName вместо name
+          }));
+          console.log('Устанавливаем студентов группы:', mappedStudents);
+          setAttendanceStudents(mappedStudents);
+          return;
+        }
+      }
+      
+      // Если не получилось через группы, попробуем обычный запрос с groupId
+      const response = await AuthenticatedApiService.post<{items: Array<{id: string, name: string}>}>('/User/get-users', {
+        pageNumber: 1,
+        pageSize: 1000,
+        organizationId: user.organizationId,
+        roleIds: [1], // Student role
+        groupId: groupId
+      });
+      
+      if (response && response.items) {
+        console.log('Получены студенты через User API:', response.items.length);
+        const validStudents = response.items.filter(student => student.id); // Фильтруем студентов без ID
+        setAttendanceStudents(validStudents.map(student => ({
+          id: student.id,
+          name: student.name || 'Без имени'
+        })));
+      } else {
+        console.log('Нет студентов в группе');
+        setAttendanceStudents([]);
+      }
+    } catch (error) {
+      console.error('Ошибка при загрузке студентов группы:', error);
+      showError('Ошибка при загрузке студентов группы');
+      setAttendanceStudents([]);
+    }
+  };
+
+  const loadAllStudents = async () => {
+    if (!user?.organizationId) {
+      setAllStudents([]);
+      return;
+    }
+    
+    try {
+      const response = await AuthenticatedApiService.post<{items: Array<{id: string, name: string}>}>('/User/get-users', {
+        pageNumber: 1,
+        pageSize: 1000,
+        organizationId: user.organizationId,
+        roleIds: [1] // Student role
+      });
+      
+      if (response && response.items) {
+        const validStudents = response.items.filter(student => student.id); // Фильтруем студентов без ID
+        setAllStudents(validStudents.map(student => ({
+          id: student.id,
+          name: student.name || 'Без имени'
+        })));
+      }
+    } catch (error) {
+      console.error('Ошибка при загрузке всех студентов:', error);
+      showError('Ошибка при загрузке студентов');
+      setAllStudents([]);
     }
   };
 
@@ -410,10 +514,13 @@ export default function ReportsPage() {
 
     setIsExporting('attendance');
     try {
-      const blob = await attendanceApi.exportAttendance({
+      const exportRequest: ExportAttendanceRequest = {
         ...attendanceFilters,
-        organizationId: user.organizationId
-      });
+        organizationId: user.organizationId,
+        studentIds: selectedStudentIds.length > 0 ? selectedStudentIds : undefined
+      };
+      
+      const blob = await attendanceApi.exportAttendance(exportRequest);
       
       // Создаем ссылку для скачивания
       const url = URL.createObjectURL(blob);
@@ -439,8 +546,13 @@ export default function ReportsPage() {
         organizationId: user.organizationId,
         fromDate: '',
         toDate: '',
-        status: undefined
+        status: undefined,
+        groupId: undefined,
+        studentIds: undefined
       });
+      setSelectedStudentIds([]);
+      setAttendanceStudents([]);
+      setAllStudents([]);
     } catch (error) {
       console.error('Error exporting attendance:', error);
       showError('Ошибка при экспорте посещаемости');
@@ -870,7 +982,7 @@ export default function ReportsPage() {
       {/* Модальное окно экспорта посещаемости */}
       {isAttendanceExportModalOpen && (
         <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-50">
-          <div className="bg-white dark:bg-gray-800 rounded-xl shadow-xl max-w-md w-full mx-4">
+          <div className="bg-white dark:bg-gray-800 rounded-xl shadow-xl max-w-2xl w-full mx-4 max-h-[90vh] overflow-y-auto">
             <div className="p-6 border-b border-gray-200 dark:border-gray-700">
               <h3 className="text-lg font-semibold text-gray-900 dark:text-white">
                 Экспорт посещаемости
@@ -899,6 +1011,176 @@ export default function ReportsPage() {
                 />
               </div>
 
+              {/* Группа - опциональное поле */}
+              <div>
+                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                  Группа
+                </label>
+                <select
+                  value={attendanceFilters.groupId || ''}
+                  onChange={async (e) => {
+                    const groupId = e.target.value;
+                    setAttendanceFilters(prev => ({
+                      ...prev,
+                      groupId: groupId || undefined
+                    }));
+                    setSelectedStudentIds([]);
+                    setStudentSearchQuery(''); // Сбрасываем поиск при смене группы
+                    if (groupId) {
+                      // Показать только студентов выбранной группы
+                      await loadStudentsForGroup(groupId);
+                    } else {
+                      // Показать всех студентов организации
+                      setAttendanceStudents([]); // Очищаем студентов группы
+                      if (allStudents.length === 0) {
+                        await loadAllStudents(); // Загружаем всех студентов, если их еще нет
+                      }
+                    }
+                  }}
+                  className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                >
+                  <option value="">Все группы</option>
+                  {groups.map((group) => (
+                    <option key={group.id} value={group.id}>
+                      {group.name}
+                    </option>
+                  ))}
+                </select>
+              </div>
+
+              {/* Студенты - зависит от выбранной группы */}
+              {(() => {
+                const currentStudents = attendanceFilters.groupId ? attendanceStudents : allStudents;
+                console.log('Текущие студенты для отображения:', {
+                  groupId: attendanceFilters.groupId,
+                  attendanceStudents: attendanceStudents.length,
+                  allStudents: allStudents.length,
+                  currentStudents: currentStudents.length
+                });
+                
+                if (currentStudents.length === 0) {
+                  return (
+                    <div className="text-center py-4 text-gray-500 dark:text-gray-400">
+                      <p className="text-sm">
+                        {attendanceFilters.groupId ? 'В выбранной группе нет студентов' : 'Загрузка студентов...'}
+                      </p>
+                    </div>
+                  );
+                }
+                
+                return (
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                      Студенты {attendanceFilters.groupId && (
+                        <span className="text-xs text-gray-500 dark:text-gray-400">
+                          ({groups.find(g => g.id === attendanceFilters.groupId)?.name} - {currentStudents.length} чел.)
+                        </span>
+                      )}
+                      {!attendanceFilters.groupId && (
+                        <span className="text-xs text-gray-500 dark:text-gray-400">
+                          (все студенты - {currentStudents.length} чел.)
+                        </span>
+                      )}
+                    </label>
+                    
+                    {/* Поиск студентов */}
+                    <div className="mb-3">
+                      <input
+                        type="text"
+                        placeholder="Поиск студентов..."
+                        value={studentSearchQuery}
+                        onChange={(e) => setStudentSearchQuery(e.target.value)}
+                        className="w-full px-3 py-2 text-sm border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white placeholder-gray-500 dark:placeholder-gray-400 focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                      />
+                    </div>
+
+                    <div className="max-h-48 overflow-y-auto border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700">
+                      <div className="p-2 border-b border-gray-200 dark:border-gray-600 bg-gray-50 dark:bg-gray-600">
+                        <label className="flex items-center gap-2 p-1 hover:bg-gray-100 dark:hover:bg-gray-500 rounded cursor-pointer">
+                          <input
+                            type="checkbox"
+                            checked={(() => {
+                              const filteredStudents = currentStudents.filter(student => 
+                                student.name.toLowerCase().includes(studentSearchQuery.toLowerCase())
+                              );
+                              return filteredStudents.length > 0 && filteredStudents.every(student => selectedStudentIds.includes(student.id));
+                            })()}
+                            onChange={(e) => {
+                              const filteredStudents = currentStudents.filter(student => 
+                                student.name.toLowerCase().includes(studentSearchQuery.toLowerCase())
+                              );
+                              if (e.target.checked) {
+                                const newIds = filteredStudents.map(s => s.id).filter(id => !selectedStudentIds.includes(id));
+                                setSelectedStudentIds(prev => [...prev, ...newIds]);
+                              } else {
+                                const filteredIds = filteredStudents.map(s => s.id);
+                                setSelectedStudentIds(prev => prev.filter(id => !filteredIds.includes(id)));
+                              }
+                            }}
+                            className="rounded border-gray-300 dark:border-gray-500 text-blue-600 focus:ring-blue-500"
+                          />
+                          <span className="text-sm text-gray-900 dark:text-white font-medium">
+                            {studentSearchQuery ? 'Все найденные' : 'Все студенты'}
+                          </span>
+                        </label>
+                      </div>
+                      
+                      {(() => {
+                        const filteredStudents = currentStudents.filter(student => 
+                          student.name.toLowerCase().includes(studentSearchQuery.toLowerCase())
+                        );
+                        
+                        if (filteredStudents.length === 0) {
+                          return (
+                            <div className="p-4 text-center text-gray-500 dark:text-gray-400">
+                              <span className="text-sm">Студенты не найдены</span>
+                            </div>
+                          );
+                        }
+                        
+                        return filteredStudents.map((student, index) => (
+                          <div key={`${attendanceFilters.groupId ? 'group' : 'all'}-${student.id || `no-id-${index}`}`} className="p-2">
+                            <label className="flex items-center gap-2 p-1 hover:bg-gray-50 dark:hover:bg-gray-600 rounded cursor-pointer">
+                              <input
+                                type="checkbox"
+                                checked={!!student.id && selectedStudentIds.includes(student.id)}
+                                onChange={(e) => {
+                                  if (!student.id) return; // Не обрабатываем студентов без ID
+                                  if (e.target.checked) {
+                                    setSelectedStudentIds(prev => [...prev, student.id]);
+                                  } else {
+                                    setSelectedStudentIds(prev => prev.filter(id => id !== student.id));
+                                  }
+                                }}
+                                disabled={!student.id} // Отключаем чекбокс для студентов без ID
+                                className="rounded border-gray-300 dark:border-gray-600 text-blue-600 focus:ring-blue-500 disabled:opacity-50"
+                              />
+                              <span className={`text-sm ${student.id ? 'text-gray-900 dark:text-white' : 'text-gray-400 dark:text-gray-500'}`}>
+                                {student.name} {!student.id && '(нет ID)'}
+                              </span>
+                            </label>
+                          </div>
+                        ));
+                      })()}
+                    </div>
+                    
+                    <div className="flex justify-between items-center mt-2">
+                      <p className="text-xs text-gray-500 dark:text-gray-400">
+                        Выбрано: {selectedStudentIds.length} из {currentStudents.length}
+                      </p>
+                      {studentSearchQuery && (
+                        <button
+                          onClick={() => setStudentSearchQuery('')}
+                          className="text-xs text-blue-600 dark:text-blue-400 hover:text-blue-800 dark:hover:text-blue-300"
+                        >
+                          Сбросить поиск
+                        </button>
+                      )}
+                    </div>
+                  </div>
+                );
+              })()}
+
               {/* Статус посещения - опциональное поле */}
               <div>
                 <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
@@ -923,7 +1205,12 @@ export default function ReportsPage() {
               {/* Информация */}
               <div className="bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-700 rounded-lg p-3">
                 <p className="text-sm text-blue-700 dark:text-blue-300">
-                  💡 Экспорт включит данные всех студентов вашей организации за выбранный период
+                  💡 {selectedStudentIds.length > 0
+                    ? `Экспорт включит данные ${selectedStudentIds.length} выбранных студентов`
+                    : attendanceFilters.groupId 
+                      ? 'Экспорт включит данные всех студентов выбранной группы'
+                      : 'Экспорт включит данные всех студентов вашей организации'
+                  } за выбранный период
                 </p>
               </div>
             </div>
@@ -935,8 +1222,14 @@ export default function ReportsPage() {
                     organizationId: user?.organizationId || '',
                     fromDate: '',
                     toDate: '',
-                    status: undefined
+                    status: undefined,
+                    groupId: undefined,
+                    studentIds: undefined
                   });
+                  setSelectedStudentIds([]);
+                  setAttendanceStudents([]);
+                  setAllStudents([]);
+                  setStudentSearchQuery('');
                 }}
                 className="px-4 py-2 text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg transition-colors"
               >

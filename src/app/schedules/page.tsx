@@ -76,7 +76,7 @@ export default function SchedulesPage() {
   });
   
   // Toast уведомления для API операций
-  const { createOperation, updateOperation, deleteOperation, loadOperation } = useApiToast();
+  const { createOperation, updateOperation, deleteOperation, loadOperation, handleApiOperation } = useApiToast();
 
   const [pageSize, setPageSize] = useState(10);
   
@@ -594,12 +594,17 @@ export default function SchedulesPage() {
     const schedule = schedules.find(s => s.id === id);
     if (!schedule) return;
 
-    await createOperation(
+    const result = await handleApiOperation(
       () => AuthenticatedApiService.post(`/Schedule/restore/${id}`, {}),
-      'Расписание восстановлено'
+      {
+        successMessage: 'Запись успешно восстановлена',
+        errorMessage: 'Не удалось восстановить запись'
+      }
     );
 
-    await loadSchedules(currentPage, true);
+    if (result.success) {
+      await loadSchedules(currentPage, true);
+    }
   };
 
   // Check authentication and permissions

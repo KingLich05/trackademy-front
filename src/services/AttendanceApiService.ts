@@ -111,17 +111,28 @@ class AttendanceApiService {
 
   // Экспорт данных посещаемости
   async exportAttendance(data: ExportAttendanceRequest): Promise<Blob> {
+    const token = localStorage.getItem('authToken');
+    
     const response = await fetch(`${API_BASE_URL}/api/Attendance/export`, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
-        'Authorization': `Bearer ${localStorage.getItem('authToken')}`,
+        'Authorization': token ? `Bearer ${token}` : '',
       },
       body: JSON.stringify(data),
     });
 
     if (!response.ok) {
-      throw new Error(`Export failed: ${response.status} ${response.statusText}`);
+      let errorMessage = 'Ошибка при экспорте посещаемости';
+      
+      try {
+        const errorData = await response.json();
+        errorMessage = errorData.error || errorData.message || errorData.title || `Ошибка экспорта: ${response.status} ${response.statusText}`;
+      } catch {
+        errorMessage = `Ошибка экспорта: ${response.status} ${response.statusText}`;
+      }
+      
+      throw new Error(errorMessage);
     }
 
     return response.blob();
