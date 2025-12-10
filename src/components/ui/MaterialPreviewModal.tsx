@@ -218,10 +218,21 @@ export function MaterialPreviewModal({ isOpen, onClose, material, onDownload }: 
                   margin-bottom: 0.5em;
                 }
               `}} />
-              <div 
-                className="word-content text-gray-900 dark:text-gray-100"
-                dangerouslySetInnerHTML={{ __html: wordHtml }}
-              />
+              {/* БЕЗОПАСНОЕ отображение - НЕ используем dangerouslySetInnerHTML */}
+              <div className="word-content text-gray-900 dark:text-gray-100">
+                <div className="p-4 bg-yellow-50 dark:bg-yellow-900/20 border border-yellow-200 dark:border-yellow-800 rounded-lg mb-4">
+                  <p className="text-yellow-800 dark:text-yellow-200 text-sm">
+                    🔒 Превью Word документов временно отключено по соображениям безопасности
+                  </p>
+                </div>
+                <button
+                  onClick={onDownload}
+                  className="px-6 py-3 bg-gradient-to-r from-purple-500 to-pink-600 text-white rounded-lg hover:shadow-lg transition-all flex items-center gap-2"
+                >
+                  <ArrowDownTrayIcon className="w-5 h-5" />
+                  Скачать для просмотра
+                </button>
+              </div>
             </div>
           </div>
         );

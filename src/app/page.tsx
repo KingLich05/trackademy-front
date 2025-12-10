@@ -192,7 +192,7 @@ function LandingPage() {
               Контакты
             </h2>
             <p className="text-xl text-gray-600 dark:text-gray-300">
-              Нужна консультация или помощь? Свяжитесь с нами
+              Нужна консультация или помощь?
             </p>
           </div>
 

@@ -1288,6 +1288,7 @@ export default function HomeworkPage() {
         }}
         submissionId={selectedSubmissionId}
         studentName={selectedStudentName}
+        userRole={user?.role}
         onUpdate={() => {
           // Reload assignments list after grading/returning
           loadAssignments(currentPage, true);

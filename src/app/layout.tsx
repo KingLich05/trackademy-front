@@ -1,6 +1,7 @@
 import { Inter } from 'next/font/google';
 import { Metadata } from 'next';
 import './globals.css';
+import { ServerActionErrorBoundary } from '../components/ServerActionErrorBoundary';
 
 export const metadata: Metadata = {
   metadataBase: new URL('https://trackademy.kz'),
@@ -106,13 +107,15 @@ export default function RootLayout({
         />
       </head>
       <body className={inter.className} suppressHydrationWarning>
-        <ThemeProvider>
-          <AuthProvider>
-            <ToastProvider>
-              <LayoutContent>{children}</LayoutContent>
-            </ToastProvider>
-          </AuthProvider>
-        </ThemeProvider>
+        <ServerActionErrorBoundary>
+          <ThemeProvider>
+            <AuthProvider>
+              <ToastProvider>
+                <LayoutContent>{children}</LayoutContent>
+              </ToastProvider>
+            </AuthProvider>
+          </ThemeProvider>
+        </ServerActionErrorBoundary>
       </body>
     </html>
   );

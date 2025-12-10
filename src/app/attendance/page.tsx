@@ -241,13 +241,15 @@ export default function AttendancePage() {
             <div className="flex items-end justify-between mb-4">
               <h3 className="text-lg font-semibold text-gray-900 dark:text-white">Фильтры</h3>
               <div className="flex gap-3">
-                <button
-                  onClick={() => setShowExportModal(true)}
-                  className="px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg font-medium transition-colors text-sm flex items-center gap-2"
-                >
-                  <DocumentArrowDownIcon className="w-4 h-4" />
-                  Экспорт Excel
-                </button>
+                {user?.role !== 'Teacher' && (
+                  <button
+                    onClick={() => setShowExportModal(true)}
+                    className="px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg font-medium transition-colors text-sm flex items-center gap-2"
+                  >
+                    <DocumentArrowDownIcon className="w-4 h-4" />
+                    Экспорт Excel
+                  </button>
+                )}
                 <button
                   onClick={resetFilters}
                   className="px-4 py-2 bg-gray-500 hover:bg-gray-600 text-white rounded-lg font-medium transition-colors text-sm"

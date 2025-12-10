@@ -13,11 +13,17 @@ import { BaseModal } from '../../components/ui/BaseModal';
 import { MaterialPreviewModal } from '../../components/ui/MaterialPreviewModal';
 import { useDebounce } from '../../hooks/useDebounce';
 
+// 🔒 БЕЗОПАСНЫЕ форматы файлов (исключены исполняемые)
 const ALLOWED_EXTENSIONS = [
-  '.pdf', '.doc', '.docx', '.txt', '.rtf', 
-  '.ppt', '.pptx', '.xls', '.xlsx', '.csv',
-  '.jpg', '.jpeg', '.png', '.gif', 
-  '.zip', '.rar', '.7z', '.epub', '.djvu'
+  '.pdf', '.txt', '.rtf', 
+  '.jpg', '.jpeg', '.png', '.gif'
+];
+
+// ⚠️ ОПАСНЫЕ форматы - временно отключены
+const DANGEROUS_EXTENSIONS = [
+  '.doc', '.docx', '.ppt', '.pptx', '.xls', '.xlsx', // Могут содержать макросы
+  '.zip', '.rar', '.7z', // Могут содержать исполняемые файлы
+  '.exe', '.bat', '.cmd', '.sh', '.js', '.html' // Исполняемые файлы
 ];
 
 const MAX_FILE_SIZE = 150 * 1024 * 1024; // 150MB
@@ -124,8 +130,46 @@ export default function MaterialsPage() {
     }
 
     const fileExtension = '.' + uploadData.file.name.split('.').pop()?.toLowerCase();
+    
+    // 🛡️ ПРОВЕРКА 1: Опасные расширения
+    if (DANGEROUS_EXTENSIONS.includes(fileExtension)) {
+      showError('⚠️ ОПАСНЫЙ ФОРМАТ! Этот тип файла временно заблокирован по соображениям безопасности.');
+      return;
+    }
+    
+    // 🛡️ ПРОВЕРКА 2: Разрешенные форматы
     if (!ALLOWED_EXTENSIONS.includes(fileExtension)) {
-      showError('Недопустимый формат файла');
+      showError('Недопустимый формат файла. Разрешены только: ' + ALLOWED_EXTENSIONS.join(', '));
+      return;
+    }
+    
+    // 🛡️ ПРОВЕРКА 3: Подозрительные паттерны в имени файла
+    const suspiciousPatterns = /(\.exe|\.bat|\.cmd|\.sh|\.js|\.vbs|script|malware|virus|trojan|miner|bot|hack)/i;
+    if (suspiciousPatterns.test(uploadData.file.name)) {
+      showError('🚨 ПОДОЗРИТЕЛЬНЫЙ ФАЙЛ! Обнаружены потенциально опасные элементы в имени файла.');
+      return;
+    }
+
+    // 🛡️ ПРОВЕРКА 4: Размер файла (защита от ZIP-бомб)
+    if (uploadData.file.size > MAX_FILE_SIZE) {
+      showError('Размер файла не должен превышать 150 МБ');
+      return;
+    }
+
+    // 🛡️ ПРОВЕРКА 5: MIME-type должен соответствовать расширению
+    const expectedMimeTypes: Record<string, string[]> = {
+      '.pdf': ['application/pdf'],
+      '.txt': ['text/plain'],
+      '.rtf': ['application/rtf', 'text/rtf'],
+      '.jpg': ['image/jpeg'],
+      '.jpeg': ['image/jpeg'],
+      '.png': ['image/png'],
+      '.gif': ['image/gif']
+    };
+    
+    if (expectedMimeTypes[fileExtension] && 
+        !expectedMimeTypes[fileExtension].includes(uploadData.file.type)) {
+      showError('🚨 НЕСООТВЕТСТВИЕ! MIME-тип файла не соответствует расширению. Возможная подмена.');
       return;
     }
 
@@ -550,9 +594,17 @@ export default function MaterialsPage() {
                 </button>
               </div>
             )}
-            <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">
-              Максимальный размер: 150 МБ. Форматы: {ALLOWED_EXTENSIONS.join(', ')}
-            </p>
+            <div className="mt-2 space-y-2">
+              <p className="text-xs text-gray-500 dark:text-gray-400">
+                Максимальный размер: 150 МБ. Разрешенные форматы: {ALLOWED_EXTENSIONS.join(', ')}
+              </p>
+              <div className="p-3 bg-yellow-50 dark:bg-yellow-900/20 border border-yellow-200 dark:border-yellow-800 rounded-lg">
+                <p className="text-xs text-yellow-800 dark:text-yellow-200">
+                  🔒 <strong>Меры безопасности:</strong> Office документы (.doc, .docx, .xls, .xlsx) и архивы временно заблокированы
+                  для предотвращения загрузки вредоносного кода. Используйте PDF или изображения.
+                </p>
+              </div>
+            </div>
           </div>
 
           <div className="flex justify-end gap-3 pt-4">

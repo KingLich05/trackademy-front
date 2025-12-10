@@ -44,6 +44,7 @@ interface SubmissionDetailModalProps {
   submissionId: string | null;
   studentName: string;
   onUpdate?: () => void;
+  userRole?: string;
 }
 
 const getStatusInfo = (status: number) => {
@@ -88,7 +89,8 @@ export const SubmissionDetailModal: React.FC<SubmissionDetailModalProps> = ({
   onClose,
   submissionId,
   studentName,
-  onUpdate
+  onUpdate,
+  userRole
 }) => {
   const [submission, setSubmission] = useState<SubmissionDetail | null>(null);
   const [loading, setLoading] = useState(false);
@@ -106,6 +108,16 @@ export const SubmissionDetailModal: React.FC<SubmissionDetailModalProps> = ({
     }
   }, [isOpen, submissionId]);
 
+  // Автоматически переключаемся на вкладку "info", если вкладка "оценить" недоступна
+  useEffect(() => {
+    if (submission && activeTab === 'grade') {
+      const canGrade = submission.status !== 2 && submission.score === null && !(userRole === 'Teacher' && submission.status === 3);
+      if (!canGrade) {
+        setActiveTab('info');
+      }
+    }
+  }, [submission, activeTab, userRole]);
+
   const loadSubmissionDetail = async () => {
     if (!submissionId) return;
 
@@ -122,6 +134,8 @@ export const SubmissionDetailModal: React.FC<SubmissionDetailModalProps> = ({
       console.log('Loaded submission data:', data);
       console.log('Files array:', data?.files);
       console.log('Files length:', data?.files?.length);
+      console.log('Submission status:', data?.status);
+      console.log('Submission score:', data?.score);
       setSubmission(data);
       setScore(data.score?.toString() || '');
       setTeacherComment(data.teacherComment || '');
@@ -204,12 +218,13 @@ export const SubmissionDetailModal: React.FC<SubmissionDetailModalProps> = ({
       );
       
       if (result.success) {
+        console.log('Grading successful, reloading submission data...');
+        // Переключаемся на вкладку с информацией сразу
+        setActiveTab('info');
         // Обновляем данные в модалке
         await loadSubmissionDetail();
         // Уведомляем родительский компонент
         onUpdate?.();
-        // Переключаемся на вкладку с информацией
-        setActiveTab('info');
       }
     } finally {
       setActionLoading(false);
@@ -234,14 +249,14 @@ export const SubmissionDetailModal: React.FC<SubmissionDetailModalProps> = ({
       );
       
       if (result.success) {
+        // Переключаемся на вкладку с информацией сразу
+        setActiveTab('info');
+        // Очищаем поле комментария
+        setReturnComment('');
         // Обновляем данные в модалке
         await loadSubmissionDetail();
         // Уведомляем родительский компонент
         onUpdate?.();
-        // Переключаемся на вкладку с информацией
-        setActiveTab('info');
-        // Очищаем поле комментария
-        setReturnComment('');
       }
     } finally {
       setActionLoading(false);
@@ -327,8 +342,8 @@ export const SubmissionDetailModal: React.FC<SubmissionDetailModalProps> = ({
                 <DocumentTextIcon className="h-5 w-5 inline-block mr-2" />
                 Информация
               </button>
-              {/* Show grading tab only if not yet graded (status not 2 and no score) */}
-              {submission.status !== 2 && submission.score === null && (
+              {/* Show grading tab only if not yet graded (status not 2 and no score) and not returned for teachers */}
+              {submission.status !== 2 && submission.score === null && !(userRole === 'Teacher' && submission.status === 3) && (
                 <button
                   onClick={() => setActiveTab('grade')}
                   className={`py-2 px-1 border-b-2 font-medium text-sm transition-colors ${
