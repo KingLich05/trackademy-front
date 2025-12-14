@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { Subject, SubjectFormData } from '../types/Subject';
+import { Subject, SubjectFormData, PaymentType } from '../types/Subject';
 import { XMarkIcon } from '@heroicons/react/24/outline';
 
 interface EditSubjectModalProps {
@@ -21,7 +21,10 @@ const EditSubjectModal: React.FC<EditSubjectModalProps> = ({
     name: '',
     description: '',
     price: 0,
-    paymentType: 1,
+    paymentType: undefined as unknown as PaymentType, // Без значения по умолчанию
+    lessonsPerMonth: 0,
+    totalLessons: 0,
+    organizationId: '',
   });
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -33,6 +36,9 @@ const EditSubjectModal: React.FC<EditSubjectModalProps> = ({
         description: subject.description,
         price: subject.price,
         paymentType: subject.paymentType,
+        lessonsPerMonth: subject.lessonsPerMonth || 4,
+        totalLessons: subject.totalLessons || 36,
+        organizationId: subject.organizationId || '',
       });
     }
   }, [subject]);

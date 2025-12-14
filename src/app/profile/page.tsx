@@ -3,11 +3,14 @@
 import { useState, useEffect } from 'react';
 import { useAuth } from '../../contexts/AuthContext';
 import { AuthenticatedApiService } from '../../services/AuthenticatedApiService';
-import { UserIcon, BuildingOfficeIcon, IdentificationIcon, ShieldCheckIcon } from '@heroicons/react/24/outline';
+import { UserIcon, BuildingOfficeIcon, IdentificationIcon, ShieldCheckIcon, BanknotesIcon } from '@heroicons/react/24/outline';
 import { PageHeaderWithStats } from '../../components/ui/PageHeaderWithStats';
 import ProfileEditModal from '../../components/ProfileEditModal';
 import ChangePasswordModal from '../../components/ChangePasswordModal';
 import { User, UserFormData } from '../../types/User';
+
+
+
 
 interface ProfileData {
   id: string;
@@ -28,6 +31,8 @@ export default function Profile() {
   const [isChangePasswordModalOpen, setIsChangePasswordModalOpen] = useState(false);
   const [fullProfileData, setFullProfileData] = useState<User | null>(null);
 
+
+
   useEffect(() => {
     if (isAuthenticated) {
       fetchProfileData();
@@ -41,6 +46,11 @@ export default function Profile() {
       
       const data = await AuthenticatedApiService.get<ProfileData>('/Auth/me');
       setProfileData(data);
+
+      // Загружаем балансы для студентов
+      if (user?.role === 'Student' && user?.id) {
+
+      }
     } catch (error) {
       console.error('Failed to fetch profile data:', error);
       setError('Не удалось загрузить данные профиля');
@@ -48,6 +58,8 @@ export default function Profile() {
       setLoading(false);
     }
   };
+
+
 
   const handleEditProfile = async () => {
     if (!user?.id) return;
@@ -280,6 +292,57 @@ export default function Profile() {
               </div>
             </div>
           </div>
+
+        {/* Student Balances Section */}
+        {user?.role === 'Student' && (
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+            {/* Balances Card */}
+            <div className="bg-white/80 dark:bg-gray-800/80 backdrop-blur-sm shadow-lg rounded-xl border border-gray-200/50 dark:border-gray-700/50 overflow-hidden">
+              <div className="bg-gradient-to-r from-green-50 to-emerald-50 dark:from-green-900/30 dark:to-emerald-900/30 px-6 py-4 border-b border-gray-200/50 dark:border-gray-700/50">
+                <h2 className="text-lg font-semibold text-gray-900 dark:text-white flex items-center">
+                  <div className="p-2 bg-green-100 dark:bg-green-900/50 rounded-lg mr-3">
+                    <BanknotesIcon className="h-5 w-5 text-green-600 dark:text-green-400" />
+                  </div>
+                  Мои балансы
+                </h2>
+                <p className="text-sm text-gray-600 dark:text-gray-400 mt-1">
+                  Баланс и скидки по группам
+                </p>
+              </div>
+              
+              <div className="p-6">
+                {false ? (
+                  <div className="space-y-4">
+                    {[1, 2].map(i => (
+                      <div key={i} className="animate-pulse">
+                        <div className="h-24 bg-gray-200 dark:bg-gray-700 rounded-lg"></div>
+                      </div>
+                    ))}
+                  </div>
+                ) : (
+                  <div className="text-center py-8">
+                    <BanknotesIcon className="mx-auto h-12 w-12 text-gray-400 dark:text-gray-600 mb-4" />
+                    <p className="text-gray-500 dark:text-gray-400">
+                      Данные баланса недоступны
+                    </p>
+                  </div>
+                )}
+              </div>
+            </div>
+
+            {/* Additional Info Card */}
+            <div className="bg-white/80 dark:bg-gray-800/80 backdrop-blur-sm shadow-lg rounded-xl border border-gray-200/50 dark:border-gray-700/50 overflow-hidden">
+              <div className="p-6">
+                <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-4">
+                  Дополнительная информация
+                </h3>
+                <p className="text-gray-600 dark:text-gray-300">
+                  Здесь может быть размещена дополнительная информация профиля.
+                </p>
+              </div>
+            </div>
+          </div>
+        )}
 
         {/* Actions Card */}
         <div className="bg-white/80 dark:bg-gray-800/80 backdrop-blur-sm shadow-lg rounded-xl border border-gray-200/50 dark:border-gray-700/50 overflow-hidden">

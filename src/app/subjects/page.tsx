@@ -4,7 +4,7 @@ import { useState, useEffect, useCallback } from 'react';
 import { useAuth } from '../../contexts/AuthContext';
 import { AuthenticatedApiService } from '../../services/AuthenticatedApiService';
 import { BookOpenIcon, PencilIcon, TrashIcon, PlusIcon } from '@heroicons/react/24/outline';
-import { Subject, SubjectFormData, getPaymentTypeLabel } from '../../types/Subject';
+import { Subject, SubjectFormData, PaymentType, getPaymentTypeLabel } from '../../types/Subject';
 import { UniversalModal, useUniversalModal, SubjectForm, createSubjectValidator } from '../../components';
 import { DeleteConfirmationModal } from '../../components/ui/DeleteConfirmationModal';
 import { PageHeaderWithStats } from '../../components/ui/PageHeaderWithStats';
@@ -33,12 +33,17 @@ export default function SubjectsPage() {
   const [pageSize, setPageSize] = useState(10);
 
   // Универсальная система модалов
-  const subjectModal = useUniversalModal<SubjectFormData>('subject', {
+  const initialData: Record<string, unknown> = {
     name: '',
     description: '',
     price: 0,
-    paymentType: 1
-  });
+    paymentType: undefined, // Без значения по умолчанию
+    lessonsPerMonth: 0,
+    totalLessons: 0,
+    organizationId: user?.organizationId || ''
+  };
+  
+  const subjectModal = useUniversalModal('subject', initialData);
 
   // API Toast уведомления
   const { createOperation, updateOperation, deleteOperation, loadOperation } = useApiToast();
@@ -50,6 +55,8 @@ export default function SubjectsPage() {
     { key: 'description', label: 'Описание', required: false },
     { key: 'price', label: 'Цена', required: false },
     { key: 'paymentType', label: 'Тип оплаты', required: false },
+    { key: 'lessonsPerMonth', label: 'Уроков/месяц', required: false },
+    { key: 'totalLessons', label: 'Всего уроков', required: false },
     { key: 'actions', label: 'Действия', required: true }
   ]);
 
@@ -139,7 +146,8 @@ export default function SubjectsPage() {
     subjectModal.openCreateModal();
   };
 
-  const handleSaveCreate = async (formData: SubjectFormData) => {
+  const handleSaveCreate = async (formData: Record<string, unknown>) => {
+    const subjectData = formData as SubjectFormData;
     const organizationId = user?.organizationId || localStorage.getItem('userOrganizationId');
     
     if (!organizationId) {
@@ -147,7 +155,7 @@ export default function SubjectsPage() {
     }
 
     const dataToSend = {
-      ...formData,
+      ...subjectData,
       organizationId: organizationId,
     };
 
@@ -170,18 +178,22 @@ export default function SubjectsPage() {
       subjectModal.openEditModal({
         id: subject.id,
         name: subject.name,
-        description: subject.description,
+        description: subject.description || '',
         price: subject.price,
-        paymentType: subject.paymentType
+        paymentType: subject.paymentType,
+        lessonsPerMonth: subject.lessonsPerMonth,
+        totalLessons: subject.totalLessons,
+        organizationId: subject.organizationId
       } as SubjectFormData & { id: string });
     }
   };
 
-  const handleSaveEdit = async (formData: SubjectFormData, subjectId?: string) => {
+  const handleSaveEdit = async (formData: Record<string, unknown>, subjectId?: string) => {
     if (!subjectId) return;
     
+    const subjectData = formData as SubjectFormData;
     const result = await updateOperation(
-      () => AuthenticatedApiService.put(`/Subject/${subjectId}`, formData),
+      () => AuthenticatedApiService.put(`/Subject/${subjectId}`, subjectData),
       'Предмет'
     );
     
@@ -428,6 +440,11 @@ export default function SubjectsPage() {
                         Тип оплаты
                       </th>
                     )}
+                    {(isColumnVisible('lessonsPerMonth') || isColumnVisible('totalLessons')) && (
+                      <th className="px-3 py-3 text-left text-xs font-semibold text-gray-700 dark:text-gray-200 uppercase tracking-wider" style={{ width: '12%' }}>
+                        Уроки
+                      </th>
+                    )}
                     {isColumnVisible('actions') && (
                       <th className="px-3 py-3 text-center text-xs font-semibold text-gray-700 dark:text-gray-200 uppercase tracking-wider" style={{ width: '100px' }}>
                         Действия
@@ -475,12 +492,26 @@ export default function SubjectsPage() {
                         <td className="px-3 py-3 truncate">
                           <div className="text-sm text-gray-900 dark:text-white">
                             <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${
-                              Number(subject.paymentType) === 1 
-                                ? 'bg-blue-100 text-blue-800 dark:bg-blue-900/30 dark:text-blue-300' 
-                                : 'bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-300'
+                              subject.paymentType === PaymentType.Monthly
+                                ? 'bg-blue-100 text-blue-800 dark:bg-blue-900/30 dark:text-blue-300'
+                                : subject.paymentType === PaymentType.OneTime
+                                ? 'bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-300'
+                                : 'bg-purple-100 text-purple-800 dark:bg-purple-900/30 dark:text-purple-300'
                             }`}>
-                              {getPaymentTypeLabel(Number(subject.paymentType))}
+                              {getPaymentTypeLabel(subject.paymentType)}
                             </span>
+                          </div>
+                        </td>
+                      )}
+                      {(isColumnVisible('lessonsPerMonth') || isColumnVisible('totalLessons')) && (
+                        <td className="px-3 py-3 text-sm text-gray-900 dark:text-white">
+                          <div className="flex flex-col">
+                            <div className="text-xs text-gray-500 dark:text-gray-400 mb-1">
+                              {subject.paymentType === PaymentType.Monthly ? 'Уроков/мес' : 'Всего уроков'}
+                            </div>
+                            <div className="font-medium">
+                              {subject.paymentType === PaymentType.Monthly ? subject.lessonsPerMonth : subject.totalLessons}
+                            </div>
                           </div>
                         </td>
                       )}
@@ -561,7 +592,19 @@ export default function SubjectsPage() {
                     <div className="p-3 bg-gradient-to-r from-blue-50 to-indigo-50 dark:from-blue-900/20 dark:to-indigo-900/20 rounded-lg border border-blue-200/30 dark:border-blue-600/30">
                       <div className="text-xs text-gray-600 dark:text-gray-400 mb-1">Тип оплаты</div>
                       <div className="text-sm font-medium text-blue-700 dark:text-blue-300">
-                        {getPaymentTypeLabel(Number(subject.paymentType))}
+                        {getPaymentTypeLabel(subject.paymentType)}
+                      </div>
+                    </div>
+                  </div>
+                  
+                  {/* Lessons Configuration */}
+                  <div className="mt-3">
+                    <div className="p-3 bg-gradient-to-r from-purple-50 to-pink-50 dark:from-purple-900/20 dark:to-pink-900/20 rounded-lg border border-purple-200/30 dark:border-purple-600/30">
+                      <div className="text-xs text-gray-600 dark:text-gray-400 mb-1">
+                        {subject.paymentType === PaymentType.Monthly ? 'Уроков/мес' : 'Всего уроков'}
+                      </div>
+                      <div className="text-sm font-medium text-purple-700 dark:text-purple-300">
+                        {subject.paymentType === PaymentType.Monthly ? subject.lessonsPerMonth : subject.totalLessons}
                       </div>
                     </div>
                   </div>
@@ -611,11 +654,11 @@ export default function SubjectsPage() {
         initialData={subjectModal.initialData}
         data={subjectModal.editData || undefined}
         onSave={subjectModal.mode === 'create' ? handleSaveCreate : handleSaveEdit}
-        validate={createSubjectValidator}
+        validate={(data) => createSubjectValidator(data as SubjectFormData)}
         submitText={subjectModal.getConfig().submitText}
         loadingText={subjectModal.getConfig().loadingText}
       >
-        {(props) => <SubjectForm {...props} />}
+        {(props) => <SubjectForm {...(props as unknown as Parameters<typeof SubjectForm>[0])} />}
       </UniversalModal>
 
       {/* Delete Subject Confirmation Modal */}

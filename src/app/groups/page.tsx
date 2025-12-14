@@ -14,7 +14,7 @@ import { PageHeaderWithStats } from '../../components/ui/PageHeaderWithStats';
 import { useColumnVisibility, ColumnVisibilityControl } from '../../components/ui/ColumnVisibilityControl';
 import { useApiToast } from '../../hooks/useApiToast';
 import { GroupStudentsModal } from '../../components/GroupStudentsModal';
-import { CreatePaymentModal } from '../../components/CreatePaymentModal';
+
 import { BaseModal } from '../../components/ui/BaseModal';
 import { FreezeStudentModal } from '../../components/FreezeStudentModal';
 
@@ -33,9 +33,8 @@ export default function GroupsPage() {
   // Состояния для модалок платежей
   const [isStudentsModalOpen, setIsStudentsModalOpen] = useState(false);
   const [selectedGroup, setSelectedGroup] = useState<Group | null>(null);
-  const [isCreatePaymentModalOpen, setIsCreatePaymentModalOpen] = useState(false);
-  const [selectedStudentId, setSelectedStudentId] = useState<string>('');
-  const [selectedStudentName, setSelectedStudentName] = useState<string>('');
+
+
 
   // Состояния для модалок заморозки
   const [isFreezeModalOpen, setIsFreezeModalOpen] = useState(false);
@@ -331,28 +330,16 @@ export default function GroupsPage() {
     setIsStudentsModalOpen(true);
   };
 
-  const handleStudentSelect = (studentId: string, studentName: string) => {
-    setSelectedStudentId(studentId);
-    setSelectedStudentName(studentName);
-    setIsStudentsModalOpen(false);
-    setIsCreatePaymentModalOpen(true);
-  };
 
-  const handlePaymentSuccess = () => {
-    // Можно добавить toast уведомление или обновление данных
-    console.log('Payment created successfully');
-  };
+
+
 
   const handleCloseStudentsModal = () => {
     setIsStudentsModalOpen(false);
     setSelectedGroup(null);
   };
 
-  const handleClosePaymentModal = () => {
-    setIsCreatePaymentModalOpen(false);
-    setSelectedStudentId('');
-    setSelectedStudentName('');
-  };
+
 
   const handleFreezeStudent = (studentId: string, studentName: string) => {
     setFreezingStudentId(studentId);
@@ -1001,25 +988,10 @@ export default function GroupsPage() {
       <GroupStudentsModal
         isOpen={isStudentsModalOpen}
         onClose={handleCloseStudentsModal}
-        groupName={selectedGroup?.name || ''}
-        groupId={selectedGroup?.id || ''}
-        students={selectedGroup?.students || []}
-        onStudentSelect={handleStudentSelect}
-        onFreezeStudent={handleFreezeStudent}
-        onUnfreezeStudent={handleUnfreezeStudent}
+        group={selectedGroup}
       />
 
-      {/* Модалка создания платежа */}
-      <CreatePaymentModal
-        isOpen={isCreatePaymentModalOpen}
-        onClose={handleClosePaymentModal}
-        studentId={selectedStudentId}
-        studentName={selectedStudentName}
-        groupId={selectedGroup?.id || ''}
-        groupName={selectedGroup?.name || ''}
-        subjectId={selectedGroup ? (typeof selectedGroup.subject === 'object' ? selectedGroup.subject.subjectId : selectedGroup.subject) : ''}
-        onSuccess={handlePaymentSuccess}
-      />
+
 
       {/* Модалка просмотра деталей группы */}
       <BaseModal

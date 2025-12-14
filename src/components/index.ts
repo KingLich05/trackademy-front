@@ -19,5 +19,4 @@ export {
 
 // Экспорт модальных окон
 export { ExportAttendanceModal } from './ExportAttendanceModal';
-export { StudentPaymentsModal } from './StudentPaymentsModal';
 export { FreezeStudentModal } from './FreezeStudentModal';

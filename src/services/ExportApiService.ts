@@ -40,13 +40,7 @@ export class ExportApiService {
     return new Blob(['Экспорт групп'], { type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' });
   }
 
-  /**
-   * Экспорт платежей
-   */
-  static async exportPayments(options: ExportOptions = {}): Promise<Blob> {
-    // Заглушка - будет реализовано позже
-    return new Blob(['Экспорт платежей'], { type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' });
-  }
+
 
   /**
    * Экспорт посещаемости
@@ -88,7 +82,6 @@ export class ExportApiService {
     const typeNames: Record<string, string> = {
       users: 'пользователи',
       groups: 'группы',
-      payments: 'платежи',
       attendance: 'посещаемость',
       schedules: 'расписания'
     };

@@ -53,17 +53,42 @@ export const createRoomValidator = (data: RoomFormData) => {
 export const createSubjectValidator = (data: SubjectFormData) => {
   const errors: Record<string, string> = {};
 
+  // Проверка названия (обязательно, макс 200 символов)
   if (!data.name?.trim()) {
     errors.name = 'Название предмета обязательно';
+  } else if (data.name.length > 200) {
+    errors.name = 'Название не должно превышать 200 символов';
   }
 
+  // Проверка описания (опционально, макс 1000 символов)
+  if (data.description && data.description.length > 1000) {
+    errors.description = 'Описание не должно превышать 1000 символов';
+  }
+
+  // Проверка цены (>= 0)
   if (data.price === undefined || data.price === null || data.price < 0) {
     errors.price = 'Цена обязательна и должна быть неотрицательной';
   }
 
+  // Проверка типа оплаты (1, 2)
   const paymentTypeNum = Number(data.paymentType);
-  if (!paymentTypeNum || (paymentTypeNum !== 1 && paymentTypeNum !== 2)) {
-    errors.paymentType = 'Выберите тип оплаты';
+  if (paymentTypeNum === undefined || paymentTypeNum === null || ![1, 2].includes(paymentTypeNum)) {
+    errors.paymentType = 'Выберите корректный тип оплаты';
+  }
+
+  // Проверка уроков в месяц (для ежемесячного типа)
+  if (paymentTypeNum === 1 && (!data.lessonsPerMonth || data.lessonsPerMonth <= 0)) {
+    errors.lessonsPerMonth = 'Количество уроков в месяц должно быть больше 0';
+  }
+
+  // Проверка общего количества уроков (для единоразового типа)
+  if (paymentTypeNum === 2 && (!data.totalLessons || data.totalLessons <= 0)) {
+    errors.totalLessons = 'Общее количество уроков должно быть больше 0';
+  }
+
+  // Проверка organizationId (UUID)
+  if (!data.organizationId?.trim()) {
+    errors.organizationId = 'ID организации обязателен';
   }
 
   return errors;

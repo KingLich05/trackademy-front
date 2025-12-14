@@ -207,7 +207,7 @@ export const SubjectForm: React.FC<SubjectFormProps> = ({
         <select
           id="subjectPaymentType"
           name="paymentType"
-          value={formData.paymentType ?? 1}
+          value={formData.paymentType ?? ''}
           onChange={(e) => {
             const value = Number(e.target.value);
             setFormData((prev: SubjectFormData) => ({
@@ -225,6 +225,7 @@ export const SubjectForm: React.FC<SubjectFormProps> = ({
           } text-gray-900 dark:text-white`}
           required
         >
+          <option value="" disabled>Выберите тип оплаты</option>
           <option value={1}>Ежемесячный</option>
           <option value={2}>Единоразовый</option>
         </select>
@@ -232,6 +233,78 @@ export const SubjectForm: React.FC<SubjectFormProps> = ({
           <p className="mt-1 text-sm text-red-600 dark:text-red-400">{errors.paymentType}</p>
         )}
       </div>
+
+      {/* Lessons Per Month - показывается только для ежемесячного типа оплаты */}
+      {formData.paymentType === 1 && (
+        <div>
+          <label htmlFor="subjectLessonsPerMonth" className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+            Занятий в месяц *
+          </label>
+          <input
+            id="subjectLessonsPerMonth"
+            type="number"
+            name="lessonsPerMonth"
+            value={formData.lessonsPerMonth || ''}
+            onChange={(e) => {
+              const value = e.target.value === '' ? 0 : Number(e.target.value);
+              setFormData((prev: SubjectFormData) => ({
+                ...prev,
+                lessonsPerMonth: value
+              }));
+              if (errors.lessonsPerMonth) {
+                setErrors(prev => ({ ...prev, lessonsPerMonth: '' }));
+              }
+            }}
+            className={`w-full px-4 py-3 border rounded-xl focus:outline-none focus:ring-2 focus:ring-orange-500 focus:border-transparent transition-colors ${
+              errors.lessonsPerMonth 
+                ? 'border-red-400 bg-red-50 dark:bg-red-900/20' 
+                : 'border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700'
+            } text-gray-900 dark:text-white`}
+            placeholder="Количество занятий в месяц"
+            min="1"
+            required
+          />
+          {errors.lessonsPerMonth && (
+            <p className="mt-1 text-sm text-red-600 dark:text-red-400">{errors.lessonsPerMonth}</p>
+          )}
+        </div>
+      )}
+
+      {/* Total Lessons - показывается только для единоразового типа оплаты */}
+      {formData.paymentType === 2 && (
+        <div>
+          <label htmlFor="subjectTotalLessons" className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+            Всего занятий *
+          </label>
+          <input
+            id="subjectTotalLessons"
+            type="number"
+            name="totalLessons"
+            value={formData.totalLessons || ''}
+            onChange={(e) => {
+              const value = e.target.value === '' ? 0 : Number(e.target.value);
+              setFormData((prev: SubjectFormData) => ({
+                ...prev,
+                totalLessons: value
+              }));
+              if (errors.totalLessons) {
+                setErrors(prev => ({ ...prev, totalLessons: '' }));
+              }
+            }}
+            className={`w-full px-4 py-3 border rounded-xl focus:outline-none focus:ring-2 focus:ring-orange-500 focus:border-transparent transition-colors ${
+              errors.totalLessons 
+                ? 'border-red-400 bg-red-50 dark:bg-red-900/20' 
+                : 'border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700'
+            } text-gray-900 dark:text-white`}
+            placeholder="Общее количество занятий"
+            min="1"
+            required
+          />
+          {errors.totalLessons && (
+            <p className="mt-1 text-sm text-red-600 dark:text-red-400">{errors.totalLessons}</p>
+          )}
+        </div>
+      )}
     </div>
   );
 };
