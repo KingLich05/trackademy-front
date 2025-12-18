@@ -11,9 +11,23 @@ interface GroupStudentsModalProps {
   onPaymentCreate?: (studentId: string, studentName: string) => void;
 }
 
-interface GroupStudent {
-  studentId: string;
-  studentName: string;
+interface StudentBalance {
+  student: {
+    id: string;
+    name: string;
+    phone: string;
+  };
+  group: {
+    id: string;
+    name: string;
+    code: string;
+  };
+  balance: number;
+  discountType: number | null;
+  discountValue: number | null;
+  discountReason: string | null;
+  createdAt: string;
+  updatedAt: string | null;
 }
 
 export const GroupStudentsModal: React.FC<GroupStudentsModalProps> = ({
@@ -22,7 +36,7 @@ export const GroupStudentsModal: React.FC<GroupStudentsModalProps> = ({
   group,
   onPaymentCreate
 }) => {
-  const [students, setStudents] = useState<GroupStudent[]>([]);
+  const [studentBalances, setStudentBalances] = useState<StudentBalance[]>([]);
   const [loading, setLoading] = useState(false);
 
   useEffect(() => {
@@ -36,20 +50,20 @@ export const GroupStudentsModal: React.FC<GroupStudentsModalProps> = ({
     
     setLoading(true);
     try {
-      const response = await AuthenticatedApiService.get<GroupStudent[]>(
-        `/Group/${group.id}/students`
+      const response = await AuthenticatedApiService.get<StudentBalance[]>(
+        `/StudentBalance/group/${group.id}/all`
       );
-      setStudents(response);
+      setStudentBalances(response);
     } catch (error) {
       console.error('Failed to load students:', error);
-      setStudents([]);
+      setStudentBalances([]);
     } finally {
       setLoading(false);
     }
   };
 
   const handleClose = () => {
-    setStudents([]);
+    setStudentBalances([]);
     onClose();
   };
 
@@ -71,7 +85,7 @@ export const GroupStudentsModal: React.FC<GroupStudentsModalProps> = ({
                 Список студентов
               </h3>
               <p className="text-sm text-gray-600 dark:text-gray-400">
-                Всего студентов: {students.length}
+                Всего студентов: {studentBalances.length}
               </p>
             </div>
           </div>
@@ -90,7 +104,7 @@ export const GroupStudentsModal: React.FC<GroupStudentsModalProps> = ({
               Загрузка студентов...
             </p>
           </div>
-        ) : students.length === 0 ? (
+        ) : studentBalances.length === 0 ? (
           <div className="text-center py-8">
             <div className="p-3 bg-gray-100 dark:bg-gray-700 rounded-full w-16 h-16 mx-auto mb-4">
               <UserIcon className="w-10 h-10 text-gray-400 mx-auto mt-1" />
@@ -104,9 +118,9 @@ export const GroupStudentsModal: React.FC<GroupStudentsModalProps> = ({
           </div>
         ) : (
           <div className="space-y-3 max-h-96 overflow-y-auto">
-            {students.map((student) => (
+            {studentBalances.map((studentBalance) => (
               <div
-                key={student.studentId}
+                key={studentBalance.student.id}
                 className="bg-white dark:bg-gray-700 rounded-lg p-4 shadow-sm hover:shadow-md transition-all duration-200 border border-gray-200/50 dark:border-gray-600/50"
               >
                 <div className="flex items-center justify-between">
@@ -116,16 +130,19 @@ export const GroupStudentsModal: React.FC<GroupStudentsModalProps> = ({
                     </div>
                     <div>
                       <h4 className="font-medium text-gray-900 dark:text-white">
-                        {student.studentName}
+                        {studentBalance.student.name}
                       </h4>
                       <p className="text-sm text-gray-600 dark:text-gray-400">
-                        ID: {student.studentId}
+                        {studentBalance.student.phone}
+                      </p>
+                      <p className="text-sm font-medium text-green-600 dark:text-green-400">
+                        Баланс: {studentBalance.balance.toLocaleString()} ₸
                       </p>
                     </div>
                   </div>
                   {onPaymentCreate && (
                     <button
-                      onClick={() => onPaymentCreate(student.studentId, student.studentName)}
+                      onClick={() => onPaymentCreate(studentBalance.student.id, studentBalance.student.name)}
                       className="px-3 py-1.5 text-sm bg-gradient-to-r from-green-500 to-green-600 text-white rounded-lg hover:shadow-lg transition-all duration-200 hover:scale-105"
                     >
                       Создать платеж

@@ -807,7 +807,10 @@ export default function GroupsPage() {
                         {isColumnVisible('students') && (
                           <td className="px-3 py-3">
                             <button
-                              onClick={() => handleShowStudents(group)}
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                handleShowStudents(group);
+                              }}
                               className="text-teal-600 hover:text-teal-900 dark:text-teal-400 dark:hover:text-teal-300 flex items-center hover:bg-teal-50 dark:hover:bg-teal-900/20 px-2 py-1 rounded transition-colors"
                               title="Создать платеж для студента"
                             >
@@ -820,14 +823,20 @@ export default function GroupsPage() {
                           <td className="px-3 py-3 text-right">
                             <div className="flex justify-end gap-1">
                               <button 
-                                onClick={() => handleEdit(group.id)}
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  handleEdit(group.id);
+                                }}
                                 className="text-indigo-600 hover:text-indigo-900 dark:text-indigo-400 dark:hover:text-indigo-300 p-1.5 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors duration-200"
                                 title="Редактировать группу"
                               >
                                 <PencilIcon className="h-4 w-4" />
                               </button>
                               <button 
-                                onClick={() => handleDelete(group.id)}
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  handleDelete(group.id);
+                                }}
                                 className="text-red-600 hover:text-red-900 dark:text-red-400 dark:hover:text-red-300 p-1.5 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors duration-200"
                                 title="Удалить группу"
                               >
@@ -875,7 +884,7 @@ export default function GroupsPage() {
                     <div className="flex items-center space-x-3 text-sm">
                       <span className="font-medium text-gray-700 dark:text-gray-300">Студенты:</span>
                       <button
-                        onClick={() => handleView(group.id)}
+                        onClick={() => handleShowStudents(group)}
                         className="text-teal-600 hover:text-teal-900 dark:text-teal-400 dark:hover:text-teal-300 flex items-center"
                       >
                         <span className="font-medium">{group.students.length}</span>

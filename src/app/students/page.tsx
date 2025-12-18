@@ -859,7 +859,7 @@ export default function StudentsPage() {
           </div>
 
           {/* Pagination */}
-          {totalPages > 1 && (
+          {totalCount > 0 && (
             <div className="px-6 py-4 border-t border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-700/50">
               {renderPagination()}
             </div>
