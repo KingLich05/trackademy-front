@@ -10,6 +10,7 @@ export interface GroupBalance {
   groupCode: string;
   subjectName: string;
   balance: number;
+  remainingLessons: number;
   discountType: number | null;
   discountValue: number | null;
   discountReason: string | null;
@@ -33,6 +34,7 @@ export interface FlattenedBalance {
   groupCode: string;
   subjectName: string;
   balance: number;
+  remainingLessons: number;
   discountType: number | null;
   discountValue: number | null;
   discountReason: string | null;

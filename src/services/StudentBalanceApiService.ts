@@ -29,6 +29,7 @@ export class StudentBalanceApiService {
           groupCode: balance.groupCode,
           subjectName: balance.subjectName,
           balance: balance.balance,
+          remainingLessons: balance.remainingLessons || 0,
           discountType: balance.discountType,
           discountValue: balance.discountValue,
           discountReason: balance.discountReason,

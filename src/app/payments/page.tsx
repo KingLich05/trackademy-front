@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { useAuth } from '../../contexts/AuthContext';
 import { useRouter } from 'next/navigation';
 import { canManageUsers } from '../../types/Role';
@@ -24,6 +24,7 @@ interface GroupedStudent {
     groupCode: string;
     subjectName: string;
     balance: number;
+    remainingLessons: number;
     discountType: number | null;
     discountValue: number;
     discountReason: string | null;
@@ -109,6 +110,9 @@ export default function PaymentsPage() {
   const [modalLoading, setModalLoading] = useState(false);
   const [searchTerm, setSearchTerm] = useState('');
   
+  // Expanded rows state - by default all rows are expanded
+  const [expandedRows, setExpandedRows] = useState<Set<string>>(new Set());
+  
   // Pagination states
   const [currentPage, setCurrentPage] = useState(1);
   const [totalCount, setTotalCount] = useState(0);
@@ -147,6 +151,7 @@ export default function PaymentsPage() {
         groupCode: item.groupCode,
         subjectName: item.subjectName,
         balance: item.balance,
+        remainingLessons: item.remainingLessons || 0,
         discountType: item.discountType,
         discountValue: item.discountValue || 0,
         discountReason: item.discountReason,
@@ -182,6 +187,37 @@ export default function PaymentsPage() {
     fetchStudentDetails(student.studentId);
     setShowModal(true);
   };
+  
+  const toggleRowExpansion = (studentId: string) => {
+    setExpandedRows(prev => {
+      const newSet = new Set(prev);
+      if (newSet.has(studentId)) {
+        newSet.delete(studentId);
+      } else {
+        newSet.add(studentId);
+      }
+      return newSet;
+    });
+  };
+  
+  // Initialize all rows as expanded when grouped students change
+  useEffect(() => {
+    const allStudentIds = new Set(groupedStudents.map(student => student.studentId));
+    setExpandedRows(allStudentIds);
+  }, [groupedStudents]);
+
+  const toggleAllRows = () => {
+    if (expandedRows.size === groupedStudents.length) {
+      // All rows are expanded, collapse all
+      setExpandedRows(new Set());
+    } else {
+      // Some or no rows are expanded, expand all
+      const allStudentIds = new Set(groupedStudents.map(student => student.studentId));
+      setExpandedRows(allStudentIds);
+    }
+  };
+
+  const allRowsExpanded = expandedRows.size === groupedStudents.length;
   
   // Column visibility
   const { columns, toggleColumn, isColumnVisible } = useColumnVisibility([
@@ -309,9 +345,7 @@ export default function PaymentsPage() {
     return new Date(dateString).toLocaleDateString('ru-RU', {
       day: '2-digit',
       month: '2-digit',
-      year: 'numeric',
-      hour: '2-digit',
-      minute: '2-digit'
+      year: 'numeric'
     });
   };
 
@@ -408,7 +442,7 @@ export default function PaymentsPage() {
                 <MagnifyingGlassIcon className="absolute left-3 top-1/2 transform -translate-y-1/2 h-5 w-5 text-gray-400" />
                 <input
                   type="text"
-                  placeholder="Поиск по имени студента, телефону, группе..."
+                  placeholder="Поиск по имени студента"
                   value={searchTerm}
                   onChange={(e) => setSearchTerm(e.target.value)}
                   className="w-full pl-10 pr-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-green-500 focus:border-green-500"
@@ -433,11 +467,25 @@ export default function PaymentsPage() {
                 )}
               </button>
               <button
-                onClick={loadStudentBalances}
-                disabled={loading}
-                className="px-4 py-2 bg-gradient-to-r from-green-500 to-green-600 text-white rounded-lg hover:shadow-lg transition-all duration-200 hover:scale-105 disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:scale-100"
+                onClick={toggleAllRows}
+                className="px-4 py-2 bg-gradient-to-r from-purple-500 to-purple-600 text-white rounded-lg hover:shadow-lg transition-all duration-200 hover:scale-105 flex items-center gap-2"
+                title={allRowsExpanded ? "Свернуть детали всех студентов" : "Развернуть детали всех студентов"}
               >
-                {loading ? 'Обновление...' : 'Обновить'}
+                {allRowsExpanded ? (
+                  <>
+                    <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 15l7-7 7 7" />
+                    </svg>
+                    Свернуть всех
+                  </>
+                ) : (
+                  <>
+                    <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+                    </svg>
+                    Развернуть всех
+                  </>
+                )}
               </button>
             </div>
           </div>
@@ -566,75 +614,160 @@ export default function PaymentsPage() {
                   </thead>
                   <tbody className="bg-white dark:bg-gray-800 divide-y divide-gray-200 dark:divide-gray-700">
                     {groupedStudents.map((student, index) => (
-                      <tr 
-                        key={student.studentId} 
-                        className={`cursor-pointer hover:bg-gradient-to-r hover:from-green-50 hover:to-emerald-50 dark:hover:from-gray-700 dark:hover:to-gray-600 transition-all duration-200 ${getBalanceBg(student.totalBalance, student.isFrozen)}`}
-                        onClick={() => handleStudentClick(student)}
-                      >
-
-                        {isColumnVisible('student') && (
-                          <td className="px-2 sm:px-4 py-3">
-                            <div className="flex items-center">
-                              <div className="p-2 bg-gradient-to-r from-blue-100 to-purple-100 dark:from-blue-900 dark:to-purple-900 rounded-lg mr-3">
-                                <UserIcon className="h-4 w-4 text-blue-600 dark:text-blue-400" />
+                      <React.Fragment key={student.studentId}>
+                        {/* Main student row */}
+                        <tr 
+                          className={`hover:bg-gradient-to-r hover:from-green-50 hover:to-emerald-50 dark:hover:from-gray-700 dark:hover:to-gray-600 transition-all duration-200 ${getBalanceBg(student.totalBalance, student.isFrozen)}`}
+                        >
+                          {isColumnVisible('student') && (
+                            <td className="px-2 sm:px-4 py-3">
+                              <div className="flex items-center">
+                                <button
+                                  onClick={(e) => {
+                                    e.stopPropagation();
+                                    toggleRowExpansion(student.studentId);
+                                  }}
+                                  className="mr-2 p-1 hover:bg-gray-200 dark:hover:bg-gray-600 rounded transition-colors"
+                                >
+                                  {expandedRows.has(student.studentId) ? (
+                                    <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+                                    </svg>
+                                  ) : (
+                                    <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
+                                    </svg>
+                                  )}
+                                </button>
+                                <div className="p-2 bg-gradient-to-r from-blue-100 to-purple-100 dark:from-blue-900 dark:to-purple-900 rounded-lg mr-3">
+                                  <UserIcon className="h-4 w-4 text-blue-600 dark:text-blue-400" />
+                                </div>
+                                <div className="text-sm font-medium text-gray-900 dark:text-white">
+                                  {student.studentName}
+                                </div>
                               </div>
-                              <div className="text-sm font-medium text-gray-900 dark:text-white">
-                                {student.studentName}
+                            </td>
+                          )}
+                          {isColumnVisible('phone') && (
+                            <td className="px-2 sm:px-4 py-3">
+                              <div className="flex items-center text-sm text-gray-600 dark:text-gray-300 min-w-0">
+                                <PhoneIcon className="h-4 w-4 mr-2" />
+                                {student.studentPhone}
                               </div>
-                            </div>
-                          </td>
-                        )}
-                        {isColumnVisible('phone') && (
-                          <td className="px-2 sm:px-4 py-3">
-                            <div className="flex items-center text-sm text-gray-600 dark:text-gray-300 min-w-0">
-                              <PhoneIcon className="h-4 w-4 mr-2" />
-                              {student.studentPhone}
-                            </div>
-                          </td>
-                        )}
-                        {isColumnVisible('balance') && (
-                          <td className="px-4 py-3 text-right">
-                            <div className={`text-sm font-semibold ${getBalanceColor(student.totalBalance)}`}>
-                              {formatBalance(student.totalBalance)}
-                            </div>
-                          </td>
-                        )}
-                        {isColumnVisible('group') && (
-                          <td className="px-4 py-3">
-                            <div className="flex items-center">
-                              <div className="p-2 bg-gradient-to-r from-green-100 to-emerald-100 dark:from-green-900 dark:to-emerald-900 rounded-lg mr-3">
-                                <UserGroupIcon className="h-4 w-4 text-green-600 dark:text-green-400" />
+                            </td>
+                          )}
+                          {isColumnVisible('balance') && (
+                            <td className="px-4 py-3 text-right">
+                              <div className={`text-sm font-semibold ${getBalanceColor(student.totalBalance)}`}>
+                                {formatBalance(student.totalBalance)}
                               </div>
-                              <div className="text-sm font-medium text-gray-900 dark:text-white">
-                                {student.groups.length} группы
+                            </td>
+                          )}
+                          {isColumnVisible('group') && (
+                            <td className="px-4 py-3">
+                              <div className="flex items-center">
+                                <div className="p-2 bg-gradient-to-r from-green-100 to-emerald-100 dark:from-green-900 dark:to-emerald-900 rounded-lg mr-3">
+                                  <UserGroupIcon className="h-4 w-4 text-green-600 dark:text-green-400" />
+                                </div>
+                                <div className="text-sm font-medium text-gray-900 dark:text-white">
+                                  {student.groups.length} группы
+                                </div>
                               </div>
-                            </div>
-                          </td>
-                        )}
-                        {isColumnVisible('frozen') && (
-                          <td className="px-4 py-3">
-                            {student.isFrozen ? (
-                              <div className="flex items-center space-x-1">
-                                <AcademicCapIcon className="h-4 w-4 text-blue-600 dark:text-blue-400" />
-                                <span className="inline-flex px-2 py-1 text-xs font-semibold rounded-full bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-200">
-                                  Заморожено
+                            </td>
+                          )}
+                          {isColumnVisible('frozen') && (
+                            <td className="px-4 py-3">
+                              {student.isFrozen ? (
+                                <div className="flex items-center space-x-1">
+                                  <AcademicCapIcon className="h-4 w-4 text-blue-600 dark:text-blue-400" />
+                                  <span className="inline-flex px-2 py-1 text-xs font-semibold rounded-full bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-200">
+                                    Заморожено
+                                  </span>
+                                </div>
+                              ) : (
+                                <span className="inline-flex px-2 py-1 text-xs font-semibold rounded-full bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200">
+                                  Активно
                                 </span>
-                              </div>
-                            ) : (
-                              <span className="inline-flex px-2 py-1 text-xs font-semibold rounded-full bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200">
-                                Активно
-                              </span>
-                            )}
+                              )}
+                            </td>
+                          )}
+                          <td className="px-4 py-3 text-center">
+                            <button
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                handleStudentClick(student);
+                              }}
+                              className="text-blue-600 hover:text-blue-900 dark:text-blue-400 dark:hover:text-blue-300 font-medium text-sm"
+                            >
+                              Подробнее
+                            </button>
                           </td>
-                        )}
-                        <td className="px-4 py-3 text-center">
-                          <button
-                            className="text-blue-600 hover:text-blue-900 dark:text-blue-400 dark:hover:text-blue-300 font-medium text-sm"
-                          >
-                            Подробнее
-                          </button>
-                        </td>
-                      </tr>
+                        </tr>
+                        
+                        {/* Expanded group details rows */}
+                        {expandedRows.has(student.studentId) && student.groups.map((group, groupIndex) => (
+                          <tr key={`${student.studentId}-${group.groupId}`} className="bg-gray-50 dark:bg-gray-800/50 border-l-2 border-gray-300 dark:border-gray-600">
+                            {isColumnVisible('student') && (
+                              <td className="px-2 sm:px-4 py-2 pl-12">
+                                <div className="flex items-center">
+                                  <div className="p-1 bg-gradient-to-r from-gray-200 to-gray-300 dark:from-gray-600 dark:to-gray-500 rounded mr-3">
+                                    <AcademicCapIcon className="h-3 w-3 text-gray-600 dark:text-gray-400" />
+                                  </div>
+                                  <div className="text-xs font-medium text-gray-700 dark:text-gray-200">
+                                    {group.groupName} ({group.groupCode})
+                                  </div>
+                                </div>
+                              </td>
+                            )}
+                            {isColumnVisible('phone') && (
+                              <td className="px-2 sm:px-4 py-2">
+                                <div className="text-xs text-gray-600 dark:text-gray-300">
+                                  {group.subjectName}
+                                </div>
+                              </td>
+                            )}
+                            {isColumnVisible('balance') && (
+                              <td className="px-4 py-2 text-right">
+                                <div className={`text-xs font-semibold ${getBalanceColor(group.balance)}`}>
+                                  {formatBalance(group.balance)}
+                                  {group.balance < 10000 && (
+                                    <span className="ml-1 text-red-500">⚠️</span>
+                                  )}
+                                </div>
+                                <div className="text-xs text-gray-600 dark:text-gray-400 mt-1">
+                                  {group.remainingLessons} {group.remainingLessons === 1 ? 'урок' : group.remainingLessons < 5 ? 'урока' : 'уроков'}
+                                  {group.remainingLessons < 3 && group.remainingLessons > 0 && (
+                                    <span className="ml-1 text-orange-500">⚠️</span>
+                                  )}
+                                </div>
+                              </td>
+                            )}
+                            {isColumnVisible('group') && (
+                              <td className="px-4 py-2">
+                                <div className="text-xs text-gray-600 dark:text-gray-300">
+                                  {group.discountType && formatDiscount(group.discountType, group.discountValue)}
+                                </div>
+                              </td>
+                            )}
+                            {isColumnVisible('frozen') && (
+                              <td className="px-4 py-2">
+                                {group.isFrozen ? (
+                                  <span className="inline-flex px-1 py-0.5 text-xs font-medium rounded bg-blue-100 text-blue-800 dark:bg-blue-900/70 dark:text-blue-200">
+                                    Заморожено
+                                  </span>
+                                ) : (
+                                  <span className="inline-flex px-1 py-0.5 text-xs font-medium rounded bg-green-100 text-green-800 dark:bg-green-900/70 dark:text-green-200">
+                                    Активно
+                                  </span>
+                                )}
+                              </td>
+                            )}
+                            <td className="px-4 py-2">
+                              {/* Empty actions cell for group rows */}
+                            </td>
+                          </tr>
+                        ))}
+                      </React.Fragment>
                     ))}
                   </tbody>
                 </table>
@@ -651,6 +784,23 @@ export default function PaymentsPage() {
                     {/* Student Info */}
                     <div className="flex items-center justify-between mb-3">
                       <div className="flex items-center">
+                        <button
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            toggleRowExpansion(student.studentId);
+                          }}
+                          className="mr-2 p-1 hover:bg-gray-200 dark:hover:bg-gray-600 rounded transition-colors"
+                        >
+                          {expandedRows.has(student.studentId) ? (
+                            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+                            </svg>
+                          ) : (
+                            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
+                            </svg>
+                          )}
+                        </button>
                         <div className="p-2 bg-gradient-to-r from-blue-100 to-purple-100 dark:from-blue-900 dark:to-purple-900 rounded-lg mr-3">
                           <UserIcon className="h-5 w-5 text-blue-600 dark:text-blue-400" />
                         </div>
@@ -685,11 +835,73 @@ export default function PaymentsPage() {
                             {student.groups.length} группы
                           </div>
                         </div>
-                        <button className="text-blue-600 text-xs font-medium">
+                        <button 
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            handleStudentClick(student);
+                          }}
+                          className="text-blue-600 dark:text-blue-400 text-xs font-medium"
+                        >
                           Подробнее
                         </button>
                       </div>
                     </div>
+
+                    {/* Expanded Group Details for Mobile */}
+                    {expandedRows.has(student.studentId) && (
+                      <div className="mt-3 space-y-2">
+                        {student.groups.map((group, groupIndex) => (
+                          <div 
+                            key={`mobile-${student.studentId}-${group.groupId}`}
+                            className="p-3 bg-gray-50 dark:bg-gray-800/50 rounded-lg border-l-2 border-gray-300 dark:border-gray-600"
+                          >
+                            <div className="flex items-center justify-between mb-2">
+                              <div className="flex items-center">
+                                <div className="p-1 bg-gradient-to-r from-gray-200 to-gray-300 dark:from-gray-600 dark:to-gray-500 rounded mr-2">
+                                  <AcademicCapIcon className="h-3 w-3 text-gray-600 dark:text-gray-400" />
+                                </div>
+                                <div className="text-xs font-medium text-gray-700 dark:text-gray-200">
+                                  {group.groupName} ({group.groupCode})
+                                </div>
+                              </div>
+                              <div className="text-right">
+                                <div className={`text-xs font-semibold ${getBalanceColor(group.balance)}`}>
+                                  {formatBalance(group.balance)}
+                                  {group.balance < 10000 && (
+                                    <span className="ml-1 text-red-500">⚠️</span>
+                                  )}
+                                </div>
+                                <div className="text-xs text-gray-600 dark:text-gray-400">
+                                  {group.remainingLessons} {group.remainingLessons === 1 ? 'урок' : group.remainingLessons < 5 ? 'урока' : 'уроков'}
+                                  {group.remainingLessons < 3 && group.remainingLessons > 0 && (
+                                    <span className="ml-1 text-orange-500">⚠️</span>
+                                  )}
+                                </div>
+                              </div>
+                            </div>
+                            <div className="text-xs text-gray-600 dark:text-gray-300 mb-1">
+                              {group.subjectName}
+                            </div>
+                            <div className="flex items-center justify-between">
+                              <div className="text-xs text-gray-600 dark:text-gray-300">
+                                {group.discountType && formatDiscount(group.discountType, group.discountValue)}
+                              </div>
+                              <div>
+                                {group.isFrozen ? (
+                                  <span className="inline-flex px-1 py-0.5 text-xs font-medium rounded bg-blue-100 text-blue-800 dark:bg-blue-900/70 dark:text-blue-200">
+                                    Заморожено
+                                  </span>
+                                ) : (
+                                  <span className="inline-flex px-1 py-0.5 text-xs font-medium rounded bg-green-100 text-green-800 dark:bg-green-900/70 dark:text-green-200">
+                                    Активно
+                                  </span>
+                                )}
+                              </div>
+                            </div>
+                          </div>
+                        ))}
+                      </div>
+                    )}
                   </div>
                 ))}
               </div>
@@ -897,51 +1109,73 @@ export default function PaymentsPage() {
                   </div>
 
                   {/* Recent Attendances */}
-                  {selectedStudent.some(item => item.recentAttendances && item.recentAttendances.length > 0) && (
-                    <div>
-                      <h3 className="font-semibold text-gray-900 dark:text-white mb-4">
-                        Последние посещения
-                      </h3>
-                      <div className="space-y-2 max-h-60 overflow-y-auto">
-                        {selectedStudent.map(item => 
-                          item.recentAttendances?.map(attendance => (
-                            <div
-                              key={attendance.id}
-                              className="flex items-center justify-between p-3 bg-gray-50 dark:bg-gray-700 rounded-lg"
-                            >
-                              <div className="flex-1">
-                                <div className="flex items-center justify-between mb-1">
-                                  <div className="font-medium text-gray-900 dark:text-white">
-                                    {attendance.subjectName} - {attendance.groupName}
+                  {(() => {
+                    const allAttendances = selectedStudent.flatMap(item => 
+                      item.recentAttendances?.map(attendance => ({
+                        ...attendance,
+                        groupInfo: item
+                      })) || []
+                    );
+                    
+                    if (allAttendances.length === 0) return null;
+                    
+                    return (
+                      <div>
+                        <h3 className="font-semibold text-gray-900 dark:text-white mb-4">
+                          Последние посещения
+                        </h3>
+                        <div className="space-y-2 max-h-60 overflow-y-auto">
+                          {allAttendances
+                            .sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime())
+                            .map(attendance => (
+                              <div
+                                key={`${attendance.id}-${attendance.groupInfo.groupId}`}
+                                className="flex items-center justify-between p-3 bg-gray-50 dark:bg-gray-700 rounded-lg"
+                              >
+                                <div className="flex-1">
+                                  <div className="flex items-center justify-between mb-2">
+                                    <div className="font-medium text-gray-900 dark:text-white">
+                                      {attendance.subjectName} - {attendance.groupName}
+                                    </div>
+                                    <div className={`inline-flex px-2 py-1 text-xs font-semibold rounded-full ${
+                                      attendance.status === 1 
+                                        ? 'bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200'
+                                        : 'bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-200'
+                                    }`}>
+                                      {attendance.statusName}
+                                    </div>
                                   </div>
-                                  <div className={`inline-flex px-2 py-1 text-xs font-semibold rounded-full ${
-                                    attendance.status === 1 
-                                      ? 'bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200'
-                                      : 'bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-200'
-                                  }`}>
-                                    {attendance.statusName}
+                                  <div className="text-xs text-gray-500 dark:text-gray-400">
+                                    {formatDate(attendance.date)} • {attendance.startTime} - {attendance.endTime}
                                   </div>
-                                </div>
-                                <div className="text-xs text-gray-500 dark:text-gray-400">
-                                  {formatDate(attendance.date)} • {attendance.startTime} - {attendance.endTime} • {attendance.teacherName}
+                                  <div className="text-xs text-gray-500 dark:text-gray-400">
+                                    Преподаватель: {attendance.teacherName}
+                                  </div>
                                 </div>
                               </div>
-                            </div>
-                          )) || []
-                        )}
+                            ))}
+                        </div>
                       </div>
-                    </div>
-                  )}
+                    );
+                  })()}
 
                   {/* Transaction History */}
-                  {selectedStudent.some(item => item.transactionHistory && item.transactionHistory.length > 0) && (
-                    <div>
-                      <h3 className="font-semibold text-gray-900 dark:text-white mb-4">
-                        История транзакций
-                      </h3>
-                      <div className="space-y-2 max-h-60 overflow-y-auto">
-                        {selectedStudent.map(item => 
-                          item.transactionHistory?.map(transaction => (
+                  {(() => {
+                    const allTransactions = selectedStudent.flatMap(item => 
+                      item.transactionHistory?.map(transaction => ({
+                        ...transaction,
+                        groupName: item.group.name,
+                        groupCode: item.group.code
+                      })) || []
+                    ).sort((a, b) => new Date(b.operationDate).getTime() - new Date(a.operationDate).getTime());
+                    
+                    return allTransactions.length > 0 ? (
+                      <div>
+                        <h3 className="font-semibold text-gray-900 dark:text-white mb-4">
+                          История транзакций ({allTransactions.length})
+                        </h3>
+                        <div className="space-y-2 max-h-60 overflow-y-auto">
+                          {allTransactions.map(transaction => (
                             <div
                               key={transaction.id}
                               className="flex items-center justify-between p-3 bg-gray-50 dark:bg-gray-700 rounded-lg"
@@ -963,15 +1197,18 @@ export default function PaymentsPage() {
                                   {transaction.description}
                                 </div>
                                 <div className="text-xs text-gray-500 dark:text-gray-400">
-                                  {formatDate(transaction.operationDate)} • {transaction.processedByName} • Баланс: {formatBalance(transaction.balanceAfter)}
+                                  {formatDate(transaction.operationDate)} • {transaction.processedByName}
+                                </div>
+                                <div className="text-xs text-gray-500 dark:text-gray-400 mt-1">
+                                  Баланс после операции: {formatBalance(transaction.balanceAfter)}
                                 </div>
                               </div>
                             </div>
-                          )) || []
-                        )}
+                          ))}
+                        </div>
                       </div>
-                    </div>
-                  )}
+                    ) : null;
+                  })()}
                 </div>
               ) : (
                 <div className="text-center py-8">
