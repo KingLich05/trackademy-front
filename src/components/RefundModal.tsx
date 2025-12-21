@@ -115,8 +115,8 @@ export const RefundModal: React.FC<RefundModalProps> = ({
       showSuccess('Возврат средств успешно выполнен');
       onRefundSuccess?.();
       onClose();
-    } catch (error: any) {
-      showError(error?.message || 'Ошибка при выполнении возврата средств');
+    } catch (error: unknown) {
+      showError((error as Error)?.message || 'Ошибка при выполнении возврата средств');
     } finally {
       setIsSubmitting(false);
     }
@@ -127,7 +127,6 @@ export const RefundModal: React.FC<RefundModalProps> = ({
       isOpen={isOpen}
       onClose={onClose}
       title="Возврат средств"
-      size="md"
     >
       <div className="space-y-6">
         {/* Info Section */}

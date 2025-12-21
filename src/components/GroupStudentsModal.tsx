@@ -106,8 +106,8 @@ export const GroupStudentsModal: React.FC<GroupStudentsModalProps> = ({
       setIsAddBalanceOpen(false);
       // Принудительно перезагружаем данные
       await loadStudents();
-    } catch (error: any) {
-      showError('Ошибка при пополнении баланса: ' + (error?.message || 'Неизвестная ошибка'));
+    } catch (error: unknown) {
+      showError('Ошибка при пополнении баланса: ' + ((error as Error)?.message || 'Неизвестная ошибка'));
     } finally {
       setAddingBalance(false);
     }
@@ -132,8 +132,8 @@ export const GroupStudentsModal: React.FC<GroupStudentsModalProps> = ({
       setIsDiscountOpen(false);
       // Принудительно перезагружаем данные
       await loadStudents();
-    } catch (error: any) {
-      showError('Ошибка при применении скидки: ' + (error?.message || 'Неизвестная ошибка'));
+    } catch (error: unknown) {
+      showError('Ошибка при применении скидки: ' + ((error as Error)?.message || 'Неизвестная ошибка'));
     } finally {
       setApplyingDiscount(false);
     }
@@ -154,8 +154,8 @@ export const GroupStudentsModal: React.FC<GroupStudentsModalProps> = ({
       setIsFreezeOpen(false);
       // Принудительно перезагружаем данные
       await loadStudents();
-    } catch (error: any) {
-      showError('Ошибка при заморозке студента: ' + (error?.message || 'Неизвестная ошибка'));
+    } catch (error: unknown) {
+      showError('Ошибка при заморозке студента: ' + ((error as Error)?.message || 'Неизвестная ошибка'));
     } finally {
       setFreezingStudent(false);
     }
@@ -166,14 +166,14 @@ export const GroupStudentsModal: React.FC<GroupStudentsModalProps> = ({
 
     setFreezingStudent(true);
     try {
-      await AuthenticatedApiService.post(`/User/${selectedStudent.student.id}/unfreeze`);
+      await AuthenticatedApiService.post(`/User/${selectedStudent.student.id}/unfreeze`, {});
       
       showSuccess(`Студент ${selectedStudent.student.name} разморожен`);
       setIsUnfreezeOpen(false);
       // Принудительно перезагружаем данные
       await loadStudents();
-    } catch (error: any) {
-      showError('Ошибка при разморозке студента: ' + (error?.message || 'Неизвестная ошибка'));
+    } catch (error: unknown) {
+      showError('Ошибка при разморозке студента: ' + ((error as Error)?.message || 'Неизвестная ошибка'));
     } finally {
       setFreezingStudent(false);
     }

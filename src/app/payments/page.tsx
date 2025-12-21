@@ -1182,7 +1182,7 @@ export default function PaymentsPage() {
                             .sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime())
                             .map(attendance => (
                               <div
-                                key={`${attendance.id}-${attendance.groupInfo.groupId}`}
+                                key={`${attendance.id}-${attendance.groupId}`}
                                 className="flex items-center justify-between p-3 bg-gray-50 dark:bg-gray-700 rounded-lg"
                               >
                                 <div className="flex-1">
