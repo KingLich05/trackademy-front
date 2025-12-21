@@ -26,6 +26,7 @@ const Sidebar: React.FC = () => {
       case 'Owner':
         return 'Владелец системы';
       case 'Admin':
+      case 'Administrator':
         return 'Администратор';
       case 'Teacher':
         return 'Преподаватель';
@@ -192,6 +193,11 @@ const Sidebar: React.FC = () => {
                 <p className="text-xs text-gray-500 dark:text-gray-400 truncate">
                   {getRoleLabel(user.role)}
                 </p>
+                {user.organizationNames && (
+                  <p className="text-xs text-blue-600 dark:text-blue-400 truncate font-medium">
+                    {Array.isArray(user.organizationNames) ? user.organizationNames[0] : user.organizationNames}
+                  </p>
+                )}
               </div>
             </div>
           </div>

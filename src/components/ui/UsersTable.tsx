@@ -136,7 +136,7 @@ export const UsersTable: React.FC<UsersTableProps> = ({
             <tr>
               {/* Checkbox column для массового выбора */}
               {onSelectStudent && currentUser && canManageUsers(currentUser.role) && (
-                <th className="px-3 py-3 text-left" style={{ width: '50px' }}>
+                <th className="pl-3 pr-1 py-3 text-left" style={{ width: '50px' }}>
                   <input
                     type="checkbox"
                     checked={allStudentsSelected}
@@ -152,7 +152,7 @@ export const UsersTable: React.FC<UsersTableProps> = ({
                 </th>
               )}
               {isColumnVisible('number') && (
-                <th className="px-3 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider" style={{ width: '50px' }}>
+                <th className="pl-1 pr-3 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider" style={{ width: '50px' }}>
                   №
                 </th>
               )}
@@ -206,7 +206,7 @@ export const UsersTable: React.FC<UsersTableProps> = ({
               >
                 {/* Checkbox column - только для студентов */}
                 {onSelectStudent && currentUser && canManageUsers(currentUser.role) && (
-                  <td className="px-3 py-3 whitespace-nowrap" onClick={(e) => e.stopPropagation()}>
+                  <td className="pl-3 pr-1 py-3 whitespace-nowrap" onClick={(e) => e.stopPropagation()}>
                     {isStudent ? (
                       <input
                         type="checkbox"
@@ -220,7 +220,7 @@ export const UsersTable: React.FC<UsersTableProps> = ({
                   </td>
                 )}
                 {isColumnVisible('number') && (
-                  <td className="px-3 py-3 whitespace-nowrap text-center">
+                  <td className="pl-1 pr-3 py-3 whitespace-nowrap text-center">
                     <div className="flex items-center justify-center w-8 h-8 bg-gradient-to-r from-blue-500 to-indigo-600 text-white text-sm font-medium rounded-lg shadow-sm mx-auto">
                       {(currentPage - 1) * itemsPerPage + index + 1}
                     </div>

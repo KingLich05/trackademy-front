@@ -20,3 +20,5 @@ export {
 // Экспорт модальных окон
 export { ExportAttendanceModal } from './ExportAttendanceModal';
 export { FreezeStudentModal } from './FreezeStudentModal';
+export { AddBalanceModal } from './AddBalanceModal';
+export { DiscountModal } from './DiscountModal';

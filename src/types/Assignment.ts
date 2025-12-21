@@ -24,10 +24,11 @@ export interface Assignment {
     name: string;
     code?: string;
   };
-  subject: {
+  subject?: {
     id: string;
     name: string;
   };
+  subjectName?: string; // Добавляем поле subjectName из API
   studentSubmissions?: StudentSubmission[];
 }
 

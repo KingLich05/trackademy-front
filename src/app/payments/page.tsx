@@ -12,6 +12,7 @@ import { Group } from '../../types/Group';
 import { AuthenticatedApiService } from '../../services/AuthenticatedApiService';
 import { PageHeaderWithStats } from '../../components/ui/PageHeaderWithStats';
 import { useColumnVisibility, ColumnVisibilityControl } from '../../components/ui/ColumnVisibilityControl';
+import { RefundModal } from '../../components/RefundModal';
 
 interface GroupedStudent {
   studentId: string;
@@ -108,6 +109,16 @@ export default function PaymentsPage() {
   const [showModal, setShowModal] = useState(false);
   const [selectedStudent, setSelectedStudent] = useState<StudentBalanceDetail[] | null>(null);
   const [modalLoading, setModalLoading] = useState(false);
+  
+  // Refund modal state
+  const [showRefundModal, setShowRefundModal] = useState(false);
+  const [refundData, setRefundData] = useState<{
+    studentId: string;
+    groupId: string;
+    studentName: string;
+    groupName: string;
+    availableBalance: number;
+  } | null>(null);
   const [searchTerm, setSearchTerm] = useState('');
   
   // Expanded rows state - by default all rows are expanded
@@ -186,6 +197,29 @@ export default function PaymentsPage() {
   const handleStudentClick = (student: GroupedStudent) => {
     fetchStudentDetails(student.studentId);
     setShowModal(true);
+  };
+
+  const handleRefundClick = (studentId: string, groupId: string, studentName: string, groupName: string, availableBalance: number) => {
+    setRefundData({
+      studentId,
+      groupId,
+      studentName,
+      groupName,
+      availableBalance
+    });
+    setShowRefundModal(true);
+  };
+
+  const handleRefundSuccess = () => {
+    // Refresh the data after successful refund
+    loadStudentBalances();
+    if (selectedStudent) {
+      // Also refresh modal data if it's open
+      const studentId = selectedStudent[0]?.student?.id;
+      if (studentId) {
+        fetchStudentDetails(studentId);
+      }
+    }
   };
   
   const toggleRowExpansion = (studentId: string) => {
@@ -1100,7 +1134,26 @@ export default function PaymentsPage() {
                             </div>
                           )}
                           
-                          <div className="text-xs text-gray-500 dark:text-gray-400">
+                          {/* Action Button - Refund */}
+                          {item.balance > 0 && (
+                            <div className="pt-3 border-t border-gray-200 dark:border-gray-600 mt-3">
+                              <button
+                                onClick={() => handleRefundClick(
+                                  item.student.id,
+                                  item.group.id,
+                                  item.student.name,
+                                  item.group.name,
+                                  item.balance
+                                )}
+                                className="w-full px-3 py-2 text-sm font-medium text-red-700 dark:text-red-400 bg-red-50 dark:bg-red-900/20 hover:bg-red-100 dark:hover:bg-red-900/40 border border-red-200 dark:border-red-700 rounded-lg transition-colors duration-200 flex items-center justify-center gap-2"
+                              >
+                                <CurrencyDollarIcon className="h-4 w-4" />
+                                Возврат средств
+                              </button>
+                            </div>
+                          )}
+                          
+                          <div className="text-xs text-gray-500 dark:text-gray-400 mt-3">
                             Обновлено: {formatDate(item.updatedAt)}
                           </div>
                         </div>
@@ -1220,6 +1273,23 @@ export default function PaymentsPage() {
             </div>
           </div>
         </div>
+      )}
+
+      {/* Refund Modal */}
+      {showRefundModal && refundData && (
+        <RefundModal
+          isOpen={showRefundModal}
+          onClose={() => {
+            setShowRefundModal(false);
+            setRefundData(null);
+          }}
+          studentId={refundData.studentId}
+          groupId={refundData.groupId}
+          studentName={refundData.studentName}
+          groupName={refundData.groupName}
+          availableBalance={refundData.availableBalance}
+          onRefundSuccess={handleRefundSuccess}
+        />
       )}
     </div>
   );

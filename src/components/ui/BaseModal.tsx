@@ -42,20 +42,20 @@ export const BaseModal: React.FC<BaseModalProps> = ({
 
   return (
     <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-50 p-4">
-      <div className={`rounded-2xl shadow-2xl w-full ${maxWidthClasses[maxWidth]} max-h-[85vh] sm:max-h-[90vh] overflow-hidden border-0 ${customBackground || 'bg-white dark:bg-gray-800'}`}>
+      <div className={`rounded-2xl shadow-2xl w-full ${maxWidthClasses[maxWidth]} max-h-[90vh] overflow-hidden border-0 ${customBackground || 'bg-white dark:bg-gray-800'}`}>
         {/* Header with gradient */}
-        <div className={`relative bg-gradient-to-r ${gradientFrom} ${gradientTo} p-4 text-white`}>
+        <div className={`relative bg-gradient-to-r ${gradientFrom} ${gradientTo} p-4`}>
           <div className="flex items-center justify-between">
             <div className="flex items-center space-x-2">
               {icon && (
-                <div className="w-6 h-6 bg-white/20 rounded-lg flex items-center justify-center">
+                <div className="flex items-center justify-center">
                   {icon}
                 </div>
               )}
               <div>
-                <h2 className="text-sm font-bold">{title}</h2>
+                <h2 className="text-lg font-bold text-white drop-shadow-lg">{title}</h2>
                 {subtitle && (
-                  <p className="text-white/80 text-xs">{subtitle}</p>
+                  <p className="text-white/90 text-sm font-medium drop-shadow">{subtitle}</p>
                 )}
               </div>
             </div>
@@ -64,13 +64,13 @@ export const BaseModal: React.FC<BaseModalProps> = ({
               className="w-8 h-8 bg-white/20 hover:bg-white/40 hover:scale-110 rounded-lg flex items-center justify-center transition-all duration-200"
               title="Закрыть"
             >
-              <XMarkIcon className="w-5 h-5 text-white" />
+              <XMarkIcon className="w-5 h-5 text-white drop-shadow" />
             </button>
           </div>
         </div>
 
         {/* Content */}
-        <div className={`p-4 sm:p-6 max-h-[calc(85vh-80px)] sm:max-h-[calc(90vh-80px)] overflow-y-auto ${customBackground || 'bg-white dark:bg-gray-800'}`}>
+        <div className={`p-4 sm:p-6 max-h-[calc(90vh-80px)] overflow-y-auto ${customBackground || 'bg-white dark:bg-gray-800'}`}>
           {children}
         </div>
       </div>
