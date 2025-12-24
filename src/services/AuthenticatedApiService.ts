@@ -425,13 +425,19 @@ export class AuthenticatedApiService {
   }
 
   // Lesson management
-  static async moveLesson(lessonId: string, date: string, startTime: string, endTime: string, cancelReason: string): Promise<ApiResponse<boolean>> {
-    return this.patch(`/Lesson/${lessonId}/moved`, {
+  static async moveLesson(lessonId: string, date: string, startTime: string, endTime: string, cancelReason: string, roomId?: string): Promise<ApiResponse<boolean>> {
+    const body: Record<string, unknown> = {
       date,
       startTime,
       endTime,
       cancelReason
-    });
+    };
+    
+    if (roomId) {
+      body.roomId = roomId;
+    }
+    
+    return this.patch(`/Lesson/${lessonId}/moved`, body);
   }
 
   static async cancelLesson(lessonId: string, lessonStatus: number, cancelReason: string): Promise<ApiResponse<boolean>> {

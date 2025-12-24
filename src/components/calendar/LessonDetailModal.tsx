@@ -10,6 +10,7 @@ import { AuthenticatedApiService } from '@/services/AuthenticatedApiService';
 import { ChatBubbleLeftIcon } from '@heroicons/react/24/outline';
 import { useToast } from '@/contexts/ToastContext';
 import { TimeInput } from '@/components/ui/TimeInput';
+import { Room } from '@/types/Room';
 
 interface LessonDetailModalProps {
   lesson: Lesson;
@@ -39,6 +40,9 @@ export default function LessonDetailModal({ lesson, isOpen, onClose, onUpdate }:
   const [moveEndTime, setMoveEndTime] = useState('');
   const [moveReason, setMoveReason] = useState('');
   const [isMoving, setIsMoving] = useState(false);
+  const [rooms, setRooms] = useState<Room[]>([]);
+  const [selectedRoomId, setSelectedRoomId] = useState<string>('');
+  const [loadingRooms, setLoadingRooms] = useState(false);
 
   // Update note when lesson changes
   useEffect(() => {
@@ -114,6 +118,39 @@ export default function LessonDetailModal({ lesson, isOpen, onClose, onUpdate }:
     }
   };
 
+  const loadRooms = async () => {
+    setLoadingRooms(true);
+    try {
+      const organizationId = user?.organizationId || localStorage.getItem('userOrganizationId');
+      
+      if (!organizationId) {
+        showToast('Не удается определить организацию пользователя', 'error');
+        return;
+      }
+
+      const requestBody = {
+        pageNumber: 1,
+        pageSize: 1000,
+        organizationId: organizationId
+      };
+
+      const response = await AuthenticatedApiService.post<{
+        items: Room[];
+        totalCount: number;
+        pageNumber: number;
+        pageSize: number;
+        totalPages: number;
+      }>('/Room/GetAllRooms', requestBody);
+      
+      setRooms(response.items);
+    } catch (error) {
+      console.error('Failed to load rooms:', error);
+      showToast('Не удалось загрузить список аудиторий', 'error');
+    } finally {
+      setLoadingRooms(false);
+    }
+  };
+
   const handleMoveLesson = async () => {
     if (!moveDate || !moveStartTime || !moveEndTime || !moveReason.trim()) {
       showToast('Пожалуйста, заполните все поля', 'error');
@@ -130,7 +167,14 @@ export default function LessonDetailModal({ lesson, isOpen, onClose, onUpdate }:
         ? `${moveEndTime}:00` 
         : moveEndTime;
       
-      await AuthenticatedApiService.moveLesson(lesson.id, moveDate, startTimeWithSeconds, endTimeWithSeconds, moveReason);
+      await AuthenticatedApiService.moveLesson(
+        lesson.id, 
+        moveDate, 
+        startTimeWithSeconds, 
+        endTimeWithSeconds, 
+        moveReason,
+        selectedRoomId || undefined
+      );
       
       showToast('Урок успешно перенесен', 'success');
       
@@ -143,6 +187,7 @@ export default function LessonDetailModal({ lesson, isOpen, onClose, onUpdate }:
       setMoveStartTime('');
       setMoveEndTime('');
       setMoveReason('');
+      setSelectedRoomId('');
       onClose();
     } catch (error) {
       console.error('Error moving lesson:', error);
@@ -280,7 +325,11 @@ export default function LessonDetailModal({ lesson, isOpen, onClose, onUpdate }:
             {activeTab === 'details' && (lesson.lessonStatus === 'Planned' || lesson.lessonStatus === 'Moved') && (isAdministrator || isTeacher || isOwner) && (
               <>
                 <button
-                  onClick={() => setIsMoveModalOpen(true)}
+                  onClick={() => {
+                    setIsMoveModalOpen(true);
+                    setSelectedRoomId(lesson.room.id);
+                    loadRooms();
+                  }}
                   className="px-4 py-2 bg-blue-500 text-white rounded-lg hover:bg-blue-600 transition-colors flex items-center gap-2"
                 >
                   <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -420,6 +469,36 @@ export default function LessonDetailModal({ lesson, isOpen, onClose, onUpdate }:
 
               <div>
                 <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                  Аудитория
+                </label>
+                {loadingRooms ? (
+                  <div className="flex items-center gap-2 px-3 py-2 text-gray-500 dark:text-gray-400">
+                    <svg className="animate-spin h-4 w-4" fill="none" viewBox="0 0 24 24">
+                      <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                      <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                    </svg>
+                    Загрузка аудиторий...
+                  </div>
+                ) : (
+                  <select
+                    value={selectedRoomId}
+                    onChange={(e) => setSelectedRoomId(e.target.value)}
+                    className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg 
+                             bg-white dark:bg-gray-700 text-gray-900 dark:text-white
+                             focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                  >
+                    <option value="">Не менять аудиторию</option>
+                    {rooms.map((room) => (
+                      <option key={room.id} value={room.id}>
+                        {room.name} (вместимость: {room.capacity})
+                      </option>
+                    ))}
+                  </select>
+                )}
+              </div>
+
+              <div>
+                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
                   Причина <span className="text-red-500">*</span>
                 </label>
                 <textarea
@@ -442,6 +521,7 @@ export default function LessonDetailModal({ lesson, isOpen, onClose, onUpdate }:
                   setMoveStartTime('');
                   setMoveEndTime('');
                   setMoveReason('');
+                  setSelectedRoomId('');
                 }}
                 disabled={isMoving}
                 className="px-4 py-2 text-gray-600 dark:text-gray-300 hover:text-gray-800 dark:hover:text-white transition-colors"
