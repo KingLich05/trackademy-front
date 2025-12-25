@@ -9,6 +9,7 @@ interface AddBalanceModalProps {
   onClose: () => void;
   onConfirm: (amount: number, description: string) => void;
   studentName: string;
+  subjectPrice?: number;
   loading?: boolean;
 }
 
@@ -17,6 +18,7 @@ export const AddBalanceModal: React.FC<AddBalanceModalProps> = ({
   onClose,
   onConfirm,
   studentName,
+  subjectPrice,
   loading = false
 }) => {
   const [amount, setAmount] = useState('');
@@ -67,6 +69,14 @@ export const AddBalanceModal: React.FC<AddBalanceModalProps> = ({
       maxWidth="md"
     >
       <div className="p-6 space-y-6 bg-white dark:bg-gray-800 rounded-xl">
+        {subjectPrice && (
+          <div className="bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800 rounded-lg p-4">
+            <div className="flex items-center justify-between">
+              <span className="text-sm font-medium text-blue-700 dark:text-blue-300">Цена предмета:</span>
+              <span className="text-lg font-bold text-blue-900 dark:text-blue-100">{subjectPrice.toLocaleString()} ₸</span>
+            </div>
+          </div>
+        )}
         <div className="relative">
           <label className="block text-sm font-semibold text-gray-800 dark:text-gray-200 mb-3 flex items-center gap-2">
             <div className="w-1 h-4 bg-green-500 rounded-full"></div>

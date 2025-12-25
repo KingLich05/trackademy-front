@@ -35,12 +35,15 @@ interface StudentBalance {
     code: string;
   };
   balance: number;
+  remainingLessons?: number;
   isFrozen?: boolean;
   discountType: number | null;
   discountValue: number | null;
   discountReason: string | null;
   createdAt: string;
   updatedAt: string | null;
+  subjectPrice: number;
+  lessonCost: number;
 }
 
 export const GroupStudentsModal: React.FC<GroupStudentsModalProps> = ({
@@ -144,14 +147,18 @@ export const GroupStudentsModal: React.FC<GroupStudentsModalProps> = ({
 
     setFreezingStudent(true);
     try {
-      await AuthenticatedApiService.post(`/User/${selectedStudent.student.id}/freeze`, {
-        startDate,
-        endDate,
-        reason
+      await AuthenticatedApiService.post('/Group/freeze-student', {
+        studentId: selectedStudent.student.id,
+        groupId: group.id,
+        frozenFrom: startDate,
+        frozenTo: endDate,
+        freezeReason: reason
       });
       
       showSuccess(`Студент ${selectedStudent.student.name} заморожен`);
       setIsFreezeOpen(false);
+      // Небольшая задержка для обновления на сервере
+      await new Promise(resolve => setTimeout(resolve, 500));
       // Принудительно перезагружаем данные
       await loadStudents();
     } catch (error: unknown) {
@@ -162,14 +169,19 @@ export const GroupStudentsModal: React.FC<GroupStudentsModalProps> = ({
   };
 
   const handleUnfreezeStudent = async () => {
-    if (!selectedStudent) return;
+    if (!selectedStudent || !group?.id) return;
 
     setFreezingStudent(true);
     try {
-      await AuthenticatedApiService.post(`/User/${selectedStudent.student.id}/unfreeze`, {});
+      await AuthenticatedApiService.post('/Group/unfreeze-student', {
+        studentId: selectedStudent.student.id,
+        groupId: group.id
+      });
       
       showSuccess(`Студент ${selectedStudent.student.name} разморожен`);
       setIsUnfreezeOpen(false);
+      // Небольшая задержка для обновления на сервере
+      await new Promise(resolve => setTimeout(resolve, 500));
       // Принудительно перезагружаем данные
       await loadStudents();
     } catch (error: unknown) {
@@ -284,10 +296,13 @@ export const GroupStudentsModal: React.FC<GroupStudentsModalProps> = ({
                           💰 {studentBalance.balance.toLocaleString()} ₸
                         </div>
                         
+                        <div className="inline-flex items-center px-3 py-1 rounded-lg text-sm font-medium bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-400">
+                          💳 {studentBalance.subjectPrice.toLocaleString()} ₸
+                        </div>
+                        
                         {studentBalance.discountType && 
-                         studentBalance.discountValue && 
-                         studentBalance.discountValue > 0 && 
-                         studentBalance.discountReason && (
+                         studentBalance.discountValue != null && 
+                         studentBalance.discountValue > 0 && (
                           <div className="inline-flex items-center px-3 py-1 rounded-lg text-sm font-medium bg-purple-100 text-purple-700 dark:bg-purple-900/30 dark:text-purple-400">
                             🎯 {studentBalance.discountType === 1 
                               ? `${studentBalance.discountValue}%` 
@@ -373,6 +388,7 @@ export const GroupStudentsModal: React.FC<GroupStudentsModalProps> = ({
         onClose={() => setIsAddBalanceOpen(false)}
         onConfirm={handleAddBalance}
         studentName={selectedStudent?.student.name || ''}
+        subjectPrice={selectedStudent?.subjectPrice}
         loading={addingBalance}
       />
       

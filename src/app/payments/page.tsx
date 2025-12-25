@@ -779,7 +779,9 @@ export default function PaymentsPage() {
                             {isColumnVisible('group') && (
                               <td className="px-4 py-2">
                                 <div className="text-xs text-gray-600 dark:text-gray-300">
-                                  {group.discountType && formatDiscount(group.discountType, group.discountValue)}
+                                  {group.discountType && group.discountValue && group.discountValue > 0 
+                                    ? formatDiscount(group.discountType, group.discountValue)
+                                    : '0%'}
                                 </div>
                               </td>
                             )}
@@ -918,7 +920,9 @@ export default function PaymentsPage() {
                             </div>
                             <div className="flex items-center justify-between">
                               <div className="text-xs text-gray-600 dark:text-gray-300">
-                                {group.discountType && formatDiscount(group.discountType, group.discountValue)}
+                                {group.discountType && group.discountValue && group.discountValue > 0 
+                                  ? formatDiscount(group.discountType, group.discountValue)
+                                  : '0%'}
                               </div>
                               <div>
                                 {group.isFrozen ? (
@@ -1124,7 +1128,7 @@ export default function PaymentsPage() {
                                 Скидка: {item.discountTypeName}
                               </div>
                               <div className="font-medium text-yellow-800 dark:text-yellow-200">
-                                {item.discountType === 0 ? `${item.discountValue} ₸` : `${item.discountValue}%`}
+                                {item.discountType === 1 ? `${item.discountValue}%` : `${item.discountValue} ₸`}
                               </div>
                               {item.discountReason && (
                                 <div className="text-xs text-yellow-600 dark:text-yellow-400 mt-1">

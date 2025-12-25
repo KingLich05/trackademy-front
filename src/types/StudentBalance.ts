@@ -44,8 +44,8 @@ export interface FlattenedBalance {
 }
 
 export enum DiscountType {
-  Amount = 0,
-  Percentage = 1
+  Percentage = 1,
+  Amount = 2
 }
 
 export interface StudentBalanceRequest {
