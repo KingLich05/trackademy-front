@@ -207,19 +207,19 @@ export const GroupStudentsModal: React.FC<GroupStudentsModalProps> = ({
       onClose={handleClose}
       title={`Студенты группы "${group?.name || ''}"`}
       customBackground="bg-white dark:bg-gray-900"
-      maxWidth="2xl"
+      maxWidth="xl"
     >
-      <div className="p-6">
-        <div className="flex items-center justify-between mb-6">
-          <div className="flex items-center gap-3">
-            <div className="p-3 bg-gradient-to-br from-blue-500 to-purple-600 rounded-xl shadow-lg">
-              <UserIcon className="h-6 w-6 text-white" />
+      <div className="p-4">
+        <div className="flex items-center justify-between mb-4">
+          <div className="flex items-center gap-2">
+            <div className="p-2 bg-gradient-to-br from-blue-500 to-purple-600 rounded-lg shadow-lg">
+              <UserIcon className="h-5 w-5 text-white" />
             </div>
             <div>
-              <h3 className="text-xl font-bold text-gray-900 dark:text-white">
+              <h3 className="text-lg font-bold text-gray-900 dark:text-white">
                 Управление студентами
               </h3>
-              <p className="text-sm text-gray-600 dark:text-gray-400">
+              <p className="text-xs text-gray-600 dark:text-gray-400">
                 Всего студентов: {studentBalances.length}
               </p>
             </div>
@@ -246,49 +246,51 @@ export const GroupStudentsModal: React.FC<GroupStudentsModalProps> = ({
             </p>
           </div>
         ) : (
-          <div className="grid gap-4 max-h-[60vh] overflow-y-auto">
+          <div className="grid gap-3 max-h-[60vh] overflow-y-auto overflow-x-hidden">
             {studentBalances.map((studentBalance) => (
               <div
                 key={studentBalance.student.id}
-                className={`bg-white dark:bg-gray-800 rounded-xl p-4 shadow-sm hover:shadow-md transition-all duration-200 border ${
+                className={`bg-white dark:bg-gray-800 rounded-xl p-3 shadow-sm hover:shadow-md transition-all duration-200 border min-w-0 ${
                   studentBalance.isFrozen 
-                    ? 'border-red-200 dark:border-red-800 bg-red-50 dark:bg-red-900/10' 
+                    ? 'border-slate-300 dark:border-slate-600 bg-slate-50 dark:bg-slate-800/50' 
                     : 'border-gray-200 dark:border-gray-700 hover:border-gray-300 dark:hover:border-gray-600'
                 }`}
               >
-                <div className="flex items-start justify-between">
-                  <div className="flex items-start gap-3 flex-1">
-                    <div className={`w-12 h-12 rounded-xl flex items-center justify-center ${
+                <div className="flex flex-col gap-3">
+                  <div className="flex items-start gap-2 flex-1 min-w-0">
+                    <div className={`w-10 h-10 rounded-xl flex items-center justify-center flex-shrink-0 ${
                       studentBalance.isFrozen 
-                        ? 'bg-red-100 dark:bg-red-900/30' 
+                        ? 'bg-slate-200 dark:bg-slate-700' 
                         : 'bg-gradient-to-br from-blue-100 to-purple-100 dark:from-blue-900/30 dark:to-purple-900/30'
                     }`}>
-                      <UserIcon className={`w-6 h-6 ${
+                      <UserIcon className={`w-5 h-5 ${
                         studentBalance.isFrozen 
-                          ? 'text-red-600 dark:text-red-400' 
+                          ? 'text-slate-600 dark:text-slate-400' 
                           : 'text-blue-600 dark:text-blue-400'
                       }`} />
                     </div>
                     
-                    <div className="flex-1">
-                      <div className="flex items-center gap-2 mb-1">
-                        <h4 className="font-semibold text-gray-900 dark:text-white text-base">
-                          {studentBalance.student.name}
-                        </h4>
-                        {studentBalance.isFrozen && (
-                          <span className="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-400">
-                            <LockClosedIcon className="w-3 h-3 mr-1" />
-                            Заморожен
-                          </span>
-                        )}
+                    <div className="flex-1 min-w-0">
+                      <div className="flex flex-col gap-1">
+                        <div className="flex items-center gap-1 flex-wrap">
+                          <h4 className="font-semibold text-gray-900 dark:text-white text-sm truncate flex-shrink">
+                            {studentBalance.student.name}
+                          </h4>
+                          {studentBalance.isFrozen && (
+                            <span className="inline-flex items-center px-1.5 py-0.5 rounded-full text-xs font-medium bg-slate-200 text-slate-700 dark:bg-slate-700 dark:text-slate-300 flex-shrink-0">
+                              <LockClosedIcon className="w-3 h-3 mr-0.5" />
+                              Заморожен
+                            </span>
+                          )}
+                        </div>
+                        
+                        <p className="text-xs text-gray-600 dark:text-gray-400 truncate">
+                          📱 {studentBalance.student.phone}
+                        </p>
                       </div>
                       
-                      <p className="text-sm text-gray-600 dark:text-gray-400 mb-2">
-                        📱 {studentBalance.student.phone}
-                      </p>
-                      
-                      <div className="flex items-center gap-4 flex-wrap">
-                        <div className={`inline-flex items-center px-3 py-1 rounded-lg text-sm font-medium ${
+                      <div className="flex items-center gap-1 flex-wrap mt-2">
+                        <div className={`inline-flex items-center px-1.5 py-0.5 rounded text-xs font-medium ${
                           studentBalance.balance >= 0 
                             ? 'bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400' 
                             : 'bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-400'
@@ -296,14 +298,14 @@ export const GroupStudentsModal: React.FC<GroupStudentsModalProps> = ({
                           💰 {studentBalance.balance.toLocaleString()} ₸
                         </div>
                         
-                        <div className="inline-flex items-center px-3 py-1 rounded-lg text-sm font-medium bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-400">
+                        <div className="inline-flex items-center px-1.5 py-0.5 rounded text-xs font-medium bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-400">
                           💳 {studentBalance.subjectPrice.toLocaleString()} ₸
                         </div>
                         
                         {studentBalance.discountType && 
                          studentBalance.discountValue != null && 
                          studentBalance.discountValue > 0 && (
-                          <div className="inline-flex items-center px-3 py-1 rounded-lg text-sm font-medium bg-purple-100 text-purple-700 dark:bg-purple-900/30 dark:text-purple-400">
+                          <div className="inline-flex items-center px-1.5 py-0.5 rounded text-xs font-medium bg-purple-100 text-purple-700 dark:bg-purple-900/30 dark:text-purple-400">
                             🎯 {studentBalance.discountType === 1 
                               ? `${studentBalance.discountValue}%` 
                               : `${studentBalance.discountValue.toLocaleString()} ₸`}
@@ -313,16 +315,16 @@ export const GroupStudentsModal: React.FC<GroupStudentsModalProps> = ({
                     </div>
                   </div>
                   
-                  <div className="flex items-center gap-2 ml-3">
+                  <div className="flex items-center gap-1 flex-wrap justify-start">
                     <button
                       onClick={() => {
                         setSelectedStudent(studentBalance);
                         setIsAddBalanceOpen(true);
                       }}
-                      className="flex items-center gap-1 px-3 py-2 text-xs font-medium text-green-700 bg-green-100 hover:bg-green-200 dark:bg-green-900/30 dark:text-green-400 dark:hover:bg-green-900/50 rounded-lg transition-colors"
+                      className="flex items-center gap-1 px-2 py-1.5 text-xs font-medium text-green-700 bg-green-100 hover:bg-green-200 dark:bg-green-900/30 dark:text-green-400 dark:hover:bg-green-900/50 rounded transition-colors"
                       title="Пополнить баланс"
                     >
-                      <PlusCircleIcon className="w-4 h-4" />
+                      <PlusCircleIcon className="w-3 h-3" />
                       Пополнить
                     </button>
                     
@@ -331,10 +333,10 @@ export const GroupStudentsModal: React.FC<GroupStudentsModalProps> = ({
                         setSelectedStudent(studentBalance);
                         setIsDiscountOpen(true);
                       }}
-                      className="flex items-center gap-1 px-3 py-2 text-xs font-medium text-purple-700 bg-purple-100 hover:bg-purple-200 dark:bg-purple-900/30 dark:text-purple-400 dark:hover:bg-purple-900/50 rounded-lg transition-colors"
+                      className="flex items-center gap-1 px-2 py-1.5 text-xs font-medium text-purple-700 bg-purple-100 hover:bg-purple-200 dark:bg-purple-900/30 dark:text-purple-400 dark:hover:bg-purple-900/50 rounded transition-colors"
                       title="Применить скидку"
                     >
-                      <ReceiptPercentIcon className="w-4 h-4" />
+                      <ReceiptPercentIcon className="w-3 h-3" />
                       Скидка
                     </button>
                     
@@ -344,10 +346,10 @@ export const GroupStudentsModal: React.FC<GroupStudentsModalProps> = ({
                           setSelectedStudent(studentBalance);
                           setIsUnfreezeOpen(true);
                         }}
-                        className="flex items-center gap-1 px-3 py-2 text-xs font-medium text-blue-700 bg-blue-100 hover:bg-blue-200 dark:bg-blue-900/30 dark:text-blue-400 dark:hover:bg-blue-900/50 rounded-lg transition-colors"
+                        className="flex items-center gap-1 px-2 py-1.5 text-xs font-medium text-emerald-700 bg-emerald-100 hover:bg-emerald-200 dark:bg-emerald-900/30 dark:text-emerald-400 dark:hover:bg-emerald-900/50 rounded transition-colors"
                         title="Разморозить студента"
                       >
-                        <LockOpenIcon className="w-4 h-4" />
+                        <LockOpenIcon className="w-3 h-3" />
                         Разморозить
                       </button>
                     ) : (
@@ -356,10 +358,10 @@ export const GroupStudentsModal: React.FC<GroupStudentsModalProps> = ({
                           setSelectedStudent(studentBalance);
                           setIsFreezeOpen(true);
                         }}
-                        className="flex items-center gap-1 px-3 py-2 text-xs font-medium text-orange-700 bg-orange-100 hover:bg-orange-200 dark:bg-orange-900/30 dark:text-orange-400 dark:hover:bg-orange-900/50 rounded-lg transition-colors"
+                        className="flex items-center gap-1 px-2 py-1.5 text-xs font-medium text-orange-700 bg-orange-100 hover:bg-orange-200 dark:bg-orange-900/30 dark:text-orange-400 dark:hover:bg-orange-900/50 rounded transition-colors"
                         title="Заморозить студента"
                       >
-                        <LockClosedIcon className="w-4 h-4" />
+                        <LockClosedIcon className="w-3 h-3" />
                         Заморозить
                       </button>
                     )}
@@ -367,10 +369,10 @@ export const GroupStudentsModal: React.FC<GroupStudentsModalProps> = ({
                 </div>
                 
                 {onPaymentCreate && (
-                  <div className="mt-3 pt-3 border-t border-gray-100 dark:border-gray-700">
+                  <div className="mt-2 pt-2 border-t border-gray-100 dark:border-gray-700">
                     <button
                       onClick={() => onPaymentCreate(studentBalance.student.id, studentBalance.student.name)}
-                      className="w-full px-4 py-2 text-sm font-medium text-white bg-gradient-to-r from-green-600 to-emerald-600 hover:from-green-700 hover:to-emerald-700 rounded-lg transition-all duration-200"
+                      className="w-full px-3 py-1.5 text-xs font-medium text-white bg-gradient-to-r from-green-600 to-emerald-600 hover:from-green-700 hover:to-emerald-700 rounded transition-all duration-200"
                     >
                       💳 Создать платеж
                     </button>

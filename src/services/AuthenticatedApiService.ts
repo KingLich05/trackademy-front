@@ -447,6 +447,13 @@ export class AuthenticatedApiService {
     });
   }
 
+  static async replaceTeacher(lessonId: string, newTeacherId: string, replaceReason: string): Promise<ApiResponse<boolean>> {
+    return this.patch(`/Lesson/${lessonId}/replace-teacher`, {
+      newTeacherId,
+      replaceReason
+    });
+  }
+
   // Assignment management
   static async getAssignmentById(id: string): Promise<Assignment> {
     return this.get(`/Assignment/${id}`);
