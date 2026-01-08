@@ -110,6 +110,15 @@ export const modalConfigs = {
       gradientTo: 'purple-600',
       submitText: 'Сохранить изменения',
       loadingText: 'Сохранение...'
+    },
+    view: {
+      title: 'Информация об организации',
+      subtitle: 'Просмотр данных организации',
+      icon: BuildingOfficeIcon,
+      gradientFrom: 'indigo-500',
+      gradientTo: 'purple-600',
+      submitText: 'Закрыть',
+      loadingText: 'Загрузка...'
     }
   },
   schedule: {
@@ -135,4 +144,4 @@ export const modalConfigs = {
 };
 
 export type EntityType = keyof typeof modalConfigs;
-export type ModalMode = 'create' | 'edit';
+export type ModalMode = 'create' | 'edit' | 'view';

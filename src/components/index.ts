@@ -7,6 +7,7 @@ export type { EntityType, ModalMode } from '../config/modalConfigs';
 // Готовые формы для использования
 export { UserForm } from './forms/UserForm';
 export { RoomForm, SubjectForm, GroupForm } from './forms';
+export { OrganizationViewForm } from './forms/OrganizationViewForm';
 
 // Валидаторы
 export { 

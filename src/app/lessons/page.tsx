@@ -208,12 +208,20 @@ export default function LessonsPage() {
       );
 
       setLessons(response.items);
+      
+      // Обновляем selectedLesson если он открыт
+      if (selectedLesson && showLessonModal) {
+        const updatedLesson = response.items.find(lesson => lesson.id === selectedLesson.id);
+        if (updatedLesson) {
+          setSelectedLesson(updatedLesson);
+        }
+      }
     } catch (error) {
       console.error('Error loading lessons:', error);
     } finally {
       setLoading(false);
     }
-  }, [selectedGroup, selectedTeacher, selectedRoom, selectedSubject, currentDate, view, dateFrom, dateTo, user?.organizationId, loadOperation]);
+  }, [selectedGroup, selectedTeacher, selectedRoom, selectedSubject, currentDate, view, dateFrom, dateTo, user?.organizationId, loadOperation, selectedLesson, showLessonModal]);
 
   const getDateRangeForView = (date: Date, viewType: CalendarView): { fromDate: string; toDate: string } => {
     // Используем локальное форматирование даты для избежания UTC сдвигов

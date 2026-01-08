@@ -2,7 +2,7 @@
  * Authenticated API service that includes JWT token in requests
  */
 import { User, UserFormData } from '../types/User';
-import { Organization, OrganizationFormData } from '../types/Organization';
+import { Organization, OrganizationDetail, OrganizationFormData } from '../types/Organization';
 import { Room, RoomFormData } from '../types/Room';
 import { Subject, SubjectFormData } from '../types/Subject';
 import { GroupsResponse } from '../types/Group';
@@ -274,6 +274,10 @@ export class AuthenticatedApiService {
   // Organization management methods
   static async getOrganizations(): Promise<Organization[]> {
     return this.get('/Organization');
+  }
+
+  static async getOrganizationById(id: string): Promise<OrganizationDetail> {
+    return this.get(`/Organization/${id}`);
   }
 
   static async createOrganization(orgData: OrganizationFormData): Promise<ApiResponse<Organization>> {

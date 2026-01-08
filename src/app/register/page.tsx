@@ -80,7 +80,9 @@ export default function RegisterPage() {
       
       // Format phone number as +7 (XXX) XXX XX-XX
       let formattedPhone = '';
-      if (digits.length > 0) {
+      if (digits.length === 0) {
+        formattedPhone = '';
+      } else {
         let phoneDigits = '';
         if (digits.startsWith('7')) {
           phoneDigits = digits.slice(1, 11);
@@ -90,29 +92,42 @@ export default function RegisterPage() {
           phoneDigits = digits.slice(0, 10);
         }
         
-        if (phoneDigits.length > 0) {
+        if (phoneDigits.length === 0) {
           formattedPhone = '+7';
-          if (phoneDigits.length > 0) {
-            formattedPhone += ` (${phoneDigits.slice(0, 3)}`;
-            if (phoneDigits.length >= 3) {
-              formattedPhone += ')';
-              if (phoneDigits.length > 3) {
-                formattedPhone += ` ${phoneDigits.slice(3, 6)}`;
-                if (phoneDigits.length > 6) {
-                  formattedPhone += ` ${phoneDigits.slice(6, 8)}`;
-                  if (phoneDigits.length > 8) {
-                    formattedPhone += `-${phoneDigits.slice(8, 10)}`;
-                  }
-                }
-              }
-            }
-          }
+        } else if (phoneDigits.length <= 3) {
+          formattedPhone = `+7 (${phoneDigits}`;
+        } else if (phoneDigits.length <= 6) {
+          formattedPhone = `+7 (${phoneDigits.slice(0, 3)}) ${phoneDigits.slice(3)}`;
+        } else if (phoneDigits.length <= 8) {
+          formattedPhone = `+7 (${phoneDigits.slice(0, 3)}) ${phoneDigits.slice(3, 6)} ${phoneDigits.slice(6)}`;
+        } else {
+          formattedPhone = `+7 (${phoneDigits.slice(0, 3)}) ${phoneDigits.slice(3, 6)} ${phoneDigits.slice(6, 8)}-${phoneDigits.slice(8)}`;
         }
       }
       
       setFormData(prev => ({
         ...prev,
         [name]: formattedPhone
+      }));
+    } else if (name === 'activationKey') {
+      // Remove all non-alphanumeric characters and convert to uppercase
+      const cleanValue = value.replace(/[^A-Za-z0-9]/g, '').toUpperCase();
+      
+      // Format activation key as XXX-XXX-XXX
+      let formattedKey = '';
+      if (cleanValue.length > 0) {
+        formattedKey = cleanValue.slice(0, 3);
+        if (cleanValue.length > 3) {
+          formattedKey += `-${cleanValue.slice(3, 6)}`;
+          if (cleanValue.length > 6) {
+            formattedKey += `-${cleanValue.slice(6, 9)}`;
+          }
+        }
+      }
+      
+      setFormData(prev => ({
+        ...prev,
+        [name]: formattedKey
       }));
     } else {
       setFormData(prev => ({
@@ -166,7 +181,12 @@ export default function RegisterPage() {
         }, 2000);
       } else {
         const errorData = await response.text();
-        setError(errorData || 'Ошибка регистрации. Попробуйте снова.');
+        try {
+          const errorJson = JSON.parse(errorData);
+          setError(errorJson.message || errorData || 'Ошибка регистрации. Попробуйте снова.');
+        } catch {
+          setError(errorData || 'Ошибка регистрации. Попробуйте снова.');
+        }
       }
     } catch (error) {
       console.error('Registration error:', error);
@@ -471,8 +491,9 @@ export default function RegisterPage() {
                   required
                   value={formData.activationKey}
                   onChange={handleChange}
+                  maxLength={11} // XXX-XXX-XXX = 11 characters
                   className="w-full px-4 py-3 bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-xl shadow-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 dark:focus:ring-blue-400 dark:focus:border-blue-400 text-gray-900 dark:text-white placeholder-gray-500 dark:placeholder-gray-400 transition-all duration-200"
-                  placeholder="Введите ключ активации"
+                  placeholder="XXX-XXX-XXX"
                 />
               </div>
 

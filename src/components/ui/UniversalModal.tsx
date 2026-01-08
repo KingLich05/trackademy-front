@@ -6,7 +6,7 @@ import { Modal } from './Modal';
 interface UniversalModalProps<T = Record<string, unknown>> {
   isOpen: boolean;
   onClose: () => void;
-  mode: 'create' | 'edit';
+  mode: 'create' | 'edit' | 'view';
   title: string;
   subtitle?: string;
   icon: React.ComponentType<{ className?: string }>;
@@ -14,15 +14,15 @@ interface UniversalModalProps<T = Record<string, unknown>> {
   gradientTo: string;
   maxWidth?: 'sm' | 'md' | 'lg' | 'xl' | '2xl';
   initialData?: T;
-  data?: T; // для режима edit
-  onSave: (data: T, id?: string) => void | Promise<void>;
+  data?: T; // для режима edit/view
+  onSave?: (data: T, id?: string) => void | Promise<void>; // Опциональный для view режима
   children: (props: {
     formData: T;
     setFormData: React.Dispatch<React.SetStateAction<T>>;
     errors: Record<string, string>;
     setErrors: React.Dispatch<React.SetStateAction<Record<string, string>>>;
     isSubmitting: boolean;
-    mode: 'create' | 'edit';
+    mode: 'create' | 'edit' | 'view';
   }) => React.ReactNode;
   validate?: (data: T) => Record<string, string>;
   submitText?: string;
@@ -51,9 +51,9 @@ const UniversalModal = <T extends Record<string, unknown>>({
   const [errors, setErrors] = useState<Record<string, string>>({});
   const [isSubmitting, setIsSubmitting] = useState(false);
 
-  // Update form data when data changes (for edit mode)
+  // Update form data when data changes (for edit/view mode)
   useEffect(() => {
-    if (mode === 'edit' && data) {
+    if ((mode === 'edit' || mode === 'view') && data) {
       setFormData(data);
     } else if (mode === 'create' && initialData) {
       setFormData(initialData);
@@ -104,7 +104,13 @@ const UniversalModal = <T extends Record<string, unknown>>({
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     
-    if (!validateForm() || isSubmitting) return;
+    // В режиме view просто закрываем модал
+    if (mode === 'view') {
+      handleClose();
+      return;
+    }
+    
+    if (!onSave || !validateForm() || isSubmitting) return;
 
     setIsSubmitting(true);
     try {
@@ -122,8 +128,23 @@ const UniversalModal = <T extends Record<string, unknown>>({
     }
   };
 
-  const defaultSubmitText = mode === 'create' ? 'Создать' : 'Сохранить изменения';
-  const defaultLoadingText = mode === 'create' ? 'Создание...' : 'Сохранение...';
+  const getDefaultSubmitText = () => {
+    switch (mode) {
+      case 'view': return 'Закрыть';
+      case 'create': return 'Создать';
+      case 'edit': return 'Сохранить изменения';
+      default: return 'Создать';
+    }
+  };
+
+  const getDefaultLoadingText = () => {
+    switch (mode) {
+      case 'view': return 'Закрытие...';
+      case 'create': return 'Создание...';
+      case 'edit': return 'Сохранение...';
+      default: return 'Создание...';
+    }
+  };
 
   return (
     <Modal
@@ -149,20 +170,22 @@ const UniversalModal = <T extends Record<string, unknown>>({
 
         {/* Action Buttons */}
         <div className="flex justify-end space-x-3 pt-6 border-t border-gray-200 dark:border-gray-700 mt-6">
-          <button
-            type="button"
-            onClick={handleClose}
-            disabled={isSubmitting}
-            className="px-6 py-3 text-sm font-medium text-gray-700 dark:text-gray-300 bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-xl hover:bg-gray-50 dark:hover:bg-gray-600 focus:outline-none focus:ring-2 focus:ring-offset-2 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
-          >
-            Отмена
-          </button>
+          {mode !== 'view' && (
+            <button
+              type="button"
+              onClick={handleClose}
+              disabled={isSubmitting}
+              className="px-6 py-3 text-sm font-medium text-gray-700 dark:text-gray-300 bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-xl hover:bg-gray-50 dark:hover:bg-gray-600 focus:outline-none focus:ring-2 focus:ring-offset-2 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+            >
+              Отмена
+            </button>
+          )}
           <button
             type="submit"
             disabled={isSubmitting}
             className={`px-6 py-3 text-sm font-medium text-white bg-gradient-to-r from-${gradientFrom} to-${gradientTo} hover:opacity-90 rounded-xl focus:outline-none focus:ring-2 focus:ring-offset-2 disabled:opacity-50 disabled:cursor-not-allowed transition-all duration-200 hover:shadow-lg hover:scale-105`}
           >
-            {isSubmitting ? (loadingText || defaultLoadingText) : (submitText || defaultSubmitText)}
+            {isSubmitting ? (loadingText || getDefaultLoadingText()) : (submitText || getDefaultSubmitText())}
           </button>
         </div>
       </form>

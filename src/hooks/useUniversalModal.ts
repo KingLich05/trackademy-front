@@ -21,6 +21,12 @@ export const useUniversalModal = <T extends Record<string, unknown>>(
     setIsOpen(true);
   };
 
+  const openViewModal = (data: T) => {
+    setMode('view');
+    setEditData(data);
+    setIsOpen(true);
+  };
+
   const closeModal = () => {
     setIsOpen(false);
     setEditData(null);
@@ -34,6 +40,7 @@ export const useUniversalModal = <T extends Record<string, unknown>>(
     editData,
     openCreateModal,
     openEditModal,
+    openViewModal,
     closeModal,
     getConfig,
     initialData

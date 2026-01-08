@@ -1,15 +1,16 @@
 'use client';
 
 import React, { useState, useEffect } from 'react';
-import { Organization, OrganizationFormData } from '../../types/Organization';
+import { Organization, OrganizationDetail, OrganizationFormData } from '../../types/Organization';
 import { UserFormData } from '../../types/User';
 import { AuthenticatedApiService } from '../../services/AuthenticatedApiService';
-import { PhoneIcon, MapPinIcon, PencilIcon, TrashIcon, PlusIcon, BuildingOfficeIcon, UserPlusIcon } from '@heroicons/react/24/outline';
+import { PhoneIcon, MapPinIcon, PencilIcon, TrashIcon, PlusIcon, BuildingOfficeIcon, UserPlusIcon, EyeIcon } from '@heroicons/react/24/outline';
 import { useAuth } from '../../contexts/AuthContext';
 import Link from 'next/link';
 
 import UniversalModal from '../../components/ui/UniversalModal';
 import { useUniversalModal } from '../../hooks/useUniversalModal';
+import { OrganizationViewForm } from '../../components/forms/OrganizationViewForm';
 import { DeleteConfirmationModal } from '../../components/ui/DeleteConfirmationModal';
 import { PhoneInput } from '../../components/ui/PhoneInput';
 import { PasswordInput } from '../../components/ui/PasswordInput';
@@ -41,6 +42,13 @@ function OrganizationsPage() {
     phone: '',
     role: 2,
     organizationId: ''
+  });
+
+  // Модалка для просмотра организации
+  const viewModal = useUniversalModal('organization', {
+    name: '',
+    phone: '',
+    address: ''
   });
 
   const [selectedOrganizationId, setSelectedOrganizationId] = useState<string | null>(null);
@@ -141,6 +149,15 @@ function OrganizationsPage() {
   const handleCreate = () => {
     setEditingOrganizationId(null);
     organizationModal.openCreateModal();
+  };
+
+  const handleView = async (id: number) => {
+    try {
+      const organizationDetail = await AuthenticatedApiService.getOrganizationById(id.toString());
+      viewModal.openViewModal(organizationDetail as any);
+    } catch (error) {
+      console.error('Ошибка при загрузке данных организации:', error);
+    }
   };
 
   const handleAddAdmin = (organizationId: string) => {
@@ -291,7 +308,8 @@ function OrganizationsPage() {
                 {organizations.map((organization) => (
                   <div
                     key={organization.id}
-                    className="bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700 p-6 hover:shadow-md transition-shadow duration-200"
+                    className="bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700 p-6 hover:shadow-md transition-shadow duration-200 cursor-pointer"
+                    onClick={() => handleView(organization.id)}
                   >
                     <div className="flex items-start justify-between mb-4">
                       <div className="flex items-center space-x-3">
@@ -306,21 +324,40 @@ function OrganizationsPage() {
                       </div>
                       <div className="flex space-x-2">
                         <button
-                          onClick={() => handleAddAdmin(organization.id.toString())}
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            handleView(organization.id);
+                          }}
+                          className="text-blue-600 hover:text-blue-900 dark:text-blue-400 dark:hover:text-blue-300 p-2 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors duration-200"
+                          title="Просмотр"
+                        >
+                          <EyeIcon className="h-4 w-4" />
+                        </button>
+                        <button
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            handleAddAdmin(organization.id.toString());
+                          }}
                           className="text-green-600 hover:text-green-900 dark:text-green-400 dark:hover:text-green-300 p-2 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors duration-200"
                           title="Добавить администратора"
                         >
                           <UserPlusIcon className="h-4 w-4" />
                         </button>
                         <button
-                          onClick={() => handleEdit(organization.id)}
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            handleEdit(organization.id);
+                          }}
                           className="text-indigo-600 hover:text-indigo-900 dark:text-indigo-400 dark:hover:text-indigo-300 p-2 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors duration-200"
                           title="Редактировать"
                         >
                           <PencilIcon className="h-4 w-4" />
                         </button>
                         <button
-                          onClick={() => handleDelete(organization.id)}
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            handleDelete(organization.id);
+                          }}
                           className="text-red-600 hover:text-red-900 dark:text-red-400 dark:hover:text-red-300 p-2 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors duration-200"
                           title="Удалить"
                         >
@@ -509,6 +546,27 @@ function OrganizationsPage() {
         onConfirm={handleConfirmDelete}
         onClose={handleCloseDeleteModal}
       />
+
+      {/* View Organization Modal */}
+      <UniversalModal
+        isOpen={viewModal.isOpen}
+        mode="view"
+        title={viewModal.getConfig().title}
+        subtitle={viewModal.getConfig().subtitle}
+        icon={viewModal.getConfig().icon}
+        gradientFrom={viewModal.getConfig().gradientFrom}
+        gradientTo={viewModal.getConfig().gradientTo}
+        maxWidth="lg"
+        onClose={viewModal.closeModal}
+        submitText={viewModal.getConfig().submitText}
+        loadingText={viewModal.getConfig().loadingText}
+      >
+        {() => viewModal.editData ? (
+          <OrganizationViewForm data={viewModal.editData as OrganizationDetail} />
+        ) : (
+          <div>Загрузка...</div>
+        )}
+      </UniversalModal>
     </div>
   );
 }

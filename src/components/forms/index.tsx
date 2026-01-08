@@ -4,6 +4,8 @@ import React from 'react';
 import { RoomFormData } from '../../types/Room';
 import { SubjectFormData } from '../../types/Subject';
 
+export { OrganizationViewForm } from './OrganizationViewForm';
+
 interface RoomFormProps {
   formData: RoomFormData;
   setFormData: React.Dispatch<React.SetStateAction<RoomFormData>>;
