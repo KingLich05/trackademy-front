@@ -30,6 +30,15 @@ export const modalConfigs = {
       gradientTo: 'lime-600',
       submitText: 'Сохранить изменения',
       loadingText: 'Сохранение...'
+    },
+    view: {
+      title: 'Информация о пользователе',
+      subtitle: 'Просмотр данных пользователя',
+      icon: UserIcon,
+      gradientFrom: 'emerald-500',
+      gradientTo: 'lime-600',
+      submitText: 'Закрыть',
+      loadingText: 'Загрузка...'
     }
   },
   room: {
@@ -50,6 +59,15 @@ export const modalConfigs = {
       gradientTo: 'emerald-600',
       submitText: 'Сохранить изменения',
       loadingText: 'Сохранение...'
+    },
+    view: {
+      title: 'Информация о кабинете',
+      subtitle: 'Просмотр данных кабинета',
+      icon: HomeIcon,
+      gradientFrom: 'green-500',
+      gradientTo: 'emerald-600',
+      submitText: 'Закрыть',
+      loadingText: 'Загрузка...'
     }
   },
   subject: {
@@ -69,8 +87,15 @@ export const modalConfigs = {
       gradientFrom: 'blue-500', // Соответствует странице предметов
       gradientTo: 'purple-600',
       submitText: 'Сохранить изменения',
-      loadingText: 'Сохранение...'
-    }
+      loadingText: 'Сохранение...'    },
+    view: {
+      title: 'Информация о предмете',
+      subtitle: 'Просмотр данных предмета',
+      icon: BookOpenIcon,
+      gradientFrom: 'orange-500',
+      gradientTo: 'amber-600',
+      submitText: 'Закрыть',
+      loadingText: 'Загрузка...'    }
   },
   group: {
     create: {
@@ -90,6 +115,15 @@ export const modalConfigs = {
       gradientTo: 'cyan-600',
       submitText: 'Сохранить изменения',
       loadingText: 'Сохранение...'
+    },
+    view: {
+      title: 'Информация о группе',
+      subtitle: 'Просмотр данных группы',
+      icon: UserGroupIcon,
+      gradientFrom: 'teal-500',
+      gradientTo: 'cyan-600',
+      submitText: 'Закрыть',
+      loadingText: 'Загрузка...'
     }
   },
   organization: {
@@ -139,6 +173,15 @@ export const modalConfigs = {
       gradientTo: 'purple-600',
       submitText: 'Сохранить изменения',
       loadingText: 'Сохранение...'
+    },
+    view: {
+      title: 'Информация о расписании',
+      subtitle: 'Просмотр данных расписания',
+      icon: CalendarDaysIcon,
+      gradientFrom: 'violet-500',
+      gradientTo: 'purple-600',
+      submitText: 'Закрыть',
+      loadingText: 'Загрузка...'
     }
   }
 };

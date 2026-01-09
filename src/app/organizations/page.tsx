@@ -154,7 +154,7 @@ function OrganizationsPage() {
   const handleView = async (id: number) => {
     try {
       const organizationDetail = await AuthenticatedApiService.getOrganizationById(id.toString());
-      viewModal.openViewModal(organizationDetail as any);
+      viewModal.openViewModal(organizationDetail);
     } catch (error) {
       console.error('Ошибка при загрузке данных организации:', error);
     }
