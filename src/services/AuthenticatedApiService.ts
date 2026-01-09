@@ -10,6 +10,7 @@ import { Assignment, AssignmentFormData, AssignmentsResponse, AssignmentFilters 
 import { Submission, SubmissionFilters, SubmissionsResponse, GradeSubmissionRequest, ReturnSubmissionRequest } from '../types/Submission';
 import { MyAssignmentsRequest, MyAssignmentsResponse } from '../types/MyAssignments';
 import { Material, MaterialsResponse, MaterialEditData } from '../types/Material';
+import { Document, DocumentUploadData } from '../types/Document';
 
 interface ApiResponse<T> {
   success: boolean;
@@ -652,5 +653,48 @@ export class AuthenticatedApiService {
     }
 
     return response.blob();
+  }
+
+  // Document management methods
+  static async getDocuments(): Promise<Document[]> {
+    return this.get('/Document');
+  }
+
+  static async getDocumentById(documentId: string): Promise<Blob> {
+    const token = this.getAuthToken();
+    const response = await fetch(`https://trackademy.kz/api/Document/${documentId}`, {
+      method: 'GET',
+      headers: {
+        'Authorization': `Bearer ${token}`
+      }
+    });
+
+    if (!response.ok) {
+      throw new Error('Failed to load document');
+    }
+
+    return response.blob();
+  }
+
+  static async uploadDocument(documentData: DocumentUploadData): Promise<ApiResponse<Document>> {
+    const formData = new FormData();
+    formData.append('name', documentData.name);
+    formData.append('type', documentData.type);
+    formData.append('file', documentData.file);
+
+    const token = this.getAuthToken();
+    const response = await fetch(`https://trackademy.kz/api/Document/upload`, {
+      method: 'POST',
+      headers: {
+        'Authorization': `Bearer ${token}`
+      },
+      body: formData
+    });
+
+    return response.json();
+  }
+
+  static async deleteDocument(documentId: string): Promise<ApiResponse<void>> {
+    return this.delete(`/Document/${documentId}`);
   }
 }
