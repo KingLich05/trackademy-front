@@ -4,8 +4,6 @@ import { useState, useEffect, useRef } from 'react';
 import { useAuth } from '../../contexts/AuthContext';
 import { EyeIcon, EyeSlashIcon, AcademicCapIcon, MagnifyingGlassIcon, ChevronDownIcon, Bars3Icon, XMarkIcon } from '@heroicons/react/24/outline';
 import Link from 'next/link';
-import { AuthenticatedApiService } from '../../services/AuthenticatedApiService';
-import { Document } from '../../types/Document';
 
 interface Organization {
   id: string;
@@ -15,7 +13,6 @@ interface Organization {
 export default function RegisterPage() {
   const { isAuthenticated } = useAuth();
   const [organizations, setOrganizations] = useState<Organization[]>([]);
-  const [documents, setDocuments] = useState<Document[]>([]);
   const [formData, setFormData] = useState({
     fullName: '',
     login: '',
@@ -23,9 +20,7 @@ export default function RegisterPage() {
     phone: '',
     birthday: '',
     organizationId: '',
-    activationKey: '',
-    acceptPublicOffer: false,
-    acceptPrivacyPolicy: false
+    activationKey: ''
   });
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
@@ -50,7 +45,6 @@ export default function RegisterPage() {
     setMounted(true);
     setIsVisible(true);
     fetchOrganizations();
-    fetchDocuments();
   }, []);
 
   // Close dropdown when clicking outside
@@ -77,23 +71,7 @@ export default function RegisterPage() {
     }
   };
 
-  const fetchDocuments = async () => {
-    try {
-      // Используем публичный fetch вместо AuthenticatedApiService для незалогиненных пользователей
-      const response = await fetch('https://trackademy.kz/api/Document');
-      if (response.ok) {
-        const documents = await response.json();
-        setDocuments(documents);
-      }
-    } catch (error) {
-      console.error('Failed to fetch documents:', error);
-      // Если API недоступен, показываем галочки как обычные поля без ссылок
-      setDocuments([
-        { id: '1', type: 'PublicOffer', name: 'Публичная оферта' } as Document,
-        { id: '2', type: 'PrivacyPolicy', name: 'Политика конфиденциальности' } as Document
-      ]);
-    }
-  };
+
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const { name, value, type, checked } = e.target;
@@ -187,21 +165,6 @@ export default function RegisterPage() {
     setError('');
     setSuccess('');
 
-    // Валидация соглашений
-    const publicOfferDoc = documents.find(doc => doc.type === 'PublicOffer');
-    const privacyPolicyDoc = documents.find(doc => doc.type === 'PrivacyPolicy');
-    
-    if (publicOfferDoc && !formData.acceptPublicOffer) {
-      setError('Необходимо согласиться с публичной офертой');
-      setLoading(false);
-      return;
-    }
-    
-    if (privacyPolicyDoc && !formData.acceptPrivacyPolicy) {
-      setError('Необходимо согласиться с политикой конфиденциальности');
-      setLoading(false);
-      return;
-    }
 
     try {
       const response = await fetch('https://trackademy.kz/api/Auth/register-admin', {
@@ -221,9 +184,7 @@ export default function RegisterPage() {
           phone: '',
           birthday: '',
           organizationId: '',
-          activationKey: '',
-          acceptPublicOffer: false,
-          acceptPrivacyPolicy: false
+          activationKey: ''
         });
         // Redirect to login after 2 seconds
         setTimeout(() => {
@@ -547,93 +508,12 @@ export default function RegisterPage() {
                 />
               </div>
 
-              {/* Agreements Section */}
-              <div className="animate-fade-in animate-delay-950 space-y-4">
-                {/* Public Offer Agreement */}
-                {documents.find(doc => doc.type === 'PublicOffer') && (
-                  <div className="flex items-start space-x-3">
-                    <input
-                      id="acceptPublicOffer"
-                      name="acceptPublicOffer"
-                      type="checkbox"
-                      checked={formData.acceptPublicOffer}
-                      onChange={handleChange}
-                      className="mt-1 h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded"
-                      required
-                    />
-                    <label htmlFor="acceptPublicOffer" className="text-sm text-gray-600 dark:text-gray-400">
-                      Я соглашаюсь с{' '}
-                      <button
-                        type="button"
-                        onClick={async () => {
-                          const doc = documents.find(d => d.type === 'PublicOffer');
-                          if (doc) {
-                            try {
-                              const blob = await AuthenticatedApiService.getDocumentById(doc.id);
-                              const url = window.URL.createObjectURL(blob);
-                              window.open(url, '_blank');
-                              setTimeout(() => window.URL.revokeObjectURL(url), 1000);
-                            } catch (error) {
-                              console.error('Error opening document:', error);
-                            }
-                          }
-                        }}
-                        className="text-blue-600 dark:text-blue-400 hover:underline font-medium"
-                      >
-                        публичной офертой
-                      </button>
-                      {' '}<span className="text-red-500">*</span>
-                    </label>
-                  </div>
-                )}
-                
-                {/* Privacy Policy Agreement */}
-                {documents.find(doc => doc.type === 'PrivacyPolicy') && (
-                  <div className="flex items-start space-x-3">
-                    <input
-                      id="acceptPrivacyPolicy"
-                      name="acceptPrivacyPolicy"
-                      type="checkbox"
-                      checked={formData.acceptPrivacyPolicy}
-                      onChange={handleChange}
-                      className="mt-1 h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded"
-                      required
-                    />
-                    <label htmlFor="acceptPrivacyPolicy" className="text-sm text-gray-600 dark:text-gray-400">
-                      Я соглашаюсь с{' '}
-                      <button
-                        type="button"
-                        onClick={async () => {
-                          const doc = documents.find(d => d.type === 'PrivacyPolicy');
-                          if (doc) {
-                            try {
-                              const blob = await AuthenticatedApiService.getDocumentById(doc.id);
-                              const url = window.URL.createObjectURL(blob);
-                              window.open(url, '_blank');
-                              setTimeout(() => window.URL.revokeObjectURL(url), 1000);
-                            } catch (error) {
-                              console.error('Error opening document:', error);
-                            }
-                          }
-                        }}
-                        className="text-blue-600 dark:text-blue-400 hover:underline font-medium"
-                      >
-                        политикой конфиденциальности
-                      </button>
-                      {' '}<span className="text-red-500">*</span>
-                    </label>
-                  </div>
-                )}
-              </div>
 
               {/* Submit Button */}
               <div className="animate-fade-in animate-delay-1000 pt-2">
                 <button
                   type="submit"
-                  disabled={loading || 
-                    (documents.find(doc => doc.type === 'PublicOffer') && !formData.acceptPublicOffer) ||
-                    (documents.find(doc => doc.type === 'PrivacyPolicy') && !formData.acceptPrivacyPolicy)
-                  }
+                  disabled={loading}
                   className="w-full py-3 px-4 bg-blue-600 hover:bg-blue-700 disabled:bg-blue-400 text-white font-medium rounded-xl shadow-lg hover:shadow-xl transition-all duration-200 disabled:cursor-not-allowed flex items-center justify-center gap-2"
                 >
                   {loading ? (

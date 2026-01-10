@@ -1,11 +1,10 @@
 export interface Document {
   id: string;
-  name: string;
-  type: 'PublicOffer' | 'PrivacyPolicy' | 'Other';
+  type: number;
   fileName: string;
-  uploadDate: string;
+  filePath: string;
   fileSize: number;
-  contentType: string;
+  uploadedAt: string;
 }
 
 export interface DocumentUploadData {
@@ -14,7 +13,13 @@ export interface DocumentUploadData {
   file: File;
 }
 
-export const DOCUMENT_TYPES = {
+export const DOCUMENT_TYPES: Record<number, string> = {
+  1: 'Публичная оферта',
+  2: 'Политика конфиденциальности',
+  3: 'Другое'
+};
+
+export const DOCUMENT_TYPE_LABELS = {
   PublicOffer: 'Публичная оферта',
   PrivacyPolicy: 'Политика конфиденциальности',
   Other: 'Другое'

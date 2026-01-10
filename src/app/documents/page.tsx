@@ -1,7 +1,7 @@
 'use client';
 
 import React, { useState, useEffect } from 'react';
-import { Document, DocumentUploadData, DOCUMENT_TYPES } from '../../types/Document';
+import { Document, DocumentUploadData, DOCUMENT_TYPES, DOCUMENT_TYPE_LABELS } from '../../types/Document';
 import { AuthenticatedApiService } from '../../services/AuthenticatedApiService';
 import { 
   DocumentTextIcon, 
@@ -243,12 +243,12 @@ function DocumentsPage() {
           { label: "Всего документов", value: documents.length, color: "blue" },
           { 
             label: "Публичные оферты", 
-            value: documents.filter(d => d.type === 'PublicOffer').length, 
+            value: documents.filter(d => d.type === 1).length, 
             color: "green" 
           },
           { 
             label: "Политики конфиденциальности", 
-            value: documents.filter(d => d.type === 'PrivacyPolicy').length, 
+            value: documents.filter(d => d.type === 2).length, 
             color: "purple" 
           }
         ]}
@@ -282,13 +282,13 @@ function DocumentsPage() {
                   className="bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700 p-6 hover:shadow-md transition-shadow duration-200"
                 >
                   <div className="flex items-start justify-between mb-4">
-                    <div className="flex items-center space-x-3">
-                      <div className="p-2 bg-blue-100 dark:bg-blue-900/30 rounded-lg">
+                    <div className="flex items-center space-x-3 min-w-0 flex-1">
+                      <div className="p-2 bg-blue-100 dark:bg-blue-900/30 rounded-lg flex-shrink-0">
                         <DocumentTextIcon className="h-6 w-6 text-blue-600 dark:text-blue-400" />
                       </div>
-                      <div>
-                        <h3 className="text-lg font-semibold text-gray-900 dark:text-white line-clamp-2">
-                          {document.name}
+                      <div className="min-w-0 flex-1">
+                        <h3 className="text-lg font-semibold text-gray-900 dark:text-white line-clamp-2 break-words">
+                          {document.fileName}
                         </h3>
                         <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-gray-100 dark:bg-gray-700 text-gray-800 dark:text-gray-200">
                           {DOCUMENT_TYPES[document.type]}
@@ -321,7 +321,7 @@ function DocumentsPage() {
                       <strong>Размер:</strong> {formatFileSize(document.fileSize)}
                     </div>
                     <div>
-                      <strong>Дата загрузки:</strong> {formatDate(document.uploadDate)}
+                      <strong>Дата загрузки:</strong> {formatDate(document.uploadedAt)}
                     </div>
                   </div>
                 </div>
@@ -379,7 +379,7 @@ function DocumentsPage() {
                     }))}
                     className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
                   >
-                    {Object.entries(DOCUMENT_TYPES).map(([key, label]) => (
+                    {Object.entries(DOCUMENT_TYPE_LABELS).map(([key, label]) => (
                       <option key={key} value={key}>{label}</option>
                     ))}
                   </select>
@@ -443,7 +443,7 @@ function DocumentsPage() {
       <DeleteConfirmationModal
         isOpen={isDeleteModalOpen}
         title="Удалить документ"
-        message={`Вы уверены, что хотите удалить документ "${deletingDocument?.name}"? Это действие нельзя отменить.`}
+        message={`Вы уверены, что хотите удалить документ "${deletingDocument?.fileName}"? Это действие нельзя отменить.`}
         onConfirm={handleConfirmDelete}
         onClose={handleCloseDeleteModal}
       />

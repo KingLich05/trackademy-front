@@ -683,7 +683,7 @@ export class AuthenticatedApiService {
     formData.append('file', documentData.file);
 
     const token = this.getAuthToken();
-    const response = await fetch(`https://trackademy.kz/api/Document/upload`, {
+    const response = await fetch(`https://trackademy.kz/api/Document`, {
       method: 'POST',
       headers: {
         'Authorization': `Bearer ${token}`
