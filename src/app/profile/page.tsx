@@ -22,7 +22,7 @@ interface ProfileData {
 }
 
 export default function Profile() {
-  const { user, isAuthenticated } = useAuth();
+  const { user, isAuthenticated, refreshUser } = useAuth();
   const [profileData, setProfileData] = useState<ProfileData | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -92,6 +92,9 @@ export default function Profile() {
       // Также обновляем полные данные для модалки
       const fullData = await AuthenticatedApiService.getUserById(user.id);
       setFullProfileData(fullData);
+      
+      // Обновляем пользователя в AuthContext с помощью refreshUser
+      await refreshUser();
     } catch (error) {
       console.error('Failed to update profile:', error);
       throw error; // Пробрасываем ошибку для обработки в модалке

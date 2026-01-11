@@ -21,6 +21,7 @@ interface AuthContextType {
   register: (userData: RegisterData) => Promise<void>;
   loginWithCredentials: (login: string, password: string, organizationId?: string) => Promise<void>;
   getAuthToken: () => string | null;
+  refreshUser: () => Promise<void>;
 }
 
 interface RegisterData {
@@ -172,6 +173,48 @@ export function AuthProvider({ children }: Readonly<{ children: ReactNode }>) {
     return localStorage.getItem('authToken');
   };
 
+  const refreshUser = useCallback(async () => {
+    if (!user?.id) return;
+    
+    try {
+      const response = await fetch(`https://trackademy.kz/api/Auth/me`, {
+        headers: {
+          'Authorization': `Bearer ${getAuthToken()}`,
+          'Content-Type': 'application/json',
+        },
+      });
+      
+      if (response.ok) {
+        const userData = await response.json();
+        
+        // Мапим roleId в строковое название роли
+        const getRoleFromRoleId = (roleId: number): string => {
+          switch (roleId) {
+            case 1: return 'Student';
+            case 2: return 'Administrator';
+            case 3: return 'Teacher';
+            case 4: return 'Owner';
+            default: return 'Student';
+          }
+        };
+        
+        const updatedUser: User = {
+          id: userData.id,
+          fullName: userData.fullName,
+          login: userData.login,
+          role: typeof userData.role === 'number' ? getRoleFromRoleId(userData.role) : userData.role,
+          roleId: userData.roleId || userData.role, // roleId может быть в userData.role
+          organizationId: userData.organizationId,
+          organizationNames: userData.organizationNames
+        };
+        setUser(updatedUser);
+        localStorage.setItem('user', JSON.stringify(updatedUser));
+      }
+    } catch (error) {
+      console.error('Failed to refresh user data:', error);
+    }
+  }, [user?.id, getAuthToken]);
+
   const contextValue = useMemo(() => ({
     user,
     token,
@@ -180,8 +223,9 @@ export function AuthProvider({ children }: Readonly<{ children: ReactNode }>) {
     logout,
     register,
     loginWithCredentials,
-    getAuthToken
-  }), [user, token, login, logout, register, loginWithCredentials, getAuthToken]);
+    getAuthToken,
+    refreshUser
+  }), [user, token, login, logout, register, loginWithCredentials, getAuthToken, refreshUser]);
 
   return (
     <AuthContext.Provider value={contextValue}>
