@@ -357,11 +357,15 @@ export function AuthProvider({ children }: Readonly<{ children: ReactNode }>) {
       }
 
       // После успешной записи согласий обновляем статус пользователя
+      // Сначала принудительно обновляем данные пользователя
+      await refreshUser();
+      // Затем проверяем статус согласия
       await checkAgreementStatus();
 
     } catch (error) {
       console.error('Error recording consent:', error);
       // В случае ошибки все равно обновляем статус
+      await refreshUser();
       await checkAgreementStatus();
     }
   }, [user?.id, getAuthToken, checkAgreementStatus]);
