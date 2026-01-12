@@ -440,10 +440,10 @@ function DocumentsPage() {
                     Тип документа <span className="text-red-500">*</span>
                   </label>
                   <select
-                    value={uploadData.type || 'Other'}
+                    value={uploadData.type || 'PrivacyPolicy'}
                     onChange={(e) => setUploadData(prev => ({ 
                       ...prev, 
-                      type: e.target.value as 'PublicOffer' | 'PrivacyPolicy' | 'Other'
+                      type: e.target.value as 'PublicOffer' | 'PrivacyPolicy' | 'TermsOfService'
                     }))}
                     className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
                   >
