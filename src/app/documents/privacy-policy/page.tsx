@@ -7,7 +7,7 @@ import { DocumentTextIcon, ArrowLeftIcon, EyeIcon, ArrowTopRightOnSquareIcon } f
 import { useRouter } from 'next/navigation';
 
 export default function PrivacyPolicyPage() {
-  const [document, setDocument] = useState<Document | null>(null);
+  const [documentData, setDocumentData] = useState<Document | null>(null);
   const [documentUrl, setDocumentUrl] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -33,7 +33,7 @@ export default function PrivacyPolicyPage() {
         return;
       }
 
-      setDocument(privacyPolicyDoc);
+      setDocumentData(privacyPolicyDoc);
 
       // Загружаем содержимое документа
       const blob = await AuthenticatedApiService.getDocumentById(privacyPolicyDoc.id);
@@ -49,13 +49,13 @@ export default function PrivacyPolicyPage() {
   };
 
   const downloadDocument = () => {
-    if (document && documentUrl) {
-      const link = document.createElement('a');
+    if (documentData && documentUrl) {
+      const link = window.document.createElement('a');
       link.href = documentUrl;
-      link.download = document.fileName || 'privacy-policy.pdf';
-      document.body.appendChild(link);
+      link.download = documentData.fileName || 'privacy-policy.pdf';
+      window.document.body.appendChild(link);
       link.click();
-      document.body.removeChild(link);
+      window.document.body.removeChild(link);
     }
   };
 

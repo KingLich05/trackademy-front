@@ -56,7 +56,7 @@ export default function StudentsPage() {
     role: 1,
     organizationId: '',
     isTrial: false,
-    groupIds: []
+    groupIds: [] as string[]
   });
   
   // Toast уведомления для API операций
@@ -65,7 +65,7 @@ export default function StudentsPage() {
   const [filters, setFilters] = useState<UserFiltersType>({
     search: '',
     roleIds: [],
-    groupIds: [],
+    groupIds: [] as string[],
     isTrial: undefined
   });
   const [groups, setGroups] = useState<Array<{id: string, name: string}>>([]);
