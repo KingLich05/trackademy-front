@@ -498,6 +498,17 @@ export default function HomeworkPage() {
     }
   };
 
+  const reloadSelectedAssignment = async () => {
+    if (selectedAssignment) {
+      try {
+        const updatedAssignment = await AuthenticatedApiService.getAssignmentById(selectedAssignment.id);
+        setSelectedAssignment(updatedAssignment);
+      } catch (error) {
+        console.error('Error reloading assignment details:', error);
+      }
+    }
+  };
+
   const isOverdue = (dueDate: string) => {
     return new Date(dueDate) < new Date();
   };
@@ -1292,6 +1303,8 @@ export default function HomeworkPage() {
         onUpdate={() => {
           // Reload assignments list after grading/returning
           loadAssignments(currentPage, true);
+          // Also reload the selected assignment details to update the status
+          reloadSelectedAssignment();
         }}
       />
     </div>

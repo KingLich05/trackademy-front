@@ -121,7 +121,7 @@ export default function PaymentsPage() {
   } | null>(null);
   const [searchTerm, setSearchTerm] = useState('');
   
-  // Expanded rows state - by default all rows are expanded
+  // Expanded rows state - by default all rows are collapsed
   const [expandedRows, setExpandedRows] = useState<Set<string>>(new Set());
   
   // Pagination states
@@ -234,11 +234,11 @@ export default function PaymentsPage() {
     });
   };
   
-  // Initialize all rows as expanded when grouped students change
-  useEffect(() => {
-    const allStudentIds = new Set(groupedStudents.map(student => student.studentId));
-    setExpandedRows(allStudentIds);
-  }, [groupedStudents]);
+  // Keep all rows collapsed by default - no auto-expand
+  // useEffect(() => {
+  //   const allStudentIds = new Set(groupedStudents.map(student => student.studentId));
+  //   setExpandedRows(allStudentIds);
+  // }, [groupedStudents]);
 
   const toggleAllRows = () => {
     if (expandedRows.size === groupedStudents.length) {

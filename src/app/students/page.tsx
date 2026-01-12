@@ -23,6 +23,7 @@ import { cleanUserFormData } from '../../utils/apiHelpers';
 import { ImportUsersModal } from '../../components/ImportUsersModal';
 import { BulkAddToGroupModal } from '../../components/BulkAddToGroupModal';
 import { GroupSelectionModal } from '../../components/GroupSelectionModal';
+import { MultiSelect } from '../../components/ui/MultiSelect';
 
 export default function StudentsPage() {
   const { isAuthenticated, user } = useAuth();
@@ -54,7 +55,8 @@ export default function StudentsPage() {
     birthday: '',
     role: 1,
     organizationId: '',
-    isTrial: false
+    isTrial: false,
+    groupIds: []
   });
   
   // Toast уведомления для API операций
@@ -462,7 +464,8 @@ export default function StudentsPage() {
       birthday: editUser.birthday || '',
       role: editUser.role,
       organizationId: editUser.organizationId || '',
-      isTrial: editUser.isTrial || false
+      isTrial: editUser.isTrial || false,
+      groupIds: editUser.groups?.map(g => g.id) || []
     });
   };
 
@@ -1053,6 +1056,22 @@ export default function StudentsPage() {
                       value={(formData.password as string) || ''}
                       onChange={(value: string) => setFormData((prev: Record<string, unknown>) => ({ ...prev, password: value }))}
                       required
+                    />
+                  </div>
+
+                  {/* Group Selection для студентов */}
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                      Группы <span className="text-gray-500 text-sm">(необязательно)</span>
+                    </label>
+                    <MultiSelect
+                      options={groups.map(g => ({ id: g.id, name: g.name }))}
+                      selectedValues={(formData.groupIds as string[]) || []}
+                      onChange={(values: string[]) => setFormData((prev: Record<string, unknown>) => ({ 
+                        ...prev, 
+                        groupIds: values
+                      }))}
+                      placeholder="Выберите группы..."
                     />
                   </div>
                   

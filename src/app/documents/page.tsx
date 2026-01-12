@@ -8,7 +8,8 @@ import {
   ArrowUpTrayIcon, 
   EyeIcon, 
   TrashIcon,
-  PlusIcon 
+  PlusIcon,
+  ArrowTopRightOnSquareIcon 
 } from '@heroicons/react/24/outline';
 import { useAuth } from '../../contexts/AuthContext';
 import { PageHeaderWithStats } from '../../components/ui/PageHeaderWithStats';
@@ -253,6 +254,73 @@ function DocumentsPage() {
           }
         ]}
       />
+
+      {/* Quick Access Links */}
+      <div className="grid gap-4 md:grid-cols-2 mb-6">
+        <div className="bg-white/80 dark:bg-gray-800/80 backdrop-blur-sm shadow-lg rounded-xl border border-gray-200/50 dark:border-gray-700/50 p-6">
+          <div className="flex items-center justify-between mb-4">
+            <div className="flex items-center space-x-3">
+              <div className="p-2 bg-green-100 dark:bg-green-900/30 rounded-lg">
+                <DocumentTextIcon className="h-6 w-6 text-green-600 dark:text-green-400" />
+              </div>
+              <div>
+                <h3 className="text-lg font-semibold text-gray-900 dark:text-white">Публичная оферта</h3>
+                <p className="text-sm text-gray-500 dark:text-gray-400">
+                  Просмотр документа публичной оферты
+                </p>
+              </div>
+            </div>
+            <button
+              onClick={() => window.open('/documents/public-offer', '_blank')}
+              className="p-2 text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg transition-colors"
+              title="Открыть публичную оферту"
+            >
+              <ArrowTopRightOnSquareIcon className="h-5 w-5" />
+            </button>
+          </div>
+          <div className="flex items-center space-x-2">
+            <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${
+              documents.filter(d => d.type === 1).length > 0 
+                ? 'bg-green-100 dark:bg-green-900/30 text-green-800 dark:text-green-200' 
+                : 'bg-gray-100 dark:bg-gray-700 text-gray-800 dark:text-gray-200'
+            }`}>
+              {documents.filter(d => d.type === 1).length > 0 ? 'Доступно' : 'Не загружено'}
+            </span>
+          </div>
+        </div>
+
+        <div className="bg-white/80 dark:bg-gray-800/80 backdrop-blur-sm shadow-lg rounded-xl border border-gray-200/50 dark:border-gray-700/50 p-6">
+          <div className="flex items-center justify-between mb-4">
+            <div className="flex items-center space-x-3">
+              <div className="p-2 bg-purple-100 dark:bg-purple-900/30 rounded-lg">
+                <DocumentTextIcon className="h-6 w-6 text-purple-600 dark:text-purple-400" />
+              </div>
+              <div>
+                <h3 className="text-lg font-semibold text-gray-900 dark:text-white">Политика конфиденциальности</h3>
+                <p className="text-sm text-gray-500 dark:text-gray-400">
+                  Просмотр политики конфиденциальности
+                </p>
+              </div>
+            </div>
+            <button
+              onClick={() => window.open('/documents/privacy-policy', '_blank')}
+              className="p-2 text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg transition-colors"
+              title="Открыть политику конфиденциальности"
+            >
+              <ArrowTopRightOnSquareIcon className="h-5 w-5" />
+            </button>
+          </div>
+          <div className="flex items-center space-x-2">
+            <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${
+              documents.filter(d => d.type === 2).length > 0 
+                ? 'bg-green-100 dark:bg-green-900/30 text-green-800 dark:text-green-200' 
+                : 'bg-gray-100 dark:bg-gray-700 text-gray-800 dark:text-gray-200'
+            }`}>
+              {documents.filter(d => d.type === 2).length > 0 ? 'Доступно' : 'Не загружено'}
+            </span>
+          </div>
+        </div>
+      </div>
 
       {/* Content Card */}
       <div className="bg-white/80 dark:bg-gray-800/80 backdrop-blur-sm shadow-lg rounded-xl border border-gray-200/50 dark:border-gray-700/50 overflow-hidden">

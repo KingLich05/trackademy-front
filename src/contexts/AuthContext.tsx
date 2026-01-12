@@ -1,6 +1,8 @@
 'use client';
 
 import { createContext, useContext, ReactNode, useState, useEffect, useMemo, useCallback } from 'react';
+import { AuthenticatedApiService } from '../services/AuthenticatedApiService';
+import { Document } from '../types/Document';
 
 interface User {
   id: string; // Changed to string since API returns GUID
@@ -16,12 +18,16 @@ interface AuthContextType {
   user: User | null;
   token: string | null;
   isAuthenticated: boolean;
+  hasAgreedToTerms: boolean;
+  needsAgreement: boolean;
   login: (user: User) => void;
   logout: () => void;
   register: (userData: RegisterData) => Promise<void>;
   loginWithCredentials: (login: string, password: string, organizationId?: string) => Promise<void>;
   getAuthToken: () => string | null;
   refreshUser: () => Promise<void>;
+  agreeToTerms: () => void;
+  checkAgreementStatus: () => void;
 }
 
 interface RegisterData {
@@ -38,6 +44,8 @@ const AuthContext = createContext<AuthContextType | undefined>(undefined);
 export function AuthProvider({ children }: Readonly<{ children: ReactNode }>) {
   const [user, setUser] = useState<User | null>(null);
   const [token, setToken] = useState<string | null>(null);
+  const [hasAgreedToTerms, setHasAgreedToTerms] = useState<boolean>(false);
+  const [needsAgreement, setNeedsAgreement] = useState<boolean>(false);
 
   const login = (userData: User) => {
     setUser(userData);
@@ -173,6 +181,204 @@ export function AuthProvider({ children }: Readonly<{ children: ReactNode }>) {
     return localStorage.getItem('authToken');
   };
 
+  const checkAgreementStatus = useCallback(async () => {
+    if (!user) {
+      setHasAgreedToTerms(false);
+      setNeedsAgreement(false);
+      // Очищаем localStorage если нет пользователя
+      localStorage.removeItem('termsAgreement');
+      return;
+    }
+
+    // Сначала проверяем localStorage для быстрой проверки
+    const storedAgreement = localStorage.getItem('termsAgreement');
+    let localData = null;
+    if (storedAgreement) {
+      try {
+        localData = JSON.parse(storedAgreement);
+        // Если данные для текущего пользователя, используем их временно
+        if (localData.userId === user.id) {
+          setHasAgreedToTerms(localData.hasAgreedToTerms || false);
+          setNeedsAgreement(localData.needsAgreement !== false);
+        }
+      } catch {
+        localStorage.removeItem('termsAgreement');
+      }
+    }
+
+    try {
+      // Получаем актуальную информацию с сервера
+      const response = await fetch(`https://trackademy.kz/api/Auth/me`, {
+        headers: {
+          'Authorization': `Bearer ${getAuthToken()}`,
+          'Content-Type': 'application/json',
+        },
+      });
+      
+      if (response.ok) {
+        const userData = await response.json();
+        console.log('User agreement status from API:', userData);
+        
+        // Проверяем статус согласия из API - используем правильное поле hasAcceptedTerms
+        const hasAgreed = userData.hasAcceptedTerms === true;
+        const needsAgreement = !hasAgreed;
+        
+        // Обновляем состояние
+        setHasAgreedToTerms(hasAgreed);
+        setNeedsAgreement(needsAgreement);
+        
+        // Сохраняем актуальные данные в localStorage
+        const agreementData = {
+          userId: user.id,
+          hasAgreedToTerms: hasAgreed,
+          needsAgreement: needsAgreement,
+          lastUpdated: new Date().toISOString(),
+          fromApi: true
+        };
+        localStorage.setItem('termsAgreement', JSON.stringify(agreementData));
+        
+        console.log('Agreement status updated from API:', { hasAgreed, needsAgreement, apiField: userData.hasAcceptedTerms });
+      } else {
+        console.error('Failed to get user agreement status from API');
+        // Если не можем получить с сервера, используем localStorage или по умолчанию требуем согласие
+        if (!localData || localData.userId !== user.id) {
+          setHasAgreedToTerms(false);
+          setNeedsAgreement(true);
+        }
+      }
+    } catch (error) {
+      console.error('Error checking agreement status:', error);
+      // В случае ошибки API используем localStorage или по умолчанию требуем согласие  
+      if (!localData || localData.userId !== user.id) {
+        setHasAgreedToTerms(false);
+        setNeedsAgreement(true);
+      }
+    }
+  }, [user, getAuthToken]);
+
+  // Быстрая проверка из localStorage для инициализации
+  const checkLocalAgreementStatus = useCallback(() => {
+    if (!user) {
+      setHasAgreedToTerms(false);
+      setNeedsAgreement(false);
+      return;
+    }
+
+    const storedAgreement = localStorage.getItem('termsAgreement');
+    if (storedAgreement) {
+      try {
+        const agreement = JSON.parse(storedAgreement);
+        if (agreement.userId === user.id) {
+          setHasAgreedToTerms(agreement.hasAgreedToTerms || false);
+          setNeedsAgreement(agreement.needsAgreement !== false);
+          return;
+        }
+      } catch {
+        localStorage.removeItem('termsAgreement');
+      }
+    }
+    
+    // По умолчанию требуем согласие
+    setHasAgreedToTerms(false);
+    setNeedsAgreement(true);
+  }, [user]);
+
+  const agreeToTerms = useCallback(async () => {
+    if (!user?.id) return;
+
+    try {
+      // Получаем список документов
+      const documents: Document[] = await AuthenticatedApiService.getDocuments();
+      
+      // Находим публичную оферту (тип 1) и политику конфиденциальности (тип 2)
+      const publicOfferDoc = documents.find(doc => doc.type === 1);
+      const privacyPolicyDoc = documents.find(doc => doc.type === 2);
+
+      console.log('Found documents:', { publicOfferDoc, privacyPolicyDoc, allDocs: documents });
+
+      if (!publicOfferDoc || !privacyPolicyDoc) {
+        console.warn('Required documents not found:', { 
+          hasPublicOffer: !!publicOfferDoc, 
+          hasPrivacyPolicy: !!privacyPolicyDoc 
+        });
+      }
+
+      // Получаем информацию о браузере
+      const userAgent = navigator.userAgent;
+      
+      // Записываем согласие для публичной оферты (если найден)
+      if (publicOfferDoc) {
+        const publicOfferConsent = {
+          userId: user.id,
+          consentType: 1, // Публичная оферта
+          documentId: publicOfferDoc.id,
+          ipAddress: "unknown", // IP будет получен на сервере
+          userAgent: userAgent,
+          documentVersion: "1.0"
+        };
+
+        const response1 = await fetch('https://trackademy.kz/api/Consent/record', {
+          method: 'POST',
+          headers: {
+            'Authorization': `Bearer ${getAuthToken()}`,
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify(publicOfferConsent),
+        });
+
+        if (!response1.ok) {
+          console.error('Failed to record public offer consent');
+        }
+      }
+
+      // Записываем согласие для политики конфиденциальности (если найден)
+      if (privacyPolicyDoc) {
+        const privacyPolicyConsent = {
+          userId: user.id,
+          consentType: 2, // Политика конфиденциальности
+          documentId: privacyPolicyDoc.id,
+          ipAddress: "unknown", // IP будет получен на сервере
+          userAgent: userAgent,
+          documentVersion: "1.0"
+        };
+
+        const response2 = await fetch('https://trackademy.kz/api/Consent/record', {
+          method: 'POST',
+          headers: {
+            'Authorization': `Bearer ${getAuthToken()}`,
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify(privacyPolicyConsent),
+        });
+
+        if (!response2.ok) {
+          console.error('Failed to record privacy policy consent');
+        }
+      }
+
+      // После успешной записи согласий обновляем статус пользователя
+      await checkAgreementStatus();
+
+    } catch (error) {
+      console.error('Error recording consent:', error);
+      // В случае ошибки все равно обновляем статус
+      await checkAgreementStatus();
+    }
+  }, [user?.id, getAuthToken, checkAgreementStatus]);
+
+  // Check agreement status when user changes
+  useEffect(() => {
+    if (user) {
+      // Сначала быстро проверяем localStorage для мгновенной инициализации
+      checkLocalAgreementStatus();
+      // Затем обновляем из API
+      checkAgreementStatus();
+    } else {
+      setHasAgreedToTerms(false);
+      setNeedsAgreement(false);
+    }
+  }, [user, checkLocalAgreementStatus, checkAgreementStatus]);
+
   const refreshUser = useCallback(async () => {
     if (!user?.id) return;
     
@@ -219,13 +425,17 @@ export function AuthProvider({ children }: Readonly<{ children: ReactNode }>) {
     user,
     token,
     isAuthenticated: !!user,
+    hasAgreedToTerms,
+    needsAgreement,
     login,
     logout,
     register,
     loginWithCredentials,
     getAuthToken,
-    refreshUser
-  }), [user, token, login, logout, register, loginWithCredentials, getAuthToken, refreshUser]);
+    refreshUser,
+    agreeToTerms,
+    checkAgreementStatus
+  }), [user, token, hasAgreedToTerms, needsAgreement, login, logout, register, loginWithCredentials, getAuthToken, refreshUser, agreeToTerms, checkAgreementStatus]);
 
   return (
     <AuthContext.Provider value={contextValue}>

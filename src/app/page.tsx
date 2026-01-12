@@ -295,11 +295,32 @@ function LandingPage() {
               <AcademicCapIcon className="h-8 w-8 text-indigo-400 mr-2" />
               <span className="text-xl font-bold">Trackademy</span>
             </div>
-            <p className="text-gray-400 mb-4">
+            <p className="text-gray-400 mb-6">
               Система управления учебными центрами
             </p>
+            
+            {/* Document Links */}
+            <div className="flex justify-center space-x-8 mb-6">
+              <Link 
+                href="/documents/public-offer"
+                className="text-gray-300 hover:text-white transition-colors text-sm underline"
+                target="_blank"
+                rel="noopener noreferrer"
+              >
+                Публичная оферта
+              </Link>
+              <Link 
+                href="/documents/privacy-policy"
+                className="text-gray-300 hover:text-white transition-colors text-sm underline"
+                target="_blank"
+                rel="noopener noreferrer"
+              >
+                Политика конфиденциальности
+              </Link>
+            </div>
+            
             <p className="text-gray-500 text-sm">
-              © 2025 Trackademy. Все права защищены.
+              © 2026 Trackademy. Все права защищены.
             </p>
           </div>
         </div>

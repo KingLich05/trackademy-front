@@ -26,17 +26,22 @@ export const MultiSelect: React.FC<MultiSelectProps> = ({
   disabled = false,
   maxHeight = "200px"
 }) => {
+export const MultiSelect: React.FC<MultiSelectProps> = ({
+  options,
+  selectedValues,
+  onChange,
+  placeholder = "Выберите опции...",
+  disabled = false,
+  maxHeight = "200px"
+}) => {
   const [isOpen, setIsOpen] = useState(false);
-  const [searchTerm, setSearchTerm] = useState('');
   const dropdownRef = useRef<HTMLDivElement>(null);
-  const inputRef = useRef<HTMLInputElement>(null);
 
   // Close dropdown when clicking outside
   useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {
       if (dropdownRef.current && !dropdownRef.current.contains(event.target as Node)) {
         setIsOpen(false);
-        setSearchTerm('');
       }
     };
 
@@ -44,13 +49,14 @@ export const MultiSelect: React.FC<MultiSelectProps> = ({
     return () => document.removeEventListener('mousedown', handleClickOutside);
   }, []);
 
-  // Filter options based on search term (по имени и secondaryText)
-  const filteredOptions = options.filter(option => {
-    const searchLower = searchTerm.toLowerCase();
-    const nameMatch = option.name.toLowerCase().includes(searchLower);
-    const secondaryMatch = option.secondaryText?.toLowerCase().includes(searchLower);
-    return nameMatch || secondaryMatch;
-  });
+  const handleToggleOption = (optionId: string) => {
+    const isSelected = selectedValues.includes(optionId);
+    if (isSelected) {
+      onChange(selectedValues.filter(id => id !== optionId));
+    } else {
+      onChange([...selectedValues, optionId]);
+    }
+  };
 
   const handleToggleOption = (optionId: string) => {
     const isSelected = selectedValues.includes(optionId);
@@ -156,32 +162,15 @@ export const MultiSelect: React.FC<MultiSelectProps> = ({
         <div className="absolute z-50 w-full mt-1 bg-white dark:bg-gray-800 
                        border border-gray-200 dark:border-gray-600 
                        rounded-lg shadow-lg ring-1 ring-black dark:ring-gray-700 ring-opacity-5">
-          
-          {/* Search Input */}
-          <div className="p-2 border-b border-gray-100 dark:border-gray-700">
-            <input
-              ref={inputRef}
-              type="text"
-              placeholder="Поиск по имени или логину..."
-              value={searchTerm}
-              onChange={(e) => setSearchTerm(e.target.value)}
-              className="w-full px-3 py-2 text-sm border border-gray-300 dark:border-gray-600
-                       rounded-md bg-white dark:bg-gray-700
-                       text-gray-900 dark:text-white
-                       placeholder-gray-500 dark:placeholder-gray-400
-                       focus:outline-none focus:ring-2 focus:ring-blue-500 dark:focus:ring-blue-400 focus:border-transparent"
-              autoFocus
-            />
-          </div>
 
           {/* Options List */}
           <div className="max-h-60 overflow-auto py-1" style={{ maxHeight }}>
-            {filteredOptions.length === 0 ? (
+            {options.length === 0 ? (
               <div className="px-3 py-2 text-sm text-gray-500 dark:text-gray-400">
-                {searchTerm ? 'Ничего не найдено' : 'Нет доступных опций'}
+                Нет доступных опций
               </div>
             ) : (
-              filteredOptions.map((option) => {
+              options.map((option) => {
                 const isSelected = selectedValues.includes(option.id);
                 return (
                   <div

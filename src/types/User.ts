@@ -28,6 +28,7 @@ export interface UserFormData {
   role: number;
   organizationId?: string;
   isTrial: boolean;
+  groupIds?: string[];
 }
 
 // Типы для импорта пользователей

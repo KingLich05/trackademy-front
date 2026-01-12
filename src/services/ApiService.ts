@@ -1,6 +1,7 @@
 import { User, UserFormData } from '../types/User';
 import { Organization, OrganizationFormData } from '../types/Organization';
 import { Subject, SubjectFormData } from '../types/Subject';
+import { Document } from '../types/Document';
 
 const API_BASE_URL = process.env.NEXT_PUBLIC_API_BASE_URL || 'https://trackademy.kz/api';
 
@@ -183,5 +184,21 @@ export class ApiService {
     return this.request<void>(`/Subject/${id}`, {
       method: 'DELETE',
     });
+  }
+
+  // Public Document API methods (no auth required)
+  static async getPublicDocuments(): Promise<Document[]> {
+    return this.request<Document[]>('/Document/public');
+  }
+
+  static async getPublicDocumentById(id: string): Promise<Blob> {
+    const url = `${API_BASE_URL}/Document/public/${id}`;
+    const response = await fetch(url);
+    
+    if (!response.ok) {
+      throw new Error(`HTTP error! status: ${response.status}`);
+    }
+    
+    return response.blob();
   }
 }
