@@ -1122,36 +1122,47 @@ export default function PaymentsPage() {
                       {selectedStudent.map((item) => (
                         <div
                           key={item.id}
-                          className={`p-4 rounded-lg border ${getBalanceBg(item.balance)} border-gray-200 dark:border-gray-600`}
+                          className={`p-4 rounded-lg border-2 ${getBalanceBg(item.balance)} border-gray-200 dark:border-gray-600 shadow-sm hover:shadow-md transition-shadow duration-200`}
                         >
-                          <div className="flex items-center justify-between mb-3">
-                            <div>
-                              <div className="font-semibold text-gray-900 dark:text-white">
+                          {/* Header with Name and Balance */}
+                          <div className="flex items-start justify-between mb-4">
+                            <div className="flex-1">
+                              <div className="font-bold text-lg text-gray-900 dark:text-white mb-1">
                                 {item.group.name}
                               </div>
-                              <div className="text-xs text-gray-500 dark:text-gray-400">
-                                Код: {item.group.code}
+                              <div className="space-y-0.5">
+                                <div className="text-sm text-gray-600 dark:text-gray-400">
+                                  Код: {item.group.code}
+                                </div>
                               </div>
                             </div>
-                            <div className={`font-bold text-lg ${getBalanceColor(item.balance)}`}>
-                              {formatBalance(item.balance)}
+                            <div className="ml-4">
+                              <div className="text-xs text-gray-500 dark:text-gray-400 mb-1 text-right">
+                                Баланс
+                              </div>
+                              <div className={`font-bold text-xl ${getBalanceColor(item.balance)}`}>
+                                {formatBalance(item.balance)}
+                              </div>
                             </div>
                           </div>
                           
-                          {/* Discount Info for this group */}
-                          {item.discountValue && item.discountValue > 0 && (
-                            <div className="bg-yellow-50 dark:bg-yellow-900/20 rounded p-3 mb-3">
-                              <div className="text-xs text-yellow-600 dark:text-yellow-400 mb-1">
-                                Скидка: {item.discountTypeName}
-                              </div>
-                              <div className="font-medium text-yellow-800 dark:text-yellow-200">
-                                {item.discountType === 1 ? `${item.discountValue}%` : `${item.discountValue} ₸`}
-                              </div>
-                              {item.discountReason && (
-                                <div className="text-xs text-yellow-600 dark:text-yellow-400 mt-1">
-                                  Причина: {item.discountReason}
+                          {/* Discount Info - only if exists */}
+                          {item.discountValue > 0 && (
+                            <div className="bg-gradient-to-r from-amber-50 to-yellow-50 dark:from-amber-900/20 dark:to-yellow-900/20 border border-amber-200 dark:border-amber-700 rounded-lg p-3 mb-3">
+                              <div className="flex items-center justify-between mb-2">
+                                <div className="text-xs font-semibold text-amber-600 dark:text-amber-400 uppercase tracking-wider">
+                                  Скидка
                                 </div>
-                              )}
+                                <div className="text-lg font-bold text-amber-800 dark:text-amber-200">
+                                  {item.discountType === 1 ? `${item.discountValue}%` : `${item.discountValue} ₸`}
+                                </div>
+                              </div>
+                              <div className="text-xs text-amber-700 dark:text-amber-300 space-y-1">
+                                <div>Тип: {item.discountTypeName}</div>
+                                {item.discountReason && (
+                                  <div>Причина: {item.discountReason}</div>
+                                )}
+                              </div>
                             </div>
                           )}
                           
