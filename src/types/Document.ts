@@ -9,18 +9,18 @@ export interface Document {
 
 export interface DocumentUploadData {
   name: string;
-  type: 'PublicOffer' | 'PrivacyPolicy' | 'Other';
+  type: 'PrivacyPolicy' | 'TermsOfService' | 'PublicOffer';
   file: File;
 }
 
 export const DOCUMENT_TYPES: Record<number, string> = {
-  1: 'Публичная оферта',
-  2: 'Политика конфиденциальности',
-  3: 'Другое'
+  1: 'Политика конфиденциальности',
+  2: 'Условия использования',
+  3: 'Публичная оферта'
 };
 
 export const DOCUMENT_TYPE_LABELS = {
-  PublicOffer: 'Публичная оферта',
   PrivacyPolicy: 'Политика конфиденциальности',
-  Other: 'Другое'
+  TermsOfService: 'Условия использования',
+  PublicOffer: 'Публичная оферта'
 } as const;

@@ -25,8 +25,8 @@ export default function PublicOfferPage() {
       // Получаем список документов
       const documents = await AuthenticatedApiService.getDocuments();
       
-      // Находим публичную оферту (тип 1)
-      const publicOfferDoc = documents.find(doc => doc.type === 1);
+      // Находим публичную оферту (тип 3)
+      const publicOfferDoc = documents.find(doc => doc.type === 3);
       
       if (!publicOfferDoc) {
         setError('Документ публичной оферты не найден');
@@ -85,21 +85,12 @@ export default function PublicOfferPage() {
             Ошибка загрузки документа
           </h2>
           <p className="text-gray-600 dark:text-gray-400 mb-6">{error}</p>
-          <div className="space-x-4">
-            <button
-              onClick={() => router.back()}
-              className="inline-flex items-center px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-md shadow-sm text-sm font-medium text-gray-700 dark:text-gray-300 bg-white dark:bg-gray-800 hover:bg-gray-50 dark:hover:bg-gray-700"
-            >
-              <ArrowLeftIcon className="h-4 w-4 mr-2" />
-              Назад
-            </button>
-            <button
-              onClick={loadPublicOfferDocument}
-              className="inline-flex items-center px-4 py-2 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-blue-600 hover:bg-blue-700"
-            >
-              Повторить
-            </button>
-          </div>
+          <button
+            onClick={loadPublicOfferDocument}
+            className="inline-flex items-center px-4 py-2 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-blue-600 hover:bg-blue-700"
+          >
+            Повторить
+          </button>
         </div>
       </div>
     );
@@ -112,13 +103,6 @@ export default function PublicOfferPage() {
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="flex items-center justify-between h-20">
             <div className="flex items-center space-x-6">
-              <button
-                onClick={() => router.back()}
-                className="group inline-flex items-center px-4 py-2.5 border border-gray-300/60 dark:border-gray-600/60 rounded-xl shadow-sm text-sm font-medium text-gray-700 dark:text-gray-300 bg-white/70 dark:bg-gray-800/70 hover:bg-white dark:hover:bg-gray-700 hover:shadow-md transition-all duration-200 hover:scale-105"
-              >
-                <ArrowLeftIcon className="h-4 w-4 mr-2 transition-transform group-hover:-translate-x-0.5" />
-                Назад
-              </button>
               <div className="flex items-center space-x-4">
                 <div className="p-3 bg-gradient-to-r from-blue-500 to-indigo-600 rounded-2xl shadow-lg">
                   <DocumentTextIcon className="h-8 w-8 text-white" />

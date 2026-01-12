@@ -1243,11 +1243,14 @@ export default function PaymentsPage() {
                                     {transaction.typeDisplayName}
                                   </div>
                                   <div className={`font-semibold ${
-                                    transaction.amount > 0 
-                                      ? 'text-green-600 dark:text-green-400' 
-                                      : 'text-red-600 dark:text-red-400'
+                                    transaction.typeDisplayName.toLowerCase().includes('возврат') || transaction.amount < 0
+                                      ? 'text-red-600 dark:text-red-400' 
+                                      : 'text-green-600 dark:text-green-400'
                                   }`}>
-                                    {transaction.amount > 0 ? '+' : ''}{formatBalance(transaction.amount)}
+                                    {transaction.typeDisplayName.toLowerCase().includes('возврат') 
+                                      ? '-' + formatBalance(Math.abs(transaction.amount))
+                                      : (transaction.amount > 0 ? '+' : '') + formatBalance(transaction.amount)
+                                    }
                                   </div>
                                 </div>
                                 <div className="text-sm text-gray-600 dark:text-gray-300 mb-1">

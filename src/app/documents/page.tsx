@@ -27,7 +27,7 @@ function DocumentsPage() {
   const [isUploadModalOpen, setIsUploadModalOpen] = useState(false);
   const [uploadData, setUploadData] = useState<Partial<DocumentUploadData>>({
     name: '',
-    type: 'Other'
+    type: 'PrivacyPolicy'
   });
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
   const [isUploading, setIsUploading] = useState(false);
@@ -137,7 +137,7 @@ function DocumentsPage() {
 
   const handleCloseUploadModal = () => {
     setIsUploadModalOpen(false);
-    setUploadData({ name: '', type: 'Other' });
+    setUploadData({ name: '', type: 'PrivacyPolicy' });
     setSelectedFile(null);
   };
 
@@ -244,12 +244,12 @@ function DocumentsPage() {
           { label: "Всего документов", value: documents.length, color: "blue" },
           { 
             label: "Публичные оферты", 
-            value: documents.filter(d => d.type === 1).length, 
+            value: documents.filter(d => d.type === 3).length, 
             color: "green" 
           },
           { 
             label: "Политики конфиденциальности", 
-            value: documents.filter(d => d.type === 2).length, 
+            value: documents.filter(d => d.type === 1).length, 
             color: "purple" 
           }
         ]}
@@ -280,11 +280,11 @@ function DocumentsPage() {
           </div>
           <div className="flex items-center space-x-2">
             <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${
-              documents.filter(d => d.type === 1).length > 0 
+              documents.filter(d => d.type === 3).length > 0 
                 ? 'bg-green-100 dark:bg-green-900/30 text-green-800 dark:text-green-200' 
                 : 'bg-gray-100 dark:bg-gray-700 text-gray-800 dark:text-gray-200'
             }`}>
-              {documents.filter(d => d.type === 1).length > 0 ? 'Доступно' : 'Не загружено'}
+              {documents.filter(d => d.type === 3).length > 0 ? 'Доступно' : 'Не загружено'}
             </span>
           </div>
         </div>
@@ -312,11 +312,11 @@ function DocumentsPage() {
           </div>
           <div className="flex items-center space-x-2">
             <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${
-              documents.filter(d => d.type === 2).length > 0 
+              documents.filter(d => d.type === 1).length > 0 
                 ? 'bg-green-100 dark:bg-green-900/30 text-green-800 dark:text-green-200' 
                 : 'bg-gray-100 dark:bg-gray-700 text-gray-800 dark:text-gray-200'
             }`}>
-              {documents.filter(d => d.type === 2).length > 0 ? 'Доступно' : 'Не загружено'}
+              {documents.filter(d => d.type === 1).length > 0 ? 'Доступно' : 'Не загружено'}
             </span>
           </div>
         </div>

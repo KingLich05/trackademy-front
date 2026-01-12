@@ -111,7 +111,7 @@ export const SubmissionDetailModal: React.FC<SubmissionDetailModalProps> = ({
   // Автоматически переключаемся на вкладку "info", если вкладка "оценить" недоступна
   useEffect(() => {
     if (submission && activeTab === 'grade') {
-      const canGrade = submission.status !== 2 && submission.score === null && !(userRole === 'Teacher' && submission.status === 3);
+      const canGrade = submission.status !== 2 && submission.score === null && !(userRole === 'Teacher' && submission.status === 3) && userRole !== 'Administrator';
       if (!canGrade) {
         setActiveTab('info');
       }
@@ -342,8 +342,8 @@ export const SubmissionDetailModal: React.FC<SubmissionDetailModalProps> = ({
                 <DocumentTextIcon className="h-5 w-5 inline-block mr-2" />
                 Информация
               </button>
-              {/* Show grading tab only if not yet graded (status not 2 and no score) and not returned for teachers */}
-              {submission.status !== 2 && submission.score === null && !(userRole === 'Teacher' && submission.status === 3) && (
+              {/* Show grading tab only if not yet graded (status not 2 and no score) and not returned for teachers, and not for administrators */}
+              {submission.status !== 2 && submission.score === null && !(userRole === 'Teacher' && submission.status === 3) && userRole !== 'Administrator' && (
                 <button
                   onClick={() => setActiveTab('grade')}
                   className={`py-2 px-1 border-b-2 font-medium text-sm transition-colors ${
