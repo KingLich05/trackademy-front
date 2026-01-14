@@ -103,6 +103,13 @@ export default function PrivacyPolicyPage() {
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="flex items-center justify-between h-20">
             <div className="flex items-center space-x-6">
+              <button
+                onClick={() => router.push('/')}
+                className="group flex items-center justify-center w-10 h-10 bg-white/70 dark:bg-gray-800/70 hover:bg-white dark:hover:bg-gray-700 border border-gray-200/50 dark:border-gray-600/50 rounded-xl shadow-sm hover:shadow-md transition-all duration-200 hover:scale-105"
+                title="Назад на главную"
+              >
+                <ArrowLeftIcon className="h-5 w-5 text-gray-600 dark:text-gray-300 group-hover:text-purple-600 dark:group-hover:text-purple-400 transition-colors" />
+              </button>
               <div className="flex items-center space-x-4">
                 <div className="p-3 bg-gradient-to-r from-purple-500 to-pink-600 rounded-2xl shadow-lg">
                   <DocumentTextIcon className="h-8 w-8 text-white" />
