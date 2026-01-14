@@ -290,9 +290,9 @@ export function AuthProvider({ children }: Readonly<{ children: ReactNode }>) {
       // Получаем список документов
       const documents: Document[] = await AuthenticatedApiService.getDocuments();
       
-      // Находим публичную оферту (тип 1) и политику конфиденциальности (тип 2)
-      const publicOfferDoc = documents.find(doc => doc.type === 1);
-      const privacyPolicyDoc = documents.find(doc => doc.type === 2);
+      // Находим публичную оферту (тип 3) и политику конфиденциальности (тип 1)
+      const publicOfferDoc = documents.find(doc => doc.type === 3);
+      const privacyPolicyDoc = documents.find(doc => doc.type === 1);
 
       console.log('Found documents:', { publicOfferDoc, privacyPolicyDoc, allDocs: documents });
 
