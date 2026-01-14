@@ -104,16 +104,23 @@ const UniversalModal = <T extends Record<string, unknown>>({
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     
+    console.log('UniversalModal handleSubmit called:', { mode, formData, onSave });
+    
     // В режиме view просто закрываем модал
     if (mode === 'view') {
       handleClose();
       return;
     }
     
-    if (!onSave || !validateForm() || isSubmitting) return;
+    if (!onSave || !validateForm() || isSubmitting) {
+      console.log('Submit blocked:', { onSave: !!onSave, validForm: validateForm(), isSubmitting });
+      return;
+    }
 
     setIsSubmitting(true);
     try {
+      console.log('Calling onSave with:', { formData, id: data && 'id' in data ? data.id : undefined });
+      
       if (mode === 'edit' && data && 'id' in data) {
         await onSave(formData, data.id as string);
       } else {
@@ -121,6 +128,7 @@ const UniversalModal = <T extends Record<string, unknown>>({
       }
       handleClose();
     } catch (error) {
+      console.log('Error in handleSubmit:', error);
       // Ошибка уже обработана toast системой, не выводим в консоль
       // console.error(`Error ${mode === 'create' ? 'creating' : 'updating'}:`, error);
     } finally {

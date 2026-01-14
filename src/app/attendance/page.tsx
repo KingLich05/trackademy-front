@@ -371,6 +371,12 @@ export default function AttendancePage() {
                     <th className="px-2 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider w-24">
                       Статус
                     </th>
+                    <th className="px-2 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider w-20">
+                      Оценка
+                    </th>
+                    <th className="px-3 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider w-32">
+                      Комментарий
+                    </th>
                     <th className="px-3 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
                       Преподаватель
                     </th>
@@ -419,6 +425,27 @@ export default function AttendancePage() {
                           <span>{getAttendanceStatusIcon(record.status)}</span>
                           <span className="hidden sm:inline">{getAttendanceStatusText(record.status)}</span>
                         </span>
+                      </td>
+                      <td className="px-2 py-4 whitespace-nowrap text-center">
+                        {record.grade ? (
+                          <span className="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-blue-100 dark:bg-blue-900/30 text-blue-800 dark:text-blue-200">
+                            {record.grade}
+                          </span>
+                        ) : (
+                          <span className="text-gray-400 dark:text-gray-500 text-xs">—</span>
+                        )}
+                      </td>
+                      <td className="px-3 py-4">
+                        {record.comment ? (
+                          <div 
+                            className="text-xs text-gray-600 dark:text-gray-400 max-w-32 truncate cursor-help" 
+                            title={record.comment}
+                          >
+                            💬 {record.comment}
+                          </div>
+                        ) : (
+                          <span className="text-gray-400 dark:text-gray-500 text-xs">—</span>
+                        )}
                       </td>
                       <td className="px-3 py-4 text-sm text-gray-900 dark:text-white">
                         <div className="truncate max-w-32" title={record.teacherName}>

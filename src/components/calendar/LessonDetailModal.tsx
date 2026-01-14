@@ -5,6 +5,7 @@ import { getAttendanceStatusText, getAttendanceStatusColor } from '@/types/Atten
 import { useState, useEffect } from 'react';
 import QuickAttendance from '@/components/attendance/QuickAttendance';
 import ImprovedAttendance from '@/components/attendance/ImprovedAttendance';
+import StudentGradeModal from '@/components/attendance/StudentGradeModal';
 import { useAuth } from '@/contexts/AuthContext';
 import { AuthenticatedApiService } from '@/services/AuthenticatedApiService';
 import { ChatBubbleLeftIcon } from '@heroicons/react/24/outline';
@@ -309,6 +310,8 @@ export default function LessonDetailModal({ lesson, isOpen, onClose, onUpdate }:
               absentStudents={absentStudents}
               unmarkedStudents={unmarkedStudents}
               lessonStatus={lesson.lessonStatus}
+              lessonId={lesson.id}
+              onUpdate={onUpdate || (() => {})}
             />
           )}
           
@@ -757,9 +760,14 @@ interface AttendanceTabProps {
   absentStudents: Lesson['students'];
   unmarkedStudents: Lesson['students'];
   lessonStatus: Lesson['lessonStatus'];
+  lessonId: string;
+  onUpdate: () => void;
 }
 
-function AttendanceTab({ students, attendedStudents, absentStudents, unmarkedStudents, lessonStatus }: AttendanceTabProps) {
+function AttendanceTab({ students, attendedStudents, absentStudents, unmarkedStudents, lessonStatus, lessonId, onUpdate }: AttendanceTabProps) {
+  const [selectedStudent, setSelectedStudent] = useState<typeof students[0] | null>(null);
+  const [isGradeModalOpen, setIsGradeModalOpen] = useState(false);
+
   if (lessonStatus === 'Planned') {
     return (
       <div className="text-center py-12">
@@ -775,6 +783,16 @@ function AttendanceTab({ students, attendedStudents, absentStudents, unmarkedStu
       </div>
     );
   }
+
+  const handleStudentClick = (student: typeof students[0]) => {
+    setSelectedStudent(student);
+    setIsGradeModalOpen(true);
+  };
+
+  const handleModalClose = () => {
+    setIsGradeModalOpen(false);
+    setSelectedStudent(null);
+  };
 
   return (
     <div className="space-y-6">
@@ -817,6 +835,25 @@ function AttendanceTab({ students, attendedStudents, absentStudents, unmarkedStu
         </div>
       </div>
 
+      {/* Instructions */}
+      <div className="bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-700 rounded-lg p-4">
+        <div className="flex items-start space-x-3">
+          <div className="text-blue-600 dark:text-blue-400 mt-0.5">
+            <svg className="w-5 h-5" fill="currentColor" viewBox="0 0 20 20">
+              <path fillRule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7-4a1 1 0 11-2 0 1 1 0 012 0zM9 9a1 1 0 000 2v3a1 1 0 001 1h1a1 1 0 100-2v-3a1 1 0 00-1-1H9z" clipRule="evenodd" />
+            </svg>
+          </div>
+          <div>
+            <h4 className="text-sm font-medium text-blue-900 dark:text-blue-100">
+              Индивидуальное редактирование
+            </h4>
+            <p className="text-sm text-blue-700 dark:text-blue-200 mt-1">
+              Нажмите на студента для редактирования статуса, добавления оценки и комментария
+            </p>
+          </div>
+        </div>
+      </div>
+
       {/* Student List */}
       <div>
         <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-4">
@@ -827,48 +864,82 @@ function AttendanceTab({ students, attendedStudents, absentStudents, unmarkedStu
           {students.map((student) => (
             <div
               key={student.id}
-              className="flex items-center justify-between p-3 bg-gray-50 dark:bg-gray-700 rounded-lg"
+              onClick={() => handleStudentClick(student)}
+              className="flex items-center justify-between p-4 bg-gray-50 dark:bg-gray-700 rounded-lg 
+                       hover:bg-gray-100 dark:hover:bg-gray-600 cursor-pointer transition-colors
+                       border border-transparent hover:border-blue-200 dark:hover:border-blue-600"
             >
               <div className="flex items-center gap-3">
                 {student.photoPath ? (
                   <img
                     src={student.photoPath}
                     alt={student.fullName}
-                    className="w-10 h-10 rounded-full object-cover"
+                    className="w-12 h-12 rounded-full object-cover"
                   />
                 ) : (
-                  <div className="w-10 h-10 rounded-full bg-gray-300 dark:bg-gray-600 flex items-center justify-center">
-                    <span className="text-gray-600 dark:text-gray-300 font-medium">
+                  <div className="w-12 h-12 rounded-full bg-gray-300 dark:bg-gray-600 flex items-center justify-center">
+                    <span className="text-gray-600 dark:text-gray-300 font-medium text-lg">
                       {student.fullName.charAt(0)}
                     </span>
                   </div>
                 )}
                 
-                <span className="font-medium text-gray-900 dark:text-white">
-                  {student.fullName}
-                </span>
+                <div>
+                  <span className="font-medium text-gray-900 dark:text-white block">
+                    {student.fullName}
+                  </span>
+                  {student.grade && (
+                    <span className="text-sm text-gray-500 dark:text-gray-400">
+                      Оценка: {student.grade}
+                    </span>
+                  )}
+                  {student.comment && (
+                    <div className="text-xs text-gray-500 dark:text-gray-400 mt-1 max-w-sm truncate">
+                      💬 {student.comment}
+                    </div>
+                  )}
+                </div>
               </div>
               
-              <div className="flex items-center gap-2">
-                <span
-                  className="px-3 py-1 rounded-full text-sm font-medium"
-                  style={{
-                    backgroundColor: getAttendanceStatusColor(student.attendanceStatus) + '20',
-                    color: getAttendanceStatusColor(student.attendanceStatus),
-                  }}
-                >
-                  {getAttendanceStatusText(student.attendanceStatus)}
-                </span>
+              <div className="flex items-center gap-3">
+                <div className="text-right">
+                  <span
+                    className="px-3 py-1 rounded-full text-sm font-medium"
+                    style={{
+                      backgroundColor: getAttendanceStatusColor(student.attendanceStatus) + '20',
+                      color: getAttendanceStatusColor(student.attendanceStatus),
+                    }}
+                  >
+                    {getAttendanceStatusText(student.attendanceStatus)}
+                  </span>
+                  {(student.grade || student.comment) && (
+                    <div className="text-xs text-gray-500 dark:text-gray-400 mt-1">
+                      {student.grade && `Оценка: ${student.grade}`}
+                      {student.grade && student.comment && ' • '}
+                      {student.comment && 'Есть комментарий'}
+                    </div>
+                  )}
+                </div>
                 
-                <div
-                  className="w-3 h-3 rounded-full"
-                  style={{ backgroundColor: getAttendanceStatusColor(student.attendanceStatus) }}
-                />
+                <svg className="w-5 h-5 text-gray-400 dark:text-gray-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
+                </svg>
               </div>
             </div>
           ))}
         </div>
       </div>
+
+      {/* Student Grade Modal */}
+      {selectedStudent && (
+        <StudentGradeModal
+          student={selectedStudent}
+          lessonId={lessonId}
+          isOpen={isGradeModalOpen}
+          onClose={handleModalClose}
+          onUpdate={onUpdate}
+        />
+      )}
     </div>
   );
 }

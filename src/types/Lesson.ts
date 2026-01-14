@@ -30,6 +30,8 @@ export interface LessonStudent {
   fullName: string;
   photoPath: string | null;
   attendanceStatus: AttendanceStatus | null;
+  grade: number | null; // 1-100, nullable
+  comment: string | null; // макс 500 символов, nullable
 }
 
 export type AttendanceStatus = 1 | 2 | 3 | 4; // 1 = присутствовал, 2 = отсутствовал, 3 = опоздал, 4 = отсутствовал по уважительной причине

@@ -174,8 +174,10 @@ export default function SubjectsPage() {
 
   const handleEdit = (id: string) => {
     const subject = subjects.find(s => s.id === id);
+    console.log('handleEdit called with id:', id, 'found subject:', subject);
+    
     if (subject) {
-      subjectModal.openEditModal({
+      const editData = {
         id: subject.id,
         name: subject.name,
         description: subject.description || '',
@@ -184,18 +186,31 @@ export default function SubjectsPage() {
         lessonsPerMonth: subject.lessonsPerMonth,
         totalLessons: subject.totalLessons,
         organizationId: subject.organizationId
-      } as SubjectFormData & { id: string });
+      } as SubjectFormData & { id: string };
+      
+      console.log('Edit data prepared:', editData);
+      subjectModal.openEditModal(editData);
+      console.log('Modal opened');
     }
   };
 
   const handleSaveEdit = async (formData: Record<string, unknown>, subjectId?: string) => {
-    if (!subjectId) return;
+    console.log('handleSaveEdit called with:', { formData, subjectId });
+    
+    if (!subjectId) {
+      console.log('No subjectId provided');
+      return;
+    }
     
     const subjectData = formData as SubjectFormData;
+    console.log('Subject data to send:', subjectData);
+    
     const result = await updateOperation(
       () => AuthenticatedApiService.put(`/Subject/${subjectId}`, subjectData),
       'Предмет'
     );
+    
+    console.log('Update result:', result);
     
     // Только если операция успешна - перезагружаем и закрываем модал
     if (result.success) {
@@ -654,7 +669,11 @@ export default function SubjectsPage() {
         initialData={subjectModal.initialData}
         data={subjectModal.editData || undefined}
         onSave={subjectModal.mode === 'create' ? handleSaveCreate : handleSaveEdit}
-        validate={(data) => createSubjectValidator(data as SubjectFormData)}
+        validate={(data) => {
+          const validationResult = createSubjectValidator(data as SubjectFormData);
+          console.log('Validation result:', validationResult);
+          return validationResult;
+        }}
         submitText={subjectModal.getConfig().submitText}
         loadingText={subjectModal.getConfig().loadingText}
       >

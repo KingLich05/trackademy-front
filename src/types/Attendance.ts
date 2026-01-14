@@ -15,6 +15,8 @@ export interface AttendanceRecord {
   teacherName: string;
   startTime: string; // "09:00:00" format
   endTime: string; // "10:30:00" format
+  grade: number | null; // nullable, диапазон 1-100
+  comment: string | null; // nullable, макс 500 символов
 }
 
 export interface AttendanceResponse {
@@ -74,6 +76,7 @@ export interface BulkAttendanceRequest {
   attendances: {
     studentId: string;
     status: AttendanceStatus;
+    // БЕЗ полей grade и comment - только массовая отметка статусов
   }[];
 }
 
@@ -81,6 +84,15 @@ export interface UpdateAttendanceRequest {
   studentId: string;
   lessonId: string;
   status: AttendanceStatus;
+  grade?: number; // опционально, 1-100
+  comment?: string; // опционально, макс 500 символов
+}
+
+export interface UpdateGradeRequest {
+  studentId: string;
+  lessonId: string;
+  grade?: number; // опционально, 1-100  
+  comment?: string; // опционально, макс 500 символов
 }
 
 export interface ExportAttendanceRequest {

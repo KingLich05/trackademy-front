@@ -6,6 +6,7 @@ import {
   GroupReport, 
   BulkAttendanceRequest, 
   UpdateAttendanceRequest, 
+  UpdateGradeRequest,
   ExportAttendanceRequest 
 } from '@/types/Attendance';
 
@@ -59,6 +60,14 @@ class AttendanceApiService {
   // Обновление статуса одного студента
   async updateAttendance(data: UpdateAttendanceRequest): Promise<void> {
     await this.makeRequest('/api/Attendance/update', {
+      method: 'PUT',
+      body: JSON.stringify(data),
+    });
+  }
+
+  // Обновление только оценки и комментария
+  async updateGrade(data: UpdateGradeRequest): Promise<void> {
+    await this.makeRequest('/api/Attendance/update-grade', {
       method: 'PUT',
       body: JSON.stringify(data),
     });
