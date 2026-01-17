@@ -486,6 +486,38 @@ export class AuthenticatedApiService {
     });
   }
 
+  static async createCustomLesson(data: {
+    date: string;
+    startTime: string;
+    endTime: string;
+    groupId: string;
+    teacherId: string;
+    roomId: string;
+    scheduleId: string;
+    note?: string;
+  }): Promise<ApiResponse<boolean>> {
+    // Форматируем время в нужный формат HH:MM:SS
+    const formatTime = (time: string): string => {
+      if (time.includes(':') && time.split(':').length === 2) {
+        return `${time}:00`;
+      }
+      return time;
+    };
+
+    const requestBody = {
+      date: data.date,
+      startTime: formatTime(data.startTime),
+      endTime: formatTime(data.endTime),
+      groupId: data.groupId,
+      teacherId: data.teacherId,
+      roomId: data.roomId,
+      scheduleId: data.scheduleId,
+      note: data.note || ""
+    };
+
+    return this.post('/Lesson/custom', requestBody);
+  }
+
   // Assignment management
   static async getAssignmentById(id: string): Promise<Assignment> {
     return this.get(`/Assignment/${id}`);

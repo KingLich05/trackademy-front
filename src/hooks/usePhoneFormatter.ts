@@ -10,9 +10,13 @@ export const usePhoneFormatter = () => {
     // If empty, return empty
     if (!cleaned) return '';
     
+    // Защита от некорректного ввода: если строка не начинается с +, 8 или 7
+    // но содержит другие символы до цифр, очищаем их
+    const normalizedValue = cleaned.replace(/^[^+87\d]*/, '');
+    
     // If starts with +7, format as +7 (XXX) XXX-XX-XX
-    if (cleaned.startsWith('+7')) {
-      const digits = cleaned.slice(2); // Remove +7
+    if (normalizedValue.startsWith('+7')) {
+      const digits = normalizedValue.slice(2); // Remove +7
       if (digits.length === 0) {
         return '+7 (';
       } else if (digits.length <= 3) {
@@ -27,8 +31,8 @@ export const usePhoneFormatter = () => {
     }
     
     // If starts with 8, replace with +7 and format
-    if (cleaned.startsWith('8')) {
-      const digits = cleaned.slice(1);
+    if (normalizedValue.startsWith('8')) {
+      const digits = normalizedValue.slice(1);
       if (digits.length === 0) {
         return '+7 (';
       } else if (digits.length <= 3) {
@@ -43,8 +47,8 @@ export const usePhoneFormatter = () => {
     }
     
     // If starts with 7, add + and format
-    if (cleaned.startsWith('7')) {
-      const digits = cleaned.slice(1);
+    if (normalizedValue.startsWith('7')) {
+      const digits = normalizedValue.slice(1);
       if (digits.length === 0) {
         return '+7 (';
       } else if (digits.length <= 3) {

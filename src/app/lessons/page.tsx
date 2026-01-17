@@ -18,6 +18,8 @@ import ListView from '@/components/calendar/ListView';
 import RangeCalendarView from '@/components/calendar/RangeCalendarView';
 import LessonDetailModal from '@/components/calendar/LessonDetailModal';
 import TeacherWorkHoursModal from '@/components/TeacherWorkHoursModal';
+import { BaseModal } from '@/components/ui/BaseModal';
+import { TimeInput } from '@/components/ui/TimeInput';
 import { PageHeaderWithStats } from '@/components/ui/PageHeaderWithStats';
 import { DateRangePicker } from '@/components/ui/DateRangePicker';
 import { useApiToast } from '@/hooks/useApiToast';
@@ -41,6 +43,7 @@ export default function LessonsPage() {
   const [view, setView] = useState<CalendarView>('week');
   const [selectedLesson, setSelectedLesson] = useState<Lesson | null>(null);
   const [showLessonModal, setShowLessonModal] = useState(false);
+  const [showCreateLessonModal, setShowCreateLessonModal] = useState(false);
   const [showTeacherWorkHoursModal, setShowTeacherWorkHoursModal] = useState(false);
   const [dateFrom, setDateFrom] = useState<string | undefined>(undefined);
   const [dateTo, setDateTo] = useState<string | undefined>(undefined);
@@ -57,6 +60,18 @@ export default function LessonsPage() {
   const [selectedTeacher, setSelectedTeacher] = useState<string>('');
   const [selectedRoom, setSelectedRoom] = useState<string>('');
   const [selectedSubject, setSelectedSubject] = useState<string>('');
+
+  // Create lesson form data
+  const [createLessonData, setCreateLessonData] = useState({
+    date: '',
+    startTime: '',
+    endTime: '',
+    groupId: '',
+    teacherId: '',
+    roomId: '',
+    scheduleId: '',
+    note: ''
+  });
 
   // Функция для получения названия текущего дня недели
   const getCurrentDayName = () => {
@@ -222,6 +237,33 @@ export default function LessonsPage() {
       setLoading(false);
     }
   }, [selectedGroup, selectedTeacher, selectedRoom, selectedSubject, currentDate, view, dateFrom, dateTo, user?.organizationId, loadOperation, selectedLesson, showLessonModal]);
+
+  const handleCreateLesson = async () => {
+    try {
+      await loadOperation(
+        () => AuthenticatedApiService.createCustomLesson(createLessonData),
+        'дополнительный урок'
+      );
+      
+      // Reset form and close modal
+      setCreateLessonData({
+        date: '',
+        startTime: '',
+        endTime: '',
+        groupId: '',
+        teacherId: '',
+        roomId: '',
+        scheduleId: '',
+        note: ''
+      });
+      setShowCreateLessonModal(false);
+      
+      // Reload lessons
+      await loadLessons();
+    } catch (error) {
+      console.error('Error creating custom lesson:', error);
+    }
+  };
 
   const getDateRangeForView = (date: Date, viewType: CalendarView): { fromDate: string; toDate: string } => {
     // Используем локальное форматирование даты для избежания UTC сдвигов
@@ -408,6 +450,8 @@ export default function LessonsPage() {
         icon={CalendarIcon}
         gradientFrom="violet-500"
         gradientTo="purple-600"
+        actionLabel={isAdminOrOwner ? "Добавить урок" : undefined}
+        onAction={isAdminOrOwner ? () => setShowCreateLessonModal(true) : undefined}
         stats={[
           { 
             label: "Всего занятий", 
@@ -745,6 +789,143 @@ export default function LessonsPage() {
           organizationId={user.organizationId}
         />
       )}
+
+      {/* Create Lesson Modal */}
+      <BaseModal
+        isOpen={showCreateLessonModal}
+        onClose={() => setShowCreateLessonModal(false)}
+        title="Создать дополнительный урок"
+        gradientFrom="from-violet-500"
+        gradientTo="to-purple-600"
+      >
+        <div className="space-y-4">
+          {/* Date */}
+          <div>
+            <label className="block text-sm font-medium text-gray-300 mb-2">Дата</label>
+            <input
+              type="date"
+              value={createLessonData.date}
+              onChange={(e) => setCreateLessonData(prev => ({ ...prev, date: e.target.value }))}
+              className="w-full px-4 py-3 border border-gray-600 rounded-xl bg-gray-700 text-white placeholder:text-gray-400 focus:outline-none focus:ring-2 focus:ring-violet-500"
+              required
+            />
+          </div>
+
+          {/* Time Range */}
+          <div className="grid grid-cols-2 gap-4">
+            <div>
+              <label className="block text-sm font-medium text-gray-300 mb-2">Время начала</label>
+              <TimeInput
+                value={createLessonData.startTime}
+                onChange={(value) => setCreateLessonData(prev => ({ ...prev, startTime: value || '' }))}
+                className="bg-gray-700 border-gray-600 text-white"
+              />
+            </div>
+            <div>
+              <label className="block text-sm font-medium text-gray-300 mb-2">Время окончания</label>
+              <TimeInput
+                value={createLessonData.endTime}
+                onChange={(value) => setCreateLessonData(prev => ({ ...prev, endTime: value || '' }))}
+                className="bg-gray-700 border-gray-600 text-white"
+              />
+            </div>
+          </div>
+
+          {/* Group */}
+          <div>
+            <label className="block text-sm font-medium text-gray-300 mb-2">Группа</label>
+            <select
+              value={createLessonData.groupId}
+              onChange={(e) => setCreateLessonData(prev => ({ ...prev, groupId: e.target.value }))}
+              className="w-full px-4 py-3 border border-gray-600 rounded-xl bg-gray-700 text-white focus:outline-none focus:ring-2 focus:ring-violet-500"
+              required
+            >
+              <option value="">Выберите группу</option>
+              {groups.map(group => (
+                <option key={group.id} value={group.id}>{group.name}</option>
+              ))}
+            </select>
+          </div>
+
+          {/* Teacher */}
+          <div>
+            <label className="block text-sm font-medium text-gray-300 mb-2">Преподаватель</label>
+            <select
+              value={createLessonData.teacherId}
+              onChange={(e) => setCreateLessonData(prev => ({ ...prev, teacherId: e.target.value }))}
+              className="w-full px-4 py-3 border border-gray-600 rounded-xl bg-gray-700 text-white focus:outline-none focus:ring-2 focus:ring-violet-500"
+              required
+            >
+              <option value="">Выберите преподавателя</option>
+              {teachers.map(teacher => (
+                <option key={teacher.id} value={teacher.id}>{teacher.name}</option>
+              ))}
+            </select>
+          </div>
+
+          {/* Room */}
+          <div>
+            <label className="block text-sm font-medium text-gray-300 mb-2">Кабинет</label>
+            <select
+              value={createLessonData.roomId}
+              onChange={(e) => setCreateLessonData(prev => ({ ...prev, roomId: e.target.value }))}
+              className="w-full px-4 py-3 border border-gray-600 rounded-xl bg-gray-700 text-white focus:outline-none focus:ring-2 focus:ring-violet-500"
+              required
+            >
+              <option value="">Выберите кабинет</option>
+              {rooms.map(room => (
+                <option key={room.id} value={room.id}>{room.name}</option>
+              ))}
+            </select>
+          </div>
+
+          {/* Schedule */}
+          <div>
+            <label className="block text-sm font-medium text-gray-300 mb-2">Расписание</label>
+            <select
+              value={createLessonData.scheduleId}
+              onChange={(e) => setCreateLessonData(prev => ({ ...prev, scheduleId: e.target.value }))}
+              className="w-full px-4 py-3 border border-gray-600 rounded-xl bg-gray-700 text-white focus:outline-none focus:ring-2 focus:ring-violet-500"
+              required
+            >
+              <option value="">Выберите расписание</option>
+              {schedules.map(schedule => (
+                <option key={schedule.id} value={schedule.id}>{schedule.subject?.subjectName} - {schedule.group?.name}</option>
+              ))}
+            </select>
+          </div>
+
+          {/* Note */}
+          <div>
+            <label className="block text-sm font-medium text-gray-300 mb-2">Заметка</label>
+            <textarea
+              value={createLessonData.note}
+              onChange={(e) => setCreateLessonData(prev => ({ ...prev, note: e.target.value }))}
+              className="w-full px-4 py-3 border border-gray-600 rounded-xl bg-gray-700 text-white placeholder:text-gray-400 focus:outline-none focus:ring-2 focus:ring-violet-500"
+              rows={3}
+              placeholder="Дополнительная информация о занятии (необязательно)"
+            />
+          </div>
+
+          {/* Buttons */}
+          <div className="flex justify-end gap-3 pt-4">
+            <button
+              onClick={() => setShowCreateLessonModal(false)}
+              className="px-4 py-2 text-sm font-medium text-gray-300 hover:bg-gray-700 rounded-lg transition-colors"
+            >
+              Отмена
+            </button>
+            <button
+              onClick={handleCreateLesson}
+              disabled={!createLessonData.date || !createLessonData.startTime || !createLessonData.endTime || 
+                       !createLessonData.groupId || !createLessonData.teacherId || !createLessonData.roomId || !createLessonData.scheduleId}
+              className="px-4 py-2 text-sm font-medium text-white bg-gradient-to-r from-violet-500 to-purple-600 rounded-lg hover:shadow-lg transition-all duration-200 hover:scale-105 disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:scale-100"
+            >
+              Создать урок
+            </button>
+          </div>
+        </div>
+      </BaseModal>
       </div>
     </div>
   );

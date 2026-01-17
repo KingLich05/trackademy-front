@@ -38,12 +38,58 @@ export const PhoneInput: React.FC<PhoneInputProps> = ({
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const inputValue = e.target.value;
+    
+    // Если пользователь пытается удалить или изменить "+7", восстанавливаем его
+    if (!inputValue.startsWith('+7')) {
+      // Если значение не начинается с +7, форматируем его правильно
+      const formatted = formatPhoneDisplay(inputValue);
+      setDisplayValue(formatted);
+      const apiValue = formatPhoneForApi(formatted);
+      onChange(apiValue);
+      return;
+    }
+    
     const formatted = formatPhoneDisplay(inputValue);
     setDisplayValue(formatted);
     
     // Отправляем в API формате
     const apiValue = formatPhoneForApi(formatted);
     onChange(apiValue);
+  };
+
+  const handleKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
+    const target = e.target as HTMLInputElement;
+    const selectionStart = target.selectionStart || 0;
+    
+    // Предотвращаем удаление или изменение "+7 (" в начале
+    if (selectionStart < 4 && (e.key === 'Backspace' || e.key === 'Delete')) {
+      e.preventDefault();
+      return;
+    }
+    
+    // Предотвращаем ввод в область "+7 ("
+    if (selectionStart < 4 && e.key !== 'ArrowLeft' && e.key !== 'ArrowRight' && 
+        e.key !== 'Tab' && !e.ctrlKey && !e.metaKey) {
+      e.preventDefault();
+      return;
+    }
+    
+    // Вызываем оригинальный обработчик
+    handlePhoneKeyDown(e);
+  };
+
+  const handleSelect = (e: React.SyntheticEvent<HTMLInputElement>) => {
+    const target = e.target as HTMLInputElement;
+    // Если курсор находится перед "+7 (", перемещаем его после
+    if (target.selectionStart! < 4 && displayValue.length > 0) {
+      setTimeout(() => {
+        target.setSelectionRange(4, 4);
+      }, 0);
+    }
+  };
+
+  const handleMouseUp = (e: React.MouseEvent<HTMLInputElement>) => {
+    handleSelect(e);
   };
 
   const handleFocus = () => {
@@ -88,7 +134,9 @@ export const PhoneInput: React.FC<PhoneInputProps> = ({
           name={name}
           value={displayValue}
           onChange={handleChange}
-          onKeyDown={handlePhoneKeyDown}
+          onKeyDown={handleKeyDown}
+          onSelect={handleSelect}
+          onMouseUp={handleMouseUp}
           onFocus={handleFocus}
           onBlur={handleBlurInternal}
           placeholder={isFocused ? '' : placeholder}
