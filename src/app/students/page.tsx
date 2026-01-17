@@ -66,7 +66,8 @@ export default function StudentsPage() {
     search: '',
     roleIds: [],
     groupIds: [] as string[],
-    isTrial: undefined
+    isTrial: undefined,
+    isDeleted: false // по умолчанию активные пользователи
   });
   const [groups, setGroups] = useState<Array<{id: string, name: string}>>([]);
   const [tableLoading, setTableLoading] = useState(false);
@@ -89,6 +90,8 @@ export default function StudentsPage() {
   const groupIdsStr = filters.groupIds.join(',');
   // Serialize isTrial to string to track changes (always defined to keep deps array size constant)
   const isTrialStr = filters.isTrial === undefined ? 'all' : filters.isTrial === true ? 'trial' : 'regular';
+  // Serialize isDeleted to string
+  const isDeletedStr = filters.isDeleted === undefined ? 'all' : filters.isDeleted === true ? 'deleted' : 'active';
   
   // Use ref to store current filters to avoid recreating callbacks
   const filtersRef = useRef(filters);
@@ -168,7 +171,8 @@ export default function StudentsPage() {
         search: searchTerm || undefined,
         roleIds: currentFilters.roleIds.length > 0 ? currentFilters.roleIds : undefined,
         groupIds: currentFilters.groupIds.length > 0 ? currentFilters.groupIds : undefined,
-        isTrial: currentFilters.isTrial !== undefined ? currentFilters.isTrial : undefined
+        isTrial: currentFilters.isTrial !== undefined ? currentFilters.isTrial : undefined,
+        isDeleted: currentFilters.isDeleted !== undefined ? currentFilters.isDeleted : undefined
       });
       
       setStudents(data.items);
@@ -191,7 +195,7 @@ export default function StudentsPage() {
       }
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [user?.organizationId, debouncedSearchTerm, isAuthenticated, pageSize]);
+  }, [user?.organizationId, debouncedSearchTerm, isAuthenticated, pageSize, roleIdsStr, groupIdsStr, isTrialStr, isDeletedStr]);
 
   const loadGroups = useCallback(async () => {
     try {
@@ -389,7 +393,7 @@ export default function StudentsPage() {
       loadStudents(1, true);
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [debouncedSearchTerm, roleIdsStr, groupIdsStr, isTrialStr]);
+  }, [debouncedSearchTerm, roleIdsStr, groupIdsStr, isTrialStr, isDeletedStr]);
 
   // Debug effect to track user context changes
   useEffect(() => {

@@ -312,6 +312,7 @@ export default function LessonDetailModal({ lesson, isOpen, onClose, onUpdate }:
               lessonStatus={lesson.lessonStatus}
               lessonId={lesson.id}
               onUpdate={onUpdate || (() => {})}
+              canViewGrades={!isStudent}
             />
           )}
           
@@ -762,9 +763,10 @@ interface AttendanceTabProps {
   lessonStatus: Lesson['lessonStatus'];
   lessonId: string;
   onUpdate: () => void;
+  canViewGrades: boolean;
 }
 
-function AttendanceTab({ students, attendedStudents, absentStudents, unmarkedStudents, lessonStatus, lessonId, onUpdate }: AttendanceTabProps) {
+function AttendanceTab({ students, attendedStudents, absentStudents, unmarkedStudents, lessonStatus, lessonId, onUpdate, canViewGrades }: AttendanceTabProps) {
   const [selectedStudent, setSelectedStudent] = useState<typeof students[0] | null>(null);
   const [isGradeModalOpen, setIsGradeModalOpen] = useState(false);
 
@@ -836,23 +838,25 @@ function AttendanceTab({ students, attendedStudents, absentStudents, unmarkedStu
       </div>
 
       {/* Instructions */}
-      <div className="bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-700 rounded-lg p-4">
-        <div className="flex items-start space-x-3">
-          <div className="text-blue-600 dark:text-blue-400 mt-0.5">
-            <svg className="w-5 h-5" fill="currentColor" viewBox="0 0 20 20">
-              <path fillRule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7-4a1 1 0 11-2 0 1 1 0 012 0zM9 9a1 1 0 000 2v3a1 1 0 001 1h1a1 1 0 100-2v-3a1 1 0 00-1-1H9z" clipRule="evenodd" />
-            </svg>
-          </div>
-          <div>
-            <h4 className="text-sm font-medium text-blue-900 dark:text-blue-100">
-              Индивидуальное редактирование
-            </h4>
-            <p className="text-sm text-blue-700 dark:text-blue-200 mt-1">
-              Нажмите на студента для редактирования статуса, добавления оценки и комментария
-            </p>
+      {canViewGrades && (
+        <div className="bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-700 rounded-lg p-4">
+          <div className="flex items-start space-x-3">
+            <div className="text-blue-600 dark:text-blue-400 mt-0.5">
+              <svg className="w-5 h-5" fill="currentColor" viewBox="0 0 20 20">
+                <path fillRule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7-4a1 1 0 11-2 0 1 1 0 012 0zM9 9a1 1 0 000 2v3a1 1 0 001 1h1a1 1 0 100-2v-3a1 1 0 00-1-1H9z" clipRule="evenodd" />
+              </svg>
+            </div>
+            <div>
+              <h4 className="text-sm font-medium text-blue-900 dark:text-blue-100">
+                Индивидуальное редактирование
+              </h4>
+              <p className="text-sm text-blue-700 dark:text-blue-200 mt-1">
+                Нажмите на студента для редактирования статуса, добавления оценки и комментария
+              </p>
+            </div>
           </div>
         </div>
-      </div>
+      )}
 
       {/* Student List */}
       <div>
@@ -864,10 +868,12 @@ function AttendanceTab({ students, attendedStudents, absentStudents, unmarkedStu
           {students.map((student) => (
             <div
               key={student.id}
-              onClick={() => handleStudentClick(student)}
-              className="flex items-center justify-between p-4 bg-gray-50 dark:bg-gray-700 rounded-lg 
-                       hover:bg-gray-100 dark:hover:bg-gray-600 cursor-pointer transition-colors
-                       border border-transparent hover:border-blue-200 dark:hover:border-blue-600"
+              onClick={canViewGrades ? () => handleStudentClick(student) : undefined}
+              className={`flex items-center justify-between p-4 bg-gray-50 dark:bg-gray-700 rounded-lg transition-colors ${
+                canViewGrades 
+                  ? 'hover:bg-gray-100 dark:hover:bg-gray-600 cursor-pointer border border-transparent hover:border-blue-200 dark:hover:border-blue-600'
+                  : 'border border-transparent'
+              }`}
             >
               <div className="flex items-center gap-3">
                 {student.photoPath ? (
@@ -888,12 +894,12 @@ function AttendanceTab({ students, attendedStudents, absentStudents, unmarkedStu
                   <span className="font-medium text-gray-900 dark:text-white block">
                     {student.fullName}
                   </span>
-                  {student.grade && (
+                  {canViewGrades && student.grade && (
                     <span className="text-sm text-gray-500 dark:text-gray-400">
                       Оценка: {student.grade}
                     </span>
                   )}
-                  {student.comment && (
+                  {canViewGrades && student.comment && (
                     <div className="text-xs text-gray-500 dark:text-gray-400 mt-1 max-w-sm truncate">
                       💬 {student.comment}
                     </div>
@@ -912,7 +918,7 @@ function AttendanceTab({ students, attendedStudents, absentStudents, unmarkedStu
                   >
                     {getAttendanceStatusText(student.attendanceStatus)}
                   </span>
-                  {(student.grade || student.comment) && (
+                  {canViewGrades && (student.grade || student.comment) && (
                     <div className="text-xs text-gray-500 dark:text-gray-400 mt-1">
                       {student.grade && `Оценка: ${student.grade}`}
                       {student.grade && student.comment && ' • '}
@@ -921,9 +927,11 @@ function AttendanceTab({ students, attendedStudents, absentStudents, unmarkedStu
                   )}
                 </div>
                 
-                <svg className="w-5 h-5 text-gray-400 dark:text-gray-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
-                </svg>
+                {canViewGrades && (
+                  <svg className="w-5 h-5 text-gray-400 dark:text-gray-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
+                  </svg>
+                )}
               </div>
             </div>
           ))}
@@ -931,7 +939,7 @@ function AttendanceTab({ students, attendedStudents, absentStudents, unmarkedStu
       </div>
 
       {/* Student Grade Modal */}
-      {selectedStudent && (
+      {canViewGrades && selectedStudent && (
         <StudentGradeModal
           student={selectedStudent}
           lessonId={lessonId}
