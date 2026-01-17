@@ -495,7 +495,7 @@ export class AuthenticatedApiService {
     groupId: string;
     teacherId: string;
     roomId: string;
-    scheduleId: string;
+    scheduleId?: string;
     note?: string;
   }): Promise<ApiResponse<boolean>> {
     // Форматируем время в нужный формат HH:MM:SS

@@ -38,6 +38,8 @@ interface StudentBalance {
   balance: number;
   remainingLessons?: number;
   isFrozen?: boolean;
+  frozenFrom?: string | null;
+  frozenTo?: string | null;
   discountType: number | null;
   discountValue: number | null;
   discountReason: string | null;
@@ -309,10 +311,19 @@ export const GroupStudentsModal: React.FC<GroupStudentsModalProps> = ({
                             {studentBalance.student.name}
                           </h4>
                           {studentBalance.isFrozen && (
-                            <span className="inline-flex items-center px-1.5 py-0.5 rounded-full text-xs font-medium bg-slate-200 text-slate-700 dark:bg-slate-700 dark:text-slate-300 flex-shrink-0">
-                              <LockClosedIcon className="w-3 h-3 mr-0.5" />
-                              Заморожен
-                            </span>
+                            <div className="flex flex-col gap-0.5">
+                              <span className="inline-flex items-center px-1.5 py-0.5 rounded-full text-xs font-medium bg-slate-200 text-slate-700 dark:bg-slate-700 dark:text-slate-300 flex-shrink-0">
+                                <LockClosedIcon className="w-3 h-3 mr-0.5" />
+                                Заморожен
+                              </span>
+                              {(studentBalance.frozenFrom || studentBalance.frozenTo) && (
+                                <span className="text-xs text-slate-600 dark:text-slate-400 whitespace-nowrap">
+                                  {studentBalance.frozenFrom && new Date(studentBalance.frozenFrom).toLocaleDateString('ru-RU')}
+                                  {(studentBalance.frozenFrom && studentBalance.frozenTo) && ' - '}
+                                  {studentBalance.frozenTo && new Date(studentBalance.frozenTo).toLocaleDateString('ru-RU')}
+                                </span>
+                              )}
+                            </div>
                           )}
                         </div>
                         

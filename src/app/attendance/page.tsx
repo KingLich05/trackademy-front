@@ -415,18 +415,17 @@ export default function AttendancePage() {
                         {record.startTime.slice(0, 5)}-{record.endTime.slice(0, 5)}
                       </td>
                       <td className="px-2 py-4 whitespace-nowrap max-w-[120px]">
-                        <span
-                          className="inline-flex items-center gap-1 px-2 py-1 rounded-full text-xs font-medium"
-                          style={{
-                            backgroundColor: getAttendanceStatusColor(record.status) + '20',
-                            color: getAttendanceStatusColor(record.status)
-                          }}
-                          title={getAttendanceStatusText(record.status)}
-                        >
-                          <span>{getAttendanceStatusIcon(record.status)}</span>
-                          <span className="hidden lg:inline truncate max-w-[80px]">{getAttendanceStatusText(record.status)}</span>
-                          <span className="lg:hidden">{getAttendanceStatusText(record.status) === 'Отсутствовал по уважительной причине' ? 'Ув. причина' : getAttendanceStatusText(record.status)}</span>
-                        </span>
+                        <div className="flex justify-center">
+                          <div
+                            className="w-4 h-4 rounded-full cursor-help flex items-center justify-center"
+                            style={{
+                              backgroundColor: getAttendanceStatusColor(record.status)
+                            }}
+                            title={getAttendanceStatusText(record.status)}
+                          >
+                            {/* Кружок без дополнительных элементов */}
+                          </div>
+                        </div>
                       </td>
                       <td className="px-2 py-4 whitespace-nowrap text-center">
                         {record.grade ? (

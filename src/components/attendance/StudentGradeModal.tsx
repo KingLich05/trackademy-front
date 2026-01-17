@@ -94,7 +94,14 @@ export default function StudentGradeModal({ student, lessonId, isOpen, onClose, 
 
   const handleGradeChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const value = e.target.value;
-    if (value === '' || (Number(value) >= 1 && Number(value) <= 100)) {
+    
+    // Запрещаем ввод отрицательных чисел и множественных минусов
+    if (value.includes('-') || value.startsWith('-')) {
+      return;
+    }
+    
+    // Разрешаем пустое значение или числа от 1 до 100
+    if (value === '' || (Number(value) >= 1 && Number(value) <= 100 && !isNaN(Number(value)))) {
       setGrade(value);
     }
   };
@@ -141,6 +148,12 @@ export default function StudentGradeModal({ student, lessonId, isOpen, onClose, 
                 step="5"
                 value={grade}
                 onChange={handleGradeChange}
+                onKeyDown={(e) => {
+                  // Запрещаем ввод символов минус, плюс, точка, буква e
+                  if (['-', '+', 'e', 'E', '.'].includes(e.key)) {
+                    e.preventDefault();
+                  }
+                }}
                 placeholder={canEditGrades ? "Введите оценку" : "Оценка не выставлена"}
                 disabled={!canEditGrades}
                 className={`w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg 

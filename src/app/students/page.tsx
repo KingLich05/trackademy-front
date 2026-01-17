@@ -44,6 +44,9 @@ export default function StudentsPage() {
   const [selectedGroupForBulk, setSelectedGroupForBulk] = useState<{id: string, name: string} | null>(null);
   const [isBulkAdding, setIsBulkAdding] = useState(false);
   const [isGroupSelectionModalOpen, setIsGroupSelectionModalOpen] = useState(false);
+  
+  // Archive state
+  const [showArchive, setShowArchive] = useState(false);
 
   // Универсальная система модалов для пользователей
   const userModal = useUniversalModal('user', {
@@ -775,8 +778,8 @@ export default function StudentsPage() {
       <div className="w-full space-y-6">
         {/* Modern Header with Gradient */}
         <PageHeaderWithStats
-          title="Пользователи"
-          subtitle="Управление пользователями системы"
+          title={showArchive ? "Архив пользователей" : "Пользователи"}
+          subtitle={showArchive ? "Просмотр удаленных пользователей системы" : "Управление пользователями системы"}
           icon={AcademicCapIcon}
           gradientFrom="emerald-500"
           gradientTo="lime-600"
@@ -804,6 +807,20 @@ export default function StudentsPage() {
                   </button>
                 </>
               )}
+              <button
+                onClick={() => {
+                  setShowArchive(!showArchive);
+                  setFilters(prev => ({ ...prev, isDeleted: !showArchive }));
+                  setCurrentPage(1);
+                }}
+                className={`px-4 py-2 rounded-lg font-medium transition-all duration-200 ${
+                  showArchive
+                    ? 'bg-red-500 hover:bg-red-600 text-white shadow-lg'
+                    : 'bg-gray-100 hover:bg-gray-200 dark:bg-gray-700 dark:hover:bg-gray-600 text-gray-700 dark:text-gray-300'
+                }`}
+              >
+                {showArchive ? 'Показать активные' : 'Архив'}
+              </button>
               <ColumnVisibilityControl
                 columns={columns}
                 onColumnToggle={toggleColumn}

@@ -69,7 +69,6 @@ export default function LessonsPage() {
     groupId: '',
     teacherId: '',
     roomId: '',
-    scheduleId: '',
     note: ''
   });
 
@@ -253,7 +252,6 @@ export default function LessonsPage() {
         groupId: '',
         teacherId: '',
         roomId: '',
-        scheduleId: '',
         note: ''
       });
       setShowCreateLessonModal(false);
@@ -842,7 +840,9 @@ export default function LessonsPage() {
             >
               <option value="">Выберите группу</option>
               {groups.map(group => (
-                <option key={group.id} value={group.id}>{group.name}</option>
+                <option key={group.id} value={group.id}>
+                  {group.name}/{typeof group.subject === 'object' ? group.subject.subjectName : group.subject}
+                </option>
               ))}
             </select>
           </div>
@@ -879,22 +879,6 @@ export default function LessonsPage() {
             </select>
           </div>
 
-          {/* Schedule */}
-          <div>
-            <label className="block text-sm font-medium text-gray-300 mb-2">Расписание</label>
-            <select
-              value={createLessonData.scheduleId}
-              onChange={(e) => setCreateLessonData(prev => ({ ...prev, scheduleId: e.target.value }))}
-              className="w-full px-4 py-3 border border-gray-600 rounded-xl bg-gray-700 text-white focus:outline-none focus:ring-2 focus:ring-violet-500"
-              required
-            >
-              <option value="">Выберите расписание</option>
-              {schedules.map(schedule => (
-                <option key={schedule.id} value={schedule.id}>{schedule.subject?.subjectName} - {schedule.group?.name}</option>
-              ))}
-            </select>
-          </div>
-
           {/* Note */}
           <div>
             <label className="block text-sm font-medium text-gray-300 mb-2">Заметка</label>
@@ -918,7 +902,7 @@ export default function LessonsPage() {
             <button
               onClick={handleCreateLesson}
               disabled={!createLessonData.date || !createLessonData.startTime || !createLessonData.endTime || 
-                       !createLessonData.groupId || !createLessonData.teacherId || !createLessonData.roomId || !createLessonData.scheduleId}
+                       !createLessonData.groupId || !createLessonData.teacherId || !createLessonData.roomId}
               className="px-4 py-2 text-sm font-medium text-white bg-gradient-to-r from-violet-500 to-purple-600 rounded-lg hover:shadow-lg transition-all duration-200 hover:scale-105 disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:scale-100"
             >
               Создать урок
