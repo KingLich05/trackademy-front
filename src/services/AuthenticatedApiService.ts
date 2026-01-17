@@ -190,6 +190,33 @@ export class AuthenticatedApiService {
     });
   }
 
+  static async postFormData<T>(endpoint: string, formData: FormData): Promise<T> {
+    const token = this.getAuthToken();
+    const API_BASE_URL = 'https://trackademy.kz/api';
+    const url = `${API_BASE_URL}${endpoint}`;
+
+    const response = await fetch(url, {
+      method: 'POST',
+      headers: {
+        'Authorization': `Bearer ${token}`,
+        // Don't set Content-Type for FormData, browser will set it with boundary
+      },
+      body: formData,
+    });
+
+    if (!response.ok) {
+      if (response.status === 401) {
+        localStorage.removeItem('authToken');
+        localStorage.removeItem('user');
+        globalThis.location.href = '/login';
+        throw new Error('Authentication expired');
+      }
+      throw new Error(`HTTP error! status: ${response.status}`);
+    }
+
+    return response.json();
+  }
+
   static async put<T>(endpoint: string, data: unknown): Promise<T> {
     return this.request<T>(endpoint, {
       method: 'PUT',
@@ -473,7 +500,25 @@ export class AuthenticatedApiService {
   }
 
   static async createAssignment(data: AssignmentFormData): Promise<Assignment> {
-    return this.post('/Assignment/create', data);
+    if (data.attachmentFile) {
+      // Если есть файл, используем FormData
+      const formData = new FormData();
+      formData.append('Description', data.description);
+      formData.append('GroupId', data.groupId);
+      formData.append('AssignedDate', data.assignedDate);
+      formData.append('DueDate', data.dueDate);
+      formData.append('attachmentFile', data.attachmentFile);
+      
+      return this.postFormData('/Assignment/create', formData);
+    } else {
+      // Без файла - обычный JSON
+      return this.post('/Assignment/create', {
+        description: data.description,
+        groupId: data.groupId,
+        assignedDate: data.assignedDate,
+        dueDate: data.dueDate
+      });
+    }
   }
 
   static async updateAssignment(id: string, data: Partial<AssignmentFormData>): Promise<Assignment> {
@@ -482,6 +527,31 @@ export class AuthenticatedApiService {
 
   static async deleteAssignment(id: string): Promise<void> {
     return this.delete(`/Assignment/${id}`);
+  }
+
+  static async downloadAssignmentFile(id: string): Promise<Blob> {
+    const token = this.getAuthToken();
+    const API_BASE_URL = 'https://trackademy.kz/api';
+    const url = `${API_BASE_URL}/Assignment/${id}/download`;
+
+    const response = await fetch(url, {
+      method: 'GET',
+      headers: {
+        'Authorization': `Bearer ${token}`,
+      },
+    });
+
+    if (!response.ok) {
+      if (response.status === 401) {
+        localStorage.removeItem('authToken');
+        localStorage.removeItem('user');
+        globalThis.location.href = '/login';
+        throw new Error('Authentication expired');
+      }
+      throw new Error(`HTTP error! status: ${response.status}`);
+    }
+
+    return response.blob();
   }
 
   // Submission API methods

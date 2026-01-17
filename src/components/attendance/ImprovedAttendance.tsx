@@ -28,9 +28,15 @@ export default function ImprovedAttendance({ lesson, onUpdate, onClose }: Improv
 
   // Получаем текущую статистику
   const getAttendanceStats = useMemo(() => {
-    const stats = { attended: 0, absent: 0, late: 0, specialReason: 0, unmarked: 0 };
+    const stats = { attended: 0, absent: 0, late: 0, specialReason: 0, unmarked: 0, frozen: 0 };
     
     lesson.students.forEach(student => {
+      // Пропускаем замороженных студентов в статистике
+      if (student.isFrozen) {
+        stats.frozen++;
+        return;
+      }
+      
       // Используем новый статус если есть, иначе текущий
       const currentStatus = studentStatuses[student.id] ?? student.attendanceStatus;
       
@@ -57,19 +63,26 @@ export default function ImprovedAttendance({ lesson, onUpdate, onClose }: Improv
 
   // Обработчик выбора статуса для студента
   const handleStudentStatusChange = (studentId: string, status: AttendanceStatus) => {
+    const student = lesson.students.find(s => s.id === studentId);
+    // Не позволяем менять статус замороженных студентов
+    if (student?.isFrozen) return;
+    
     setStudentStatuses(prev => ({
       ...prev,
       [studentId]: status
     }));
   };
 
-  // Применение выбранного статуса ко всем студентам справа
+  // Применение выбранного статуса ко всем студентам справа (кроме замороженных)
   const handleApplyStatusToStudents = () => {
     if (!selectedStatus) return;
 
     const updatedStatuses = { ...studentStatuses };
     lesson.students.forEach(student => {
-      updatedStatuses[student.id] = selectedStatus;
+      // Пропускаем замороженных студентов
+      if (!student.isFrozen) {
+        updatedStatuses[student.id] = selectedStatus;
+      }
     });
     setStudentStatuses(updatedStatuses);
   };
@@ -84,7 +97,8 @@ export default function ImprovedAttendance({ lesson, onUpdate, onClose }: Improv
   const handleSaveAttendance = async () => {
     const changedStudents = Object.entries(studentStatuses).filter(([studentId, newStatus]) => {
       const student = lesson.students.find(s => s.id === studentId);
-      return student && student.attendanceStatus !== newStatus;
+      // Исключаем замороженных студентов из отправки
+      return student && !student.isFrozen && student.attendanceStatus !== newStatus;
     });
 
     if (changedStudents.length === 0) {
@@ -126,7 +140,7 @@ export default function ImprovedAttendance({ lesson, onUpdate, onClose }: Improv
   return (
     <div className="space-y-6">
       {/* Статистика */}
-      <div className="grid grid-cols-2 md:grid-cols-5 gap-3">
+      <div className="grid grid-cols-2 md:grid-cols-6 gap-3">
         <div className="bg-green-50 dark:bg-green-900/20 p-3 rounded-lg text-center">
           <div className="text-lg font-bold text-green-600 dark:text-green-400">
             {getAttendanceStats.attended}
@@ -171,6 +185,17 @@ export default function ImprovedAttendance({ lesson, onUpdate, onClose }: Improv
             Не отмечены
           </div>
         </div>
+        
+        {getAttendanceStats.frozen > 0 && (
+          <div className="bg-blue-50 dark:bg-blue-900/20 p-3 rounded-lg text-center">
+            <div className="text-lg font-bold text-blue-600 dark:text-blue-400">
+              {getAttendanceStats.frozen}
+            </div>
+            <div className="text-xs text-blue-600 dark:text-blue-400">
+              Заморожены
+            </div>
+          </div>
+        )}
       </div>
 
       {/* Быстрые действия - компактная панель */}
@@ -305,21 +330,35 @@ export default function ImprovedAttendance({ lesson, onUpdate, onClose }: Improv
                 <div
                   key={student.id}
                   className={`p-3 rounded-lg border transition-all ${
-                    hasChanges
+                    student.isFrozen
+                      ? 'border-blue-300 bg-blue-50/50 dark:bg-blue-900/10 opacity-70'
+                      : hasChanges
                       ? 'border-blue-500 bg-blue-50 dark:bg-blue-900/20'
                       : 'border-gray-200 dark:border-gray-600 bg-white dark:bg-gray-700'
                   }`}
                 >
                   <div className="flex items-center justify-between">
-                    <div>
-                      <div className="font-medium text-gray-900 dark:text-white">
-                        {student.fullName}
-                      </div>
-                      {hasChanges && (
-                        <div className="text-xs text-blue-600 dark:text-blue-400">
-                          Изменено
+                    <div className="flex items-center gap-3">
+                      <div>
+                        <div className={`font-medium ${student.isFrozen ? 'text-blue-600 dark:text-blue-400' : 'text-gray-900 dark:text-white'}`}>
+                          {student.fullName}
+                          {student.isFrozen && (
+                            <span className="ml-2 inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-blue-100 dark:bg-blue-900/30 text-blue-800 dark:text-blue-300">
+                              ❄️ Заморожен
+                            </span>
+                          )}
                         </div>
-                      )}
+                        {hasChanges && !student.isFrozen && (
+                          <div className="text-xs text-blue-600 dark:text-blue-400">
+                            Изменено
+                          </div>
+                        )}
+                        {student.isFrozen && (
+                          <div className="text-xs text-blue-600 dark:text-blue-400">
+                            Посещаемость недоступна
+                          </div>
+                        )}
+                      </div>
                     </div>
                     
                     {/* Кнопки статусов для каждого студента */}
@@ -328,18 +367,21 @@ export default function ImprovedAttendance({ lesson, onUpdate, onClose }: Improv
                         <button
                           key={status}
                           onClick={() => handleStudentStatusChange(student.id, status)}
+                          disabled={student.isFrozen}
                           className={`w-8 h-8 rounded-full text-xs font-medium transition-all ${
-                            currentStatus === status
+                            student.isFrozen
+                              ? 'cursor-not-allowed opacity-30 bg-gray-200 dark:bg-gray-600 text-gray-400'
+                              : currentStatus === status
                               ? 'text-white shadow-md transform scale-110'
                               : 'text-gray-400 border border-gray-300 hover:text-white hover:shadow-md'
                           }`}
                           style={{
-                            backgroundColor: currentStatus === status ? getAttendanceStatusColor(status) : 'transparent',
-                            borderColor: getAttendanceStatusColor(status)
+                            backgroundColor: !student.isFrozen && currentStatus === status ? getAttendanceStatusColor(status) : undefined,
+                            borderColor: !student.isFrozen ? getAttendanceStatusColor(status) : undefined
                           }}
-                          title={getAttendanceStatusText(status)}
+                          title={student.isFrozen ? 'Студент заморожен' : getAttendanceStatusText(status)}
                         >
-                          {getAttendanceStatusIcon(status)}
+                          {student.isFrozen ? '❄️' : getAttendanceStatusIcon(status)}
                         </button>
                       ))}
                     </div>

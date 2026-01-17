@@ -6,6 +6,7 @@ import { AuthenticatedApiService } from '../../services/AuthenticatedApiService'
 import { UserGroupIcon, PencilIcon, TrashIcon, EyeIcon, DocumentArrowDownIcon } from '@heroicons/react/24/outline';
 import { useDebounce } from '../../hooks/useDebounce';
 import { Group, GroupFormData, GroupsResponse } from '../../types/Group';
+import { User } from '../../types/User';
 import { DeleteConfirmationModal } from '../../components/ui/DeleteConfirmationModal';
 import { UniversalModal, useUniversalModal, createGroupValidator } from '../../components';
 import { GroupFormUniversal } from '../../components/forms/GroupFormUniversal';
@@ -13,7 +14,10 @@ import { EmptyState } from '../../components/ui/EmptyState';
 import { PageHeaderWithStats } from '../../components/ui/PageHeaderWithStats';
 import { useColumnVisibility, ColumnVisibilityControl } from '../../components/ui/ColumnVisibilityControl';
 import { useApiToast } from '../../hooks/useApiToast';
+import { useToast } from '../../contexts/ToastContext';
 import { GroupStudentsModal } from '../../components/GroupStudentsModal';
+import { StudentSelectionModal } from '../../components/StudentSelectionModal';
+import { BulkAddToGroupModal } from '../../components/BulkAddToGroupModal';
 
 import { BaseModal } from '../../components/ui/BaseModal';
 import { FreezeStudentModal } from '../../components/FreezeStudentModal';
@@ -33,6 +37,11 @@ export default function GroupsPage() {
   // Состояния для модалок платежей
   const [isStudentsModalOpen, setIsStudentsModalOpen] = useState(false);
   const [selectedGroup, setSelectedGroup] = useState<Group | null>(null);
+
+  // Состояния для добавления студентов в группу
+  const [isStudentSelectionModalOpen, setIsStudentSelectionModalOpen] = useState(false);
+  const [selectedStudentsForGroup, setSelectedStudentsForGroup] = useState<User[]>([]);
+  const [targetGroupForStudents, setTargetGroupForStudents] = useState<Group | null>(null);
 
 
 
@@ -137,6 +146,7 @@ export default function GroupsPage() {
   
   // Toast уведомления для API операций
   const { createOperation, updateOperation, deleteOperation, loadOperation } = useApiToast();
+  const { showToast } = useToast();
   
   const [pageSize, setPageSize] = useState(10);
 
@@ -337,6 +347,50 @@ export default function GroupsPage() {
   const handleCloseStudentsModal = () => {
     setIsStudentsModalOpen(false);
     setSelectedGroup(null);
+  };
+
+  // Функция для открытия модала добавления студентов
+  const handleAddStudentsToGroup = () => {
+    if (!selectedGroup) return;
+    setTargetGroupForStudents(selectedGroup);
+    setIsStudentSelectionModalOpen(true);
+  };
+
+  // Функция для добавления студентов в группу
+  const handleBulkAddToGroup = async () => {
+    console.log('🚀 handleBulkAddToGroup STARTED');
+    if (!targetGroupForStudents || selectedStudentsForGroup.length === 0) return;
+
+    try {
+      console.log('Calling API from GROUPS PAGE...');
+      const response = await AuthenticatedApiService.post('/Group/bulk-add-students', {
+        groupId: targetGroupForStudents.id,
+        studentIds: selectedStudentsForGroup.map(s => s.id)
+      }) as { success?: boolean };
+      
+      console.log('API response from GROUPS PAGE:', response);
+
+      // Показываем успех независимо от формата ответа (если нет ошибки)
+      showToast('Запись успешно обновлена', 'success');
+      
+      // Перезагружаем список групп
+      await loadGroups(currentPage, true);
+      
+      console.log('FORCE CLOSING MODAL from GROUPS PAGE');
+      // ПРИНУДИТЕЛЬНО закрываем модальные окна
+      setSelectedStudentsForGroup([]);
+      setTargetGroupForStudents(null);
+      
+      // Если групповая модалка была открыта, обновляем её тоже
+      if (isStudentsModalOpen && selectedGroup?.id === targetGroupForStudents.id) {
+        // Модалка автоматически обновится при следующем открытии
+      }
+      
+      console.log('Modal closed from GROUPS PAGE');
+    } catch (error: unknown) {
+      console.error('Error adding students to group:', error);
+      showToast('Ошибка при добавлении студентов в группу: ' + ((error as Error)?.message || 'Неизвестная ошибка'), 'error');
+    }
   };
 
 
@@ -998,6 +1052,7 @@ export default function GroupsPage() {
         isOpen={isStudentsModalOpen}
         onClose={handleCloseStudentsModal}
         group={selectedGroup}
+        onAddStudents={handleAddStudentsToGroup}
       />
 
 
@@ -1239,6 +1294,36 @@ export default function GroupsPage() {
             </div>
           </div>
         </div>
+      )}
+
+      {/* Модальные окна для добавления студентов в группу */}
+      <StudentSelectionModal
+        isOpen={isStudentSelectionModalOpen}
+        onClose={() => setIsStudentSelectionModalOpen(false)}
+        onSelect={(students) => {
+          setSelectedStudentsForGroup(students);
+          setIsStudentSelectionModalOpen(false);
+        }}
+        selectedStudents={selectedStudentsForGroup}
+        title="Выберите студентов для добавления в группу"
+        groupId={targetGroupForStudents?.id}
+        organizationId={user?.organizationId || ''}
+      />
+
+      {targetGroupForStudents && selectedStudentsForGroup.length > 0 && (
+        <BulkAddToGroupModal
+          isOpen={selectedStudentsForGroup.length > 0}
+          onClose={() => {
+            setSelectedStudentsForGroup([]);
+            setTargetGroupForStudents(null);
+          }}
+          onConfirm={handleBulkAddToGroup}
+          selectedStudents={selectedStudentsForGroup}
+          groupName={targetGroupForStudents.name}
+          onRemoveStudent={(studentId) => {
+            setSelectedStudentsForGroup(prev => prev.filter(s => s.id !== studentId));
+          }}
+        />
       )}
     </div>
   );

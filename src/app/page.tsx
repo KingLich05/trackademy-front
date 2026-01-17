@@ -558,7 +558,7 @@ export default function Dashboard() {
           <>
             {/* Header */}
             <PageHeaderWithStats
-              title="Моя статистика занятий"
+              title="Моя статистика успеваемости"
               subtitle="Обзор моей учебы"
               icon={AcademicCapIcon}
               gradientFrom="emerald-500"
@@ -729,7 +729,7 @@ export default function Dashboard() {
           <>
             {/* Header */}
             <PageHeaderWithStats
-              title="Моя статистика занятий"
+              title="Моя статистика успеваемости"
               subtitle="Обзор моих занятий и задач"
               icon={AcademicCapIcon}
               gradientFrom="purple-500"

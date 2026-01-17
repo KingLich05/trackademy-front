@@ -2,6 +2,7 @@
 
 import { useState, useEffect, useCallback, useRef } from 'react';
 import { useAuth } from '../../contexts/AuthContext';
+import { useToast } from '../../contexts/ToastContext';
 import { AuthenticatedApiService } from '../../services/AuthenticatedApiService';
 import { ClipboardDocumentListIcon, PlusIcon, PencilIcon, TrashIcon } from '@heroicons/react/24/outline';
 import { Assignment, AssignmentFormData, AssignmentFilters, getSubmissionStatusText, getSubmissionStatusColor } from '../../types/Assignment';
@@ -30,7 +31,8 @@ export default function HomeworkPage() {
     description: '',
     groupId: '',
     assignedDate: '',
-    dueDate: ''
+    dueDate: '',
+    attachmentFile: undefined
   });
   const [modalDueDate, setModalDueDate] = useState<string>('');
   const [isDetailModalOpen, setIsDetailModalOpen] = useState(false);
@@ -87,6 +89,7 @@ export default function HomeworkPage() {
   submissionFiltersRef.current = submissionFilters;
 
   const { createOperation, updateOperation, deleteOperation, loadOperation } = useApiToast();
+  const { showError } = useToast();
 
   const pageSize = 10;
   const initialLoadDone = useRef(false);
@@ -375,7 +378,8 @@ export default function HomeworkPage() {
       description: '',
       groupId: '',
       assignedDate: '',
-      dueDate: ''
+      dueDate: '',
+      attachmentFile: undefined
     });
     setModalDueDate('');
     setIsAssignmentModalOpen(true);
@@ -422,7 +426,8 @@ export default function HomeworkPage() {
             description: formData.description,
             groupId: formData.groupId,
             assignedDate: assignedDate,
-            dueDate: dueDate
+            dueDate: dueDate,
+            attachmentFile: formData.attachmentFile
           }),
           'задание'
         );
@@ -495,6 +500,23 @@ export default function HomeworkPage() {
       setIsDetailModalOpen(false);
     } finally {
       setDetailLoading(false);
+    }
+  };
+
+  const handleDownloadFile = async (assignmentId: string, fileName: string) => {
+    try {
+      const blob = await AuthenticatedApiService.downloadAssignmentFile(assignmentId);
+      const url = window.URL.createObjectURL(blob);
+      const link = document.createElement('a');
+      link.href = url;
+      link.download = fileName;
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+      window.URL.revokeObjectURL(url);
+    } catch (error) {
+      console.error('Error downloading file:', error);
+      showError('Ошибка при скачивании файла');
     }
   };
 
@@ -940,6 +962,24 @@ export default function HomeworkPage() {
             />
           </div>
 
+          <div>
+            <label className="block text-sm font-medium text-gray-300 mb-2">
+              Прикрепить файл
+            </label>
+            <input
+              type="file"
+              onChange={(e) => {
+                const file = e.target.files?.[0];
+                setFormData({ ...formData, attachmentFile: file });
+              }}
+              className="w-full px-3 py-2 border border-gray-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-transparent bg-gray-700 text-white file:mr-4 file:py-2 file:px-4 file:rounded-lg file:border-0 file:text-sm file:font-medium file:bg-purple-600 file:text-white hover:file:bg-purple-700"
+              accept=".pdf,.doc,.docx,.txt,.jpg,.jpeg,.png,.zip,.rar"
+            />
+            <p className="mt-1 text-xs text-gray-400">
+              Максимальный размер: 10 МБ. Поддерживаемые форматы: PDF, DOC, DOCX, TXT, JPG, PNG, ZIP, RAR
+            </p>
+          </div>
+
           <div className="flex justify-end gap-3 mt-6 pt-6 border-t border-gray-700">
             <button
               onClick={() => {
@@ -947,6 +987,8 @@ export default function HomeworkPage() {
                   setIsAssignmentModalOpen(false);
                   setEditingAssignmentId(null);
                   setIsSaving(false);
+                  // Очищаем файл при отмене
+                  setFormData(prev => ({ ...prev, attachmentFile: undefined }));
                 }
               }}
               disabled={isSaving}
@@ -1114,6 +1156,40 @@ export default function HomeworkPage() {
                 </div>
               </div>
             </div>
+
+            {/* Attachment Info */}
+            {selectedAssignment.hasAttachment && (
+              <div>
+                <label className="block text-sm font-medium text-gray-400 mb-2">
+                  Прикрепленный файл
+                </label>
+                <div className="bg-gray-700 rounded-lg p-4">
+                  <div className="flex items-center justify-between">
+                    <div className="flex items-center space-x-3">
+                      <div className="w-8 h-8 bg-purple-500 rounded-lg flex items-center justify-center">
+                        <svg className="w-4 h-4 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15.172 7l-6.586 6.586a2 2 0 102.828 2.828l6.414-6.586a4 4 0 00-5.656-5.656l-6.415 6.585a6 6 0 108.486 8.486L20.5 13" />
+                        </svg>
+                      </div>
+                      <div>
+                        <div className="text-white font-medium">{selectedAssignment.attachmentName}</div>
+                        {selectedAssignment.attachmentSize && (
+                          <div className="text-gray-400 text-sm">
+                            {(selectedAssignment.attachmentSize / 1024 / 1024).toFixed(2)} МБ
+                          </div>
+                        )}
+                      </div>
+                    </div>
+                    <button
+                      onClick={() => handleDownloadFile(selectedAssignment.id, selectedAssignment.attachmentName!)}
+                      className="px-3 py-1.5 text-sm font-medium text-white bg-purple-500 hover:bg-purple-600 rounded-lg transition-colors"
+                    >
+                      Скачать
+                    </button>
+                  </div>
+                </div>
+              </div>
+            )}
 
             {/* Actions for Details Tab */}
             <div className="flex justify-end gap-3 pt-6 border-t border-gray-700">

@@ -20,6 +20,10 @@ export default function QuickAttendance({ lesson, onUpdate }: QuickAttendancePro
   const quickStatuses: AttendanceStatus[] = [1, 2, 3, 4];
 
   const handleStudentToggle = (studentId: string) => {
+    const student = lesson.students.find(s => s.id === studentId);
+    // Не позволяем выбирать замороженных студентов
+    if (student?.isFrozen) return;
+    
     const newSelected = new Set(selectedStudents);
     if (newSelected.has(studentId)) {
       newSelected.delete(studentId);
@@ -30,19 +34,33 @@ export default function QuickAttendance({ lesson, onUpdate }: QuickAttendancePro
   };
 
   const handleSelectAll = () => {
-    if (selectedStudents.size === lesson.students.length) {
+    // Фильтруем только незамороженных студентов
+    const unfrozenStudents = lesson.students.filter(s => !s.isFrozen);
+    
+    if (selectedStudents.size === unfrozenStudents.length) {
       setSelectedStudents(new Set());
     } else {
-      setSelectedStudents(new Set(lesson.students.map(s => s.id)));
+      setSelectedStudents(new Set(unfrozenStudents.map(s => s.id)));
     }
   };
 
   const handleBulkStatusUpdate = async (status: AttendanceStatus) => {
     if (selectedStudents.size === 0) return;
 
+    // Дополнительная проверка: исключаем замороженных студентов из отправки
+    const validStudentIds = Array.from(selectedStudents).filter(studentId => {
+      const student = lesson.students.find(s => s.id === studentId);
+      return student && !student.isFrozen;
+    });
+
+    if (validStudentIds.length === 0) {
+      showToast('Выбранные студенты заморожены', 'error');
+      return;
+    }
+
     setLoading(true);
     try {
-      const attendances = Array.from(selectedStudents).map(studentId => ({
+      const attendances = validStudentIds.map(studentId => ({
         studentId,
         status
       }));
@@ -71,6 +89,13 @@ export default function QuickAttendance({ lesson, onUpdate }: QuickAttendancePro
   };
 
   const handleIndividualStatusUpdate = async (studentId: string, status: AttendanceStatus) => {
+    const student = lesson.students.find(s => s.id === studentId);
+    // Не позволяем обновлять статус замороженных студентов
+    if (student?.isFrozen) {
+      showToast('Студент заморожен, посещаемость недоступна', 'error');
+      return;
+    }
+
     setLoading(true);
     try {
       await attendanceApi.updateAttendance({

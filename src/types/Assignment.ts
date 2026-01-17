@@ -19,6 +19,9 @@ export interface Assignment {
   assignedDate: string;
   dueDate: string;
   createdAt: string;
+  hasAttachment?: boolean;
+  attachmentName?: string;
+  attachmentSize?: number;
   group: {
     id: string;
     name: string;
@@ -76,6 +79,7 @@ export interface AssignmentFormData {
   groupId: string;
   assignedDate: string;
   dueDate: string;
+  attachmentFile?: File;
 }
 
 export interface AssignmentsResponse {

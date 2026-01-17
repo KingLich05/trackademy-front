@@ -7,6 +7,7 @@ export interface User {
   id: string;
   login: string;
   name: string;
+  fullName?: string; // Алиас для name для совместимости
   phone: string;
   parentPhone: string | null;
   birthday: string | null;

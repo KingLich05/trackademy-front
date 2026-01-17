@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useEffect } from 'react';
+import React from 'react';
 import { User } from '../types/User';
 import { XMarkIcon, UserGroupIcon, CheckCircleIcon, ExclamationTriangleIcon } from '@heroicons/react/24/outline';
 
@@ -24,13 +24,7 @@ export const BulkAddToGroupModal: React.FC<BulkAddToGroupModalProps> = ({
   onRemoveStudent
 }) => {
   console.log('BulkAddToGroupModal render:', { isOpen, selectedStudents: selectedStudents.length, groupName, isLoading });
-  
-  // Автоматически закрываем модалку если студентов не осталось
-  useEffect(() => {
-    if (isOpen && selectedStudents.length === 0) {
-      onClose();
-    }
-  }, [isOpen, selectedStudents.length, onClose]);
+  console.log('BulkAddToGroupModal onConfirm prop:', typeof onConfirm, onConfirm?.toString().substring(0, 100));
   
   if (!isOpen) return null;
 
@@ -219,7 +213,14 @@ export const BulkAddToGroupModal: React.FC<BulkAddToGroupModalProps> = ({
             </button>
               <button
               type="button"
-              onClick={onConfirm}
+              onClick={() => {
+                console.log('🔘 BulkAddToGroupModal BUTTON CLICKED');
+                console.log('Button state:', { isLoading, selectedStudentsCount: selectedStudents.length, disabled: isLoading || selectedStudents.length === 0 });
+                console.log('About to call onConfirm function:', onConfirm);
+                console.log('Calling onConfirm now...');
+                onConfirm();
+                console.log('onConfirm called successfully');
+              }}
               disabled={isLoading || selectedStudents.length === 0}
               className="px-6 py-2.5 text-sm font-medium text-white bg-gradient-to-r from-emerald-500 to-lime-600 rounded-xl hover:shadow-lg focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-emerald-500 transition-all disabled:opacity-50 disabled:cursor-not-allowed flex items-center space-x-2"
             >

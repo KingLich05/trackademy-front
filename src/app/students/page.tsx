@@ -655,21 +655,31 @@ export default function StudentsPage() {
   };
 
   const handleBulkAddConfirm = async () => {
-    console.log('handleBulkAddConfirm started', { selectedGroupForBulk, selectedStudentIds });
+    console.log('🚀 FUNCTION handleBulkAddConfirm CALLED!');
+    console.log('=== handleBulkAddConfirm STARTED ===');
+    console.log('Initial state:', { 
+      selectedGroupForBulk: selectedGroupForBulk?.name, 
+      selectedStudentIds: selectedStudentIds.length,
+      isBulkAddModalOpen,
+      isBulkAdding
+    });
     
     if (!selectedGroupForBulk || selectedStudentIds.length === 0) {
       console.log('Early return: no group or students');
       return;
     }
 
+    console.log('Setting isBulkAdding to true');
     setIsBulkAdding(true);
+    let success = false;
+    
     try {
       console.log('Calling API...');
       const result = await AuthenticatedApiService.bulkAddStudentsToGroup(
         selectedGroupForBulk.id,
         selectedStudentIds
       );
-      console.log('API response:', result);
+      console.log('🎯 API call from STUDENTS PAGE - response:', result);
 
       // API возвращает либо строку, либо объект с message
       const message = typeof result === 'string' ? result : (result as { message?: string })?.message;
@@ -681,14 +691,17 @@ export default function StudentsPage() {
       // Обновляем таблицу
       await loadStudents(currentPage, true);
       
-      console.log('Closing modal and clearing selection...');
-      // Закрываем модалку и очищаем выбор
-      setIsBulkAddModalOpen(false);
-      setSelectedGroupForBulk(null);
-      setSelectedStudentIds([]);
-      console.log('Done!');
+      console.log('Reloading groups...');
+      // Обновляем данные групп
+      await loadGroups();
+      
+      success = true;
+      console.log('Success flag set to true');
+      
     } catch (error) {
       console.error('Failed to bulk add students to group:', error);
+      success = false;
+      console.log('Success flag set to false');
       
       // Извлекаем сообщение об ошибке
       let errorMessage = 'Не удалось добавить студентов в группу';
@@ -699,8 +712,25 @@ export default function StudentsPage() {
       
       showError(errorMessage);
     } finally {
+      console.log('=== FINALLY BLOCK ===');
+      console.log('Success status:', success);
       console.log('Setting isBulkAdding to false');
       setIsBulkAdding(false);
+      
+      // ПРИНУДИТЕЛЬНО закрываем модалку ВСЕГДА
+      console.log('FORCE CLOSING MODAL - Before state change');
+      console.log('Current modal state:', { 
+        isBulkAddModalOpen, 
+        selectedGroupForBulk: !!selectedGroupForBulk, 
+        selectedStudentIds: selectedStudentIds.length 
+      });
+      
+      setIsBulkAddModalOpen(false);
+      setSelectedGroupForBulk(null);
+      setSelectedStudentIds([]);
+      
+      console.log('FORCE CLOSING MODAL - After state change calls');
+      console.log('=== handleBulkAddConfirm FINISHED ===');
     }
   };
 
@@ -1162,15 +1192,14 @@ export default function StudentsPage() {
         danger={true}
       />
 
-      {/* Import Users Modal */}
-      {user?.organizationId && (
+      {user?.organizationId ? (
         <ImportUsersModal
           isOpen={isImportModalOpen}
           onClose={() => setIsImportModalOpen(false)}
           onImport={handleImportUsers}
           organizationId={user.organizationId}
         />
-      )}
+      ) : null}
 
       {/* Group Selection Modal */}
       <GroupSelectionModal
@@ -1182,20 +1211,29 @@ export default function StudentsPage() {
       />
 
       {/* Bulk Add to Group Modal */}
-      {selectedGroupForBulk && (
-        <BulkAddToGroupModal
-          isOpen={isBulkAddModalOpen}
-          onClose={() => {
-            setIsBulkAddModalOpen(false);
-            setSelectedGroupForBulk(null);
-          }}
-          onConfirm={handleBulkAddConfirm}
-          selectedStudents={selectedStudents}
-          groupName={selectedGroupForBulk.name}
-          isLoading={isBulkAdding}
-          onRemoveStudent={handleRemoveStudentFromBulk}
-        />
-      )}
+      <BulkAddToGroupModal
+        key="students-page-modal"
+        isOpen={isBulkAddModalOpen && !!selectedGroupForBulk}
+        onClose={() => {
+          console.log('BulkAddToGroupModal onClose called');
+          setIsBulkAddModalOpen(false);
+          setSelectedGroupForBulk(null);
+        }}
+        onConfirm={() => {
+          console.log('=== BulkAddToGroupModal onConfirm CLICKED ===');
+          console.log('About to call handleBulkAddConfirm');
+          console.log('handleBulkAddConfirm function:', typeof handleBulkAddConfirm);
+          try {
+            handleBulkAddConfirm();
+          } catch (error) {
+            console.error('Error calling handleBulkAddConfirm:', error);
+          }
+        }}
+        selectedStudents={selectedStudents}
+        groupName={selectedGroupForBulk?.name || ''}
+        isLoading={isBulkAdding}
+        onRemoveStudent={handleRemoveStudentFromBulk}
+      />
     </div>
   );
 }

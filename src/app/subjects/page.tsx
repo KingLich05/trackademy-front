@@ -174,10 +174,8 @@ export default function SubjectsPage() {
 
   const handleEdit = (id: string) => {
     const subject = subjects.find(s => s.id === id);
-    console.log('handleEdit called with id:', id, 'found subject:', subject);
-    
     if (subject) {
-      const editData = {
+      subjectModal.openEditModal({
         id: subject.id,
         name: subject.name,
         description: subject.description || '',
@@ -186,31 +184,18 @@ export default function SubjectsPage() {
         lessonsPerMonth: subject.lessonsPerMonth,
         totalLessons: subject.totalLessons,
         organizationId: subject.organizationId
-      } as SubjectFormData & { id: string };
-      
-      console.log('Edit data prepared:', editData);
-      subjectModal.openEditModal(editData);
-      console.log('Modal opened');
+      } as SubjectFormData & { id: string });
     }
   };
 
   const handleSaveEdit = async (formData: Record<string, unknown>, subjectId?: string) => {
-    console.log('handleSaveEdit called with:', { formData, subjectId });
-    
-    if (!subjectId) {
-      console.log('No subjectId provided');
-      return;
-    }
+    if (!subjectId) return;
     
     const subjectData = formData as SubjectFormData;
-    console.log('Subject data to send:', subjectData);
-    
     const result = await updateOperation(
-      () => AuthenticatedApiService.put(`/Subject/${subjectId}`, subjectData),
+      () => AuthenticatedApiService.updateSubject(subjectId, subjectData),
       'Предмет'
     );
-    
-    console.log('Update result:', result);
     
     // Только если операция успешна - перезагружаем и закрываем модал
     if (result.success) {
@@ -670,9 +655,23 @@ export default function SubjectsPage() {
         data={subjectModal.editData || undefined}
         onSave={subjectModal.mode === 'create' ? handleSaveCreate : handleSaveEdit}
         validate={(data) => {
-          const validationResult = createSubjectValidator(data as SubjectFormData);
-          console.log('Validation result:', validationResult);
-          return validationResult;
+          // Временно упрощенная валидация для тестирования
+          const errors: Record<string, string> = {};
+          const formData = data as SubjectFormData;
+          
+          if (!formData.name?.trim()) {
+            errors.name = 'Название обязательно';
+          }
+          
+          if (formData.price === undefined || formData.price === null || Number(formData.price) < 0) {
+            errors.price = 'Цена обязательна';
+          }
+          
+          if (!formData.paymentType || ![1, 2].includes(Number(formData.paymentType))) {
+            errors.paymentType = 'Выберите тип оплаты';
+          }
+          
+          return errors;
         }}
         submitText={subjectModal.getConfig().submitText}
         loadingText={subjectModal.getConfig().loadingText}

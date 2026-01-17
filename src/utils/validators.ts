@@ -66,24 +66,30 @@ export const createSubjectValidator = (data: SubjectFormData) => {
   }
 
   // Проверка цены (>= 0)
-  if (data.price === undefined || data.price === null || data.price < 0) {
-    errors.price = 'Цена обязательна и должна быть неотрицательной';
+  if (data.price === undefined || data.price === null || Number(data.price) < 0 || isNaN(Number(data.price))) {
+    errors.price = 'Цена обязательна и должна быть неотрицательным числом';
   }
 
   // Проверка типа оплаты (1, 2)
   const paymentTypeNum = Number(data.paymentType);
-  if (paymentTypeNum === undefined || paymentTypeNum === null || ![1, 2].includes(paymentTypeNum)) {
+  if (isNaN(paymentTypeNum) || ![1, 2].includes(paymentTypeNum)) {
     errors.paymentType = 'Выберите корректный тип оплаты';
   }
 
   // Проверка уроков в месяц (для ежемесячного типа)
-  if (paymentTypeNum === 1 && (!data.lessonsPerMonth || data.lessonsPerMonth <= 0)) {
-    errors.lessonsPerMonth = 'Количество уроков в месяц должно быть больше 0';
+  if (paymentTypeNum === 1) {
+    const lessonsPerMonth = Number(data.lessonsPerMonth);
+    if (isNaN(lessonsPerMonth) || lessonsPerMonth <= 0) {
+      errors.lessonsPerMonth = 'Количество уроков в месяц должно быть больше 0';
+    }
   }
 
   // Проверка общего количества уроков (для единоразового типа)
-  if (paymentTypeNum === 2 && (!data.totalLessons || data.totalLessons <= 0)) {
-    errors.totalLessons = 'Общее количество уроков должно быть больше 0';
+  if (paymentTypeNum === 2) {
+    const totalLessons = Number(data.totalLessons);
+    if (isNaN(totalLessons) || totalLessons <= 0) {
+      errors.totalLessons = 'Общее количество уроков должно быть больше 0';
+    }
   }
 
   // Проверка organizationId (UUID)

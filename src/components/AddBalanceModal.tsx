@@ -22,26 +22,20 @@ export const AddBalanceModal: React.FC<AddBalanceModalProps> = ({
   loading = false
 }) => {
   const [amount, setAmount] = useState('');
-  const [description, setDescription] = useState('');
-  const [errors, setErrors] = useState<{ amount?: string; description?: string }>({});
+  const [errors, setErrors] = useState<{ amount?: string }>({});
 
   const handleClose = () => {
     setAmount('');
-    setDescription('');
     setErrors({});
     onClose();
   };
 
   const validateForm = (): boolean => {
-    const newErrors: { amount?: string; description?: string } = {};
+    const newErrors: { amount?: string } = {};
 
     const amountNum = parseFloat(amount);
     if (!amount || isNaN(amountNum) || amountNum <= 0) {
       newErrors.amount = 'Введите корректную сумму больше 0';
-    }
-
-    if (!description.trim()) {
-      newErrors.description = 'Введите описание операции';
     }
 
     setErrors(newErrors);
@@ -50,7 +44,16 @@ export const AddBalanceModal: React.FC<AddBalanceModalProps> = ({
 
   const handleConfirm = () => {
     if (validateForm()) {
-      onConfirm(parseFloat(amount), description.trim());
+      const currentDate = new Date();
+      const monthNames = [
+        'январь', 'февраль', 'март', 'апрель', 'май', 'июнь',
+        'июль', 'август', 'сентябрь', 'октябрь', 'ноябрь', 'декабрь'
+      ];
+      const monthName = monthNames[currentDate.getMonth()];
+      const year = currentDate.getFullYear();
+      const description = `пополнение за ${monthName} ${year}`;
+      
+      onConfirm(parseFloat(amount), description);
       handleClose();
     }
   };
@@ -103,28 +106,6 @@ export const AddBalanceModal: React.FC<AddBalanceModalProps> = ({
           </div>
           {errors.amount && (
             <p className="mt-1 text-sm text-red-600 dark:text-red-400">{errors.amount}</p>
-          )}
-        </div>
-
-        <div className="relative">
-          <label className="block text-sm font-semibold text-gray-800 dark:text-gray-200 mb-3 flex items-center gap-2">
-            <div className="w-1 h-4 bg-green-500 rounded-full"></div>
-            Описание операции
-          </label>
-          <textarea
-            value={description}
-            onChange={(e) => setDescription(e.target.value)}
-            placeholder="Например: Пополнение за февраль 2025"
-            rows={3}
-            className={`w-full px-4 py-3 border-2 transition-all duration-200 ${
-              errors.description 
-                ? 'border-red-400 focus:border-red-500 focus:ring-red-100' 
-                : 'border-gray-300 dark:border-gray-600 focus:border-green-500 focus:ring-green-100 dark:focus:ring-green-900/50'
-            } rounded-lg bg-gray-50 dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-4 focus:bg-white dark:focus:bg-gray-600 resize-none`}
-            disabled={loading}
-          />
-          {errors.description && (
-            <p className="mt-1 text-sm text-red-600 dark:text-red-400">{errors.description}</p>
           )}
         </div>
 

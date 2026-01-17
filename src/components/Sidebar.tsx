@@ -44,7 +44,7 @@ const Sidebar: React.FC = () => {
   // Определяем название первого пункта меню в зависимости от роли
   const getDashboardName = () => {
     if (isStudent || isTeacher) {
-      return 'Статистика занятий';
+      return 'Статистика успеваемости';
     }
     return 'Аналитика';
   };

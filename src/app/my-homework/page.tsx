@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from 'react';
 import { useAuth } from '../../contexts/AuthContext';
+import { useToast } from '../../contexts/ToastContext';
 import { AuthenticatedApiService } from '../../services/AuthenticatedApiService';
 import { ClipboardDocumentListIcon, CalendarIcon, ClockIcon, CheckCircleIcon, XCircleIcon, AcademicCapIcon, ArrowUpTrayIcon, DocumentIcon, TrashIcon } from '@heroicons/react/24/outline';
 import { MyAssignment, MyAssignmentsResponse } from '../../types/MyAssignments';
@@ -32,6 +33,7 @@ export default function MyHomeworkPage() {
   const [submitting, setSubmitting] = useState(false);
 
   const { loadOperation, createOperation, updateOperation, deleteOperation } = useApiToast();
+  const { showError } = useToast();
 
   const loadMyAssignments = async () => {
     setLoading(true);
@@ -176,6 +178,23 @@ export default function MyHomeworkPage() {
     } catch (error) {
       console.error('=== Download error ===', error);
       alert(`Ошибка при скачивании файла: ${error instanceof Error ? error.message : 'Неизвестная ошибка'}`);
+    }
+  };
+
+  const handleDownloadAssignmentFile = async (assignmentId: string, fileName: string) => {
+    try {
+      const blob = await AuthenticatedApiService.downloadAssignmentFile(assignmentId);
+      const url = window.URL.createObjectURL(blob);
+      const link = document.createElement('a');
+      link.href = url;
+      link.download = fileName;
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+      window.URL.revokeObjectURL(url);
+    } catch (error) {
+      console.error('Error downloading assignment file:', error);
+      showError('Ошибка при скачивании файла');
     }
   };
 
@@ -559,6 +578,36 @@ export default function MyHomeworkPage() {
                     </p>
                   </div>
                 </div>
+
+                {/* Assignment File */}
+                {assignmentDetails.hasAttachment && (
+                  <div>
+                    <label className="text-xs text-gray-400">Прикрепленный файл</label>
+                    <div className="bg-gray-700 rounded-lg p-3 mt-1">
+                      <div className="flex items-center justify-between">
+                        <div className="flex items-center space-x-3">
+                          <div className="w-8 h-8 bg-purple-500 rounded-lg flex items-center justify-center">
+                            <DocumentIcon className="w-4 h-4 text-white" />
+                          </div>
+                          <div>
+                            <div className="text-white text-sm font-medium">{assignmentDetails.attachmentName}</div>
+                            {assignmentDetails.attachmentSize && (
+                              <div className="text-gray-400 text-xs">
+                                {(assignmentDetails.attachmentSize / 1024 / 1024).toFixed(2)} МБ
+                              </div>
+                            )}
+                          </div>
+                        </div>
+                        <button
+                          onClick={() => handleDownloadAssignmentFile(assignmentDetails.id, assignmentDetails.attachmentName!)}
+                          className="px-3 py-1.5 text-xs font-medium text-white bg-purple-500 hover:bg-purple-600 rounded-lg transition-colors"
+                        >
+                          Скачать
+                        </button>
+                      </div>
+                    </div>
+                  </div>
+                )}
               </div>
 
               {/* Conditional rendering based on editing permissions */}
