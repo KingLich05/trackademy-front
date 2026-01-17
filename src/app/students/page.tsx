@@ -929,6 +929,23 @@ export default function StudentsPage() {
         validate={(data) => {
           const errors: Record<string, string> = {};
           
+          // Validate required fields
+          if (!data.login || (typeof data.login === 'string' && data.login.trim() === '')) {
+            errors.login = 'Логин обязателен для заполнения';
+          }
+          
+          if (!data.fullName || (typeof data.fullName === 'string' && data.fullName.trim() === '')) {
+            errors.fullName = 'Полное имя обязательно для заполнения';
+          }
+          
+          if (!data.phone || (typeof data.phone === 'string' && data.phone.trim() === '')) {
+            errors.phone = 'Номер телефона обязателен для заполнения';
+          }
+          
+          if (userModal.mode === 'create' && (!data.password || (typeof data.password === 'string' && data.password.trim() === ''))) {
+            errors.password = 'Пароль обязателен для заполнения';
+          }
+          
           // Validate birthday is not in the future
           if (data.birthday && typeof data.birthday === 'string' && data.birthday.trim() !== '') {
             const selectedDate = new Date(data.birthday);
@@ -1004,39 +1021,51 @@ export default function StudentsPage() {
               {/* Login */}
               <div>
                 <label htmlFor="login" className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                  Логин
+                  Логин <span className="text-red-500">*</span>
                 </label>
                 <input
                   id="login"
+                  name="login"
                   type="text"
                   value={(formData.login as string) || ''}
                   onChange={(e) => setFormData((prev: Record<string, unknown>) => ({ ...prev, login: e.target.value }))}
-                  className="w-full px-4 py-3 border border-gray-300 dark:border-gray-600 rounded-xl focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-transparent bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
+                  className={`w-full px-4 py-3 border rounded-xl focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-transparent bg-white dark:bg-gray-700 text-gray-900 dark:text-white ${
+                    _errors.login ? 'border-red-400' : 'border-gray-300 dark:border-gray-600'
+                  }`}
                   placeholder="Введите логин"
                   required
                 />
+                {_errors.login && (
+                  <p className="mt-1 text-sm text-red-600 dark:text-red-400">{_errors.login}</p>
+                )}
               </div>
 
               {/* Full Name */}
               <div>
                 <label htmlFor="fullName" className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                  Полное имя
+                  Полное имя <span className="text-red-500">*</span>
                 </label>
                 <input
                   id="fullName"
+                  name="fullName"
                   type="text"
                   value={(formData.fullName as string) || ''}
                   onChange={(e) => setFormData((prev: Record<string, unknown>) => ({ ...prev, fullName: e.target.value }))}
-                  className="w-full px-4 py-3 border border-gray-300 dark:border-gray-600 rounded-xl focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-transparent bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
+                  className={`w-full px-4 py-3 border rounded-xl focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-transparent bg-white dark:bg-gray-700 text-gray-900 dark:text-white ${
+                    _errors.fullName ? 'border-red-400' : 'border-gray-300 dark:border-gray-600'
+                  }`}
                   placeholder="Введите полное имя"
                   required
                 />
+                {_errors.fullName && (
+                  <p className="mt-1 text-sm text-red-600 dark:text-red-400">{_errors.fullName}</p>
+                )}
               </div>
 
               {/* Phone */}
               <div>
                 <label htmlFor="phone" className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                  Телефон
+                  Телефон <span className="text-red-500">*</span>
                 </label>
                 <PhoneInput
                   value={(formData.phone as string) || ''}

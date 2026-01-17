@@ -424,14 +424,14 @@ export default function Dashboard() {
       color: summary.averageAttendanceRate >= 80 ? 'green' : summary.averageAttendanceRate >= 60 ? 'yellow' : 'red'
     },
     {
-      label: 'Неоплаченные',
+      label: 'Должники',
       value: summary.unpaidStudentsCount,
       icon: CurrencyDollarIcon,
       color: summary.unpaidStudentsCount > 0 ? 'red' : 'green',
       description: `Общий долг: ${summary.totalDebt}₸`
     },
     {
-      label: 'Пробный период',
+      label: 'Пробные студенты',
       value: summary.trialStudentsCount,
       icon: ClockIcon,
       color: 'orange'

@@ -101,6 +101,15 @@ const UniversalModal = <T extends Record<string, unknown>>({
     return true;
   };
 
+  // Check if form is valid in real-time (without setting errors)
+  const isFormValid = (): boolean => {
+    if (validate) {
+      const validationErrors = validate(formData);
+      return Object.keys(validationErrors).length === 0;
+    }
+    return true;
+  };
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     
@@ -182,7 +191,7 @@ const UniversalModal = <T extends Record<string, unknown>>({
           )}
           <button
             type="submit"
-            disabled={isSubmitting}
+            disabled={isSubmitting || (mode !== 'view' && !isFormValid())}
             className={`px-6 py-3 text-sm font-medium text-white bg-gradient-to-r from-${gradientFrom} to-${gradientTo} hover:opacity-90 rounded-xl focus:outline-none focus:ring-2 focus:ring-offset-2 disabled:opacity-50 disabled:cursor-not-allowed transition-all duration-200 hover:shadow-lg hover:scale-105`}
           >
             {isSubmitting ? (loadingText || getDefaultLoadingText()) : (submitText || getDefaultSubmitText())}

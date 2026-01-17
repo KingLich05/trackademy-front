@@ -97,8 +97,8 @@ export const AddBalanceModal: React.FC<AddBalanceModalProps> = ({
                   {discountType !== null && discountValue !== null && (
                     <div className="text-xs text-green-600 dark:text-green-400">
                       Скидка: {discountType === 1 
-                        ? `${discountValue?.toLocaleString()} ₸` 
-                        : `${discountValue}%`
+                        ? `${discountValue}%` 
+                        : `${discountValue?.toLocaleString()} ₸`
                       } • Экономия: {(subjectPrice - discountedPrice).toLocaleString()} ₸
                     </div>
                   )}

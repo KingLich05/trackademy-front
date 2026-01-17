@@ -11,6 +11,7 @@ import { Submission } from '../../types/Submission';
 import { PageHeaderWithStats } from '../../components/ui/PageHeaderWithStats';
 import { useApiToast } from '../../hooks/useApiToast';
 import { BaseModal } from '../../components/ui/BaseModal';
+import { AssignmentPreviewModal } from '../../components/ui/AssignmentPreviewModal';
 
 export default function MyHomeworkPage() {
   const { isAuthenticated, user } = useAuth();
@@ -31,6 +32,9 @@ export default function MyHomeworkPage() {
   const [submissionText, setSubmissionText] = useState('');
   const [submissionFiles, setSubmissionFiles] = useState<File[]>([]);
   const [submitting, setSubmitting] = useState(false);
+  
+  // Assignment file preview state
+  const [isAssignmentPreviewOpen, setIsAssignmentPreviewOpen] = useState(false);
 
   const { loadOperation, createOperation, updateOperation, deleteOperation } = useApiToast();
   const { showError } = useToast();
@@ -196,6 +200,11 @@ export default function MyHomeworkPage() {
       console.error('Error downloading assignment file:', error);
       showError('Ошибка при скачивании файла');
     }
+  };
+
+  // Определяем, является ли файл PDF
+  const isPDFFile = (filename: string | undefined): boolean => {
+    return filename ? filename.toLowerCase().endsWith('.pdf') : false;
   };
 
   // Проверка, можно ли редактировать работу
@@ -598,12 +607,22 @@ export default function MyHomeworkPage() {
                             )}
                           </div>
                         </div>
-                        <button
-                          onClick={() => handleDownloadAssignmentFile(assignmentDetails.id, assignmentDetails.attachmentName!)}
-                          className="px-3 py-1.5 text-xs font-medium text-white bg-purple-500 hover:bg-purple-600 rounded-lg transition-colors"
-                        >
-                          Скачать
-                        </button>
+                        <div className="flex gap-2">
+                          {isPDFFile(assignmentDetails.attachmentName) && (
+                            <button
+                              onClick={() => setIsAssignmentPreviewOpen(true)}
+                              className="px-3 py-1.5 text-xs font-medium text-white bg-blue-500 hover:bg-blue-600 rounded-lg transition-colors"
+                            >
+                              Предпросмотр
+                            </button>
+                          )}
+                          <button
+                            onClick={() => handleDownloadAssignmentFile(assignmentDetails.id, assignmentDetails.attachmentName!)}
+                            className="px-3 py-1.5 text-xs font-medium text-white bg-purple-500 hover:bg-purple-600 rounded-lg transition-colors"
+                          >
+                            Скачать
+                          </button>
+                        </div>
                       </div>
                     </div>
                   </div>
@@ -782,14 +801,6 @@ export default function MyHomeworkPage() {
                 /* Submission Form - editable for Draft (0), Returned (3), Overdue (4), or null */
                 <>
                   <div className="border-t border-gray-600 pt-6 mt-4">
-                    <div className="bg-gradient-to-r from-blue-500/10 to-purple-500/10 border border-blue-500/30 rounded-lg p-4 mb-4">
-                      <h3 className="text-base font-semibold text-white mb-1 flex items-center">
-                        <ArrowUpTrayIcon className="h-5 w-5 mr-2 text-blue-400" />
-                        Выполнить задание
-                      </h3>
-                      <p className="text-xs text-gray-400">Напишите комментарий или загрузите файлы с выполненным заданием</p>
-                    </div>
-
                     {/* Text Content */}
                     <div className="mb-4">
                       <label className="block text-sm font-medium text-gray-300 mb-2">
@@ -971,6 +982,18 @@ export default function MyHomeworkPage() {
           ) : null}
         </div>
       </BaseModal>
+
+      {/* Assignment File Preview Modal */}
+      {assignmentDetails && assignmentDetails.hasAttachment && isPDFFile(assignmentDetails.attachmentName) && (
+        <AssignmentPreviewModal
+          isOpen={isAssignmentPreviewOpen}
+          onClose={() => setIsAssignmentPreviewOpen(false)}
+          assignmentId={assignmentDetails.id}
+          fileName={assignmentDetails.attachmentName!}
+          fileSize={assignmentDetails.attachmentSize}
+          onDownload={() => handleDownloadAssignmentFile(assignmentDetails.id, assignmentDetails.attachmentName!)}
+        />
+      )}
     </div>
   );
 }
