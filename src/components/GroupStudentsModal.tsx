@@ -67,6 +67,7 @@ export const GroupStudentsModal: React.FC<GroupStudentsModalProps> = ({
   // Состояния загрузки для операций
   const [addingBalance, setAddingBalance] = useState(false);
   const [applyingDiscount, setApplyingDiscount] = useState(false);
+  const [removingDiscount, setRemovingDiscount] = useState(false);
   const [freezingStudent, setFreezingStudent] = useState(false);
 
   const { showToast, showSuccess, showError } = useToast();
@@ -141,6 +142,23 @@ export const GroupStudentsModal: React.FC<GroupStudentsModalProps> = ({
       showError('Ошибка при применении скидки: ' + ((error as Error)?.message || 'Неизвестная ошибка'));
     } finally {
       setApplyingDiscount(false);
+    }
+  };
+
+  const handleRemoveDiscount = async () => {
+    if (!selectedStudent || !group?.id) return;
+    
+    setRemovingDiscount(true);
+    try {
+      await StudentBalanceApiService.removeDiscount(selectedStudent.student.id, group.id);
+      showSuccess(`Скидка удалена для ${selectedStudent.student.name}`);
+      setIsDiscountOpen(false);
+      // Принудительно перезагружаем данные
+      await loadStudents();
+    } catch (error: unknown) {
+      showError('Ошибка при удалении скидки: ' + ((error as Error)?.message || 'Неизвестная ошибка'));
+    } finally {
+      setRemovingDiscount(false);
     }
   };
 
@@ -405,6 +423,9 @@ export const GroupStudentsModal: React.FC<GroupStudentsModalProps> = ({
         onConfirm={handleAddBalance}
         studentName={selectedStudent?.student.name || ''}
         subjectPrice={selectedStudent?.subjectPrice}
+        discountedPrice={selectedStudent?.lessonCost}
+        discountType={selectedStudent?.discountType}
+        discountValue={selectedStudent?.discountValue}
         loading={addingBalance}
       />
       
@@ -412,8 +433,12 @@ export const GroupStudentsModal: React.FC<GroupStudentsModalProps> = ({
         isOpen={isDiscountOpen}
         onClose={() => setIsDiscountOpen(false)}
         onConfirm={handleApplyDiscount}
+        onRemove={handleRemoveDiscount}
         studentName={selectedStudent?.student.name || ''}
-        loading={applyingDiscount}
+        loading={applyingDiscount || removingDiscount}
+        currentDiscountType={selectedStudent?.discountType}
+        currentDiscountValue={selectedStudent?.discountValue}
+        currentDiscountReason={selectedStudent?.discountReason}
       />
       
       <FreezeStudentModal

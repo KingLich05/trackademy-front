@@ -6,6 +6,7 @@ import { AttendanceStatus } from '@/types/Attendance';
 import { getAttendanceStatusText, getAttendanceStatusColor } from '@/types/Lesson';
 import { attendanceApi } from '@/services/AttendanceApiService';
 import { useToast } from '@/contexts/ToastContext';
+import { useAuth } from '@/contexts/AuthContext';
 
 interface StudentGradeModalProps {
   student: LessonStudent;
@@ -17,10 +18,22 @@ interface StudentGradeModalProps {
 
 export default function StudentGradeModal({ student, lessonId, isOpen, onClose, onUpdate }: StudentGradeModalProps) {
   const { showToast } = useToast();
+  const { user } = useAuth();
   const [status, setStatus] = useState<AttendanceStatus | null>(student.attendanceStatus);
   const [grade, setGrade] = useState<number | string>(student.grade || '');
   const [comment, setComment] = useState<string>(student.comment || '');
   const [isLoading, setIsLoading] = useState(false);
+
+  // Check user roles
+  const userRole = user?.role || '';
+  const roleStr = user?.roleId?.toString() || '';
+  const isTeacher = userRole === 'Teacher' || roleStr === '3';
+  const isAdministrator = userRole === 'Administrator' || roleStr === '2';
+  const isStudent = userRole === 'Student' || roleStr === '1';
+  
+  // Students can view grades, teachers and admins can view all grades
+  const canViewGrades = isTeacher || isAdministrator || isStudent;
+  const canEditGrades = isTeacher;
 
   // Сброс формы при открытии модалки
   useEffect(() => {
@@ -37,17 +50,24 @@ export default function StudentGradeModal({ student, lessonId, isOpen, onClose, 
     try {
       setIsLoading(true);
 
-      // Валидация оценки
-      const gradeValue = grade === '' ? null : Number(grade);
-      if (gradeValue !== null && (gradeValue < 1 || gradeValue > 100)) {
-        showToast('Оценка должна быть в диапазоне от 1 до 100', 'error');
-        return;
+      // Валидация оценки (только если пользователь - преподаватель)
+      let gradeValue = null;
+      if (canEditGrades) {
+        gradeValue = grade === '' ? null : Number(grade);
+        if (gradeValue !== null && (gradeValue < 1 || gradeValue > 100)) {
+          showToast('Оценка должна быть в диапазоне от 1 до 100', 'error');
+          return;
+        }
       }
 
-      // Валидация комментария
-      if (comment.length > 500) {
-        showToast('Комментарий не должен превышать 500 символов', 'error');
-        return;
+      // Валидация комментария (только если пользователь - преподаватель)
+      let commentValue = '';
+      if (canEditGrades) {
+        commentValue = comment;
+        if (commentValue.length > 500) {
+          showToast('Комментарий не должен превышать 500 символов', 'error');
+          return;
+        }
       }
 
       // Обновляем статус, оценку и комментарий
@@ -55,8 +75,8 @@ export default function StudentGradeModal({ student, lessonId, isOpen, onClose, 
         studentId: student.id,
         lessonId: lessonId,
         status: status!,
-        grade: gradeValue || undefined,
-        comment: comment.trim() || undefined
+        grade: canEditGrades ? (gradeValue || undefined) : undefined,
+        comment: canEditGrades ? (commentValue.trim() || undefined) : undefined
       });
 
       showToast('Данные студента успешно обновлены', 'success');
@@ -106,56 +126,63 @@ export default function StudentGradeModal({ student, lessonId, isOpen, onClose, 
               <option value={3}>Опоздал</option>
               <option value={4}>Уважительная причина</option>
             </select>
-            {status && (
-              <div className={`mt-1 text-sm font-medium ${getAttendanceStatusColor(status)}`}>
-                {getAttendanceStatusText(status)}
-              </div>
-            )}
           </div>
 
-          {/* Оценка */}
-          <div>
-            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-              Оценка (1-100)
-            </label>
-            <input
-              type="number"
-              min="1"
-              max="100"
-              step="5"
-              value={grade}
-              onChange={handleGradeChange}
-              placeholder="Введите оценку"
-              className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg 
-                       bg-white dark:bg-gray-700 text-gray-900 dark:text-white
-                       focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-            />
-            {grade && (
-              <div className="mt-1 text-sm text-gray-500 dark:text-gray-400">
-                Оценка: {grade}
-              </div>
-            )}
-          </div>
-
-          {/* Комментарий */}
-          <div>
-            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-              Комментарий
-            </label>
-            <textarea
-              value={comment}
-              onChange={(e) => setComment(e.target.value)}
-              rows={3}
-              maxLength={500}
-              placeholder="Комментарий к уроку..."
-              className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg 
-                       bg-white dark:bg-gray-700 text-gray-900 dark:text-white
-                       focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent resize-none"
-            />
-            <div className="mt-1 text-sm text-gray-500 dark:text-gray-400 text-right">
-              {comment.length}/500 символов
+          {/* Оценка - для преподавателей, администраторов и самого студента */}
+          {canViewGrades && (
+            <div>
+              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                Оценка (1-100) {!canEditGrades && <span className="text-sm text-gray-500">(только просмотр)</span>}
+              </label>
+              <input
+                type="number"
+                min="1"
+                max="100"
+                step="5"
+                value={grade}
+                onChange={handleGradeChange}
+                placeholder={canEditGrades ? "Введите оценку" : "Оценка не выставлена"}
+                disabled={!canEditGrades}
+                className={`w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg 
+                         ${canEditGrades 
+                           ? 'bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent' 
+                           : 'bg-gray-100 dark:bg-gray-600 text-gray-500 dark:text-gray-400 cursor-not-allowed'
+                         }`}
+              />
+              {grade && (
+                <div className="mt-1 text-sm text-gray-500 dark:text-gray-400">
+                  Оценка: {grade}
+                </div>
+              )}
             </div>
-          </div>
+          )}
+
+          {/* Комментарий - для преподавателей, администраторов и самого студента */}
+          {canViewGrades && (
+            <div>
+              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                Комментарий преподавателя {!canEditGrades && <span className="text-sm text-gray-500">(только просмотр)</span>}
+              </label>
+              <textarea
+                value={comment}
+                onChange={(e) => setComment(e.target.value)}
+                rows={3}
+                maxLength={500}
+                placeholder={canEditGrades ? "Комментарий к уроку..." : "Комментарий отсутствует"}
+                disabled={!canEditGrades}
+                className={`w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg resize-none
+                         ${canEditGrades 
+                           ? 'bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent' 
+                           : 'bg-gray-100 dark:bg-gray-600 text-gray-500 dark:text-gray-400 cursor-not-allowed'
+                         }`}
+              />
+              {canEditGrades && (
+                <div className="mt-1 text-sm text-gray-500 dark:text-gray-400 text-right">
+                  {comment.length}/500 символов
+                </div>
+              )}
+            </div>
+          )}
         </div>
 
         <div className="flex justify-end gap-3 mt-6">

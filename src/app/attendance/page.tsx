@@ -368,7 +368,7 @@ export default function AttendancePage() {
                     <th className="px-2 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider w-20">
                       Время
                     </th>
-                    <th className="px-2 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider w-24">
+                    <th className="px-2 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider max-w-[120px]">
                       Статус
                     </th>
                     <th className="px-2 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider w-20">
@@ -414,16 +414,18 @@ export default function AttendancePage() {
                       <td className="px-2 py-4 whitespace-nowrap text-xs text-gray-900 dark:text-white">
                         {record.startTime.slice(0, 5)}-{record.endTime.slice(0, 5)}
                       </td>
-                      <td className="px-2 py-4 whitespace-nowrap">
+                      <td className="px-2 py-4 whitespace-nowrap max-w-[120px]">
                         <span
                           className="inline-flex items-center gap-1 px-2 py-1 rounded-full text-xs font-medium"
                           style={{
                             backgroundColor: getAttendanceStatusColor(record.status) + '20',
                             color: getAttendanceStatusColor(record.status)
                           }}
+                          title={getAttendanceStatusText(record.status)}
                         >
                           <span>{getAttendanceStatusIcon(record.status)}</span>
-                          <span className="hidden sm:inline">{getAttendanceStatusText(record.status)}</span>
+                          <span className="hidden lg:inline truncate max-w-[80px]">{getAttendanceStatusText(record.status)}</span>
+                          <span className="lg:hidden">{getAttendanceStatusText(record.status) === 'Отсутствовал по уважительной причине' ? 'Ув. причина' : getAttendanceStatusText(record.status)}</span>
                         </span>
                       </td>
                       <td className="px-2 py-4 whitespace-nowrap text-center">

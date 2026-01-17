@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import { useAuth } from '../contexts/AuthContext';
@@ -15,6 +15,49 @@ const TopBar: React.FC = () => {
   const [showSupportModal, setShowSupportModal] = useState(false);
   const [isCopied, setIsCopied] = useState(false);
   const pathname = usePathname();
+  const timeoutRef = useRef<NodeJS.Timeout | null>(null);
+
+  // Автоматическое закрытие меню через 5 секунд
+  useEffect(() => {
+    if (isDropdownOpen) {
+      timeoutRef.current = setTimeout(() => {
+        setIsDropdownOpen(false);
+      }, 5000); // 5 секунд
+    } else {
+      if (timeoutRef.current) {
+        clearTimeout(timeoutRef.current);
+        timeoutRef.current = null;
+      }
+    }
+
+    // Очистка таймера при размонтировании компонента
+    return () => {
+      if (timeoutRef.current) {
+        clearTimeout(timeoutRef.current);
+      }
+    };
+  }, [isDropdownOpen]);
+
+  // Закрытие меню при клике вне его области
+  useEffect(() => {
+    const handleClickOutside = (event: MouseEvent) => {
+      if (isDropdownOpen) {
+        // Проверяем, что клик был не по элементам меню
+        const target = event.target as Element;
+        if (!target.closest('[data-dropdown="profile-menu"]')) {
+          setIsDropdownOpen(false);
+        }
+      }
+    };
+
+    if (isDropdownOpen) {
+      document.addEventListener('mousedown', handleClickOutside);
+    }
+
+    return () => {
+      document.removeEventListener('mousedown', handleClickOutside);
+    };
+  }, [isDropdownOpen]);
 
   // Don't show TopBar on login page
   if (pathname === '/login' || !isAuthenticated || !user) {
@@ -36,7 +79,7 @@ const TopBar: React.FC = () => {
             </div>
 
             {/* Right side - User menu */}
-            <div className="relative">
+            <div className="relative" data-dropdown="profile-menu">
                 <button
                   onClick={() => setIsDropdownOpen(!isDropdownOpen)}
                   className="flex items-center space-x-3 px-2 py-1 text-sm font-medium text-gray-700 dark:text-gray-200 hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors duration-200 rounded-md"

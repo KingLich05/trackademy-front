@@ -300,6 +300,8 @@ export default function LessonDetailModal({ lesson, isOpen, onClose, onUpdate }:
               noteError={noteError}
               noteSuccess={noteSuccess}
               onSaveNote={handleSaveNote}
+              user={user}
+              students={lesson.students}
             />
           )}
           
@@ -312,7 +314,7 @@ export default function LessonDetailModal({ lesson, isOpen, onClose, onUpdate }:
               lessonStatus={lesson.lessonStatus}
               lessonId={lesson.id}
               onUpdate={onUpdate || (() => {})}
-              canViewGrades={!isStudent}
+              canViewGrades={true}
             />
           )}
           
@@ -591,9 +593,17 @@ interface DetailsTabProps {
   noteError: string | null;
   noteSuccess: boolean;
   onSaveNote: () => void;
+  user: { id?: string; role?: string; roleId?: number } | null;
+  students: Lesson['students'];
 }
 
-function DetailsTab({ lesson, subjectColor, note, setNote, canEditNote, isSavingNote, noteError, noteSuccess, onSaveNote }: DetailsTabProps) {
+function DetailsTab({ lesson, subjectColor, note, setNote, canEditNote, isSavingNote, noteError, noteSuccess, onSaveNote, user, students }: DetailsTabProps) {
+  // Check if current user is a student
+  const userRole = user?.role || '';
+  const isStudent = userRole === 'Student' || user?.roleId?.toString() === '1';
+  
+  // Find current student's data if user is a student
+  const currentStudentData = isStudent ? students.find(s => s.id === user?.id) : null;
   return (
     <div className="space-y-6">
       {/* Main Info */}
@@ -739,6 +749,29 @@ function DetailsTab({ lesson, subjectColor, note, setNote, canEditNote, isSaving
           </div>
         )}
       </div>
+
+      {/* Student Grade and Comment - only for students */}
+      {isStudent && currentStudentData && (currentStudentData.grade || currentStudentData.comment) && (
+        <div className="space-y-4">
+          <h3 className="text-lg font-semibold text-gray-900 dark:text-white">
+            Ваша оценка и комментарий
+          </h3>
+          <div className="p-4 bg-blue-50 dark:bg-blue-900/20 rounded-lg border border-blue-200 dark:border-blue-800">
+            {currentStudentData.grade && (
+              <div className="mb-3">
+                <label className="text-sm font-medium text-blue-600 dark:text-blue-400">Оценка</label>
+                <p className="text-xl font-bold text-blue-700 dark:text-blue-300 mt-1">{currentStudentData.grade}</p>
+              </div>
+            )}
+            {currentStudentData.comment && (
+              <div>
+                <label className="text-sm font-medium text-blue-600 dark:text-blue-400">Комментарий преподавателя</label>
+                <p className="text-blue-700 dark:text-blue-300 mt-1 whitespace-pre-wrap">{currentStudentData.comment}</p>
+              </div>
+            )}
+          </div>
+        </div>
+      )}
 
       {/* Cancel Reason */}
       {lesson.cancelReason && (
@@ -894,16 +927,6 @@ function AttendanceTab({ students, attendedStudents, absentStudents, unmarkedStu
                   <span className="font-medium text-gray-900 dark:text-white block">
                     {student.fullName}
                   </span>
-                  {canViewGrades && student.grade && (
-                    <span className="text-sm text-gray-500 dark:text-gray-400">
-                      Оценка: {student.grade}
-                    </span>
-                  )}
-                  {canViewGrades && student.comment && (
-                    <div className="text-xs text-gray-500 dark:text-gray-400 mt-1 max-w-sm truncate">
-                      💬 {student.comment}
-                    </div>
-                  )}
                 </div>
               </div>
               
@@ -919,7 +942,7 @@ function AttendanceTab({ students, attendedStudents, absentStudents, unmarkedStu
                     {getAttendanceStatusText(student.attendanceStatus)}
                   </span>
                   {canViewGrades && (student.grade || student.comment) && (
-                    <div className="text-xs text-gray-500 dark:text-gray-400 mt-1">
+                    <div className="text-xs text-gray-500 dark:text-gray-400 mt-0.5">
                       {student.grade && `Оценка: ${student.grade}`}
                       {student.grade && student.comment && ' • '}
                       {student.comment && 'Есть комментарий'}
@@ -939,7 +962,7 @@ function AttendanceTab({ students, attendedStudents, absentStudents, unmarkedStu
       </div>
 
       {/* Student Grade Modal */}
-      {canViewGrades && selectedStudent && (
+      {selectedStudent && (
         <StudentGradeModal
           student={selectedStudent}
           lessonId={lessonId}

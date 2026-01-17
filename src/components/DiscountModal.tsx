@@ -8,21 +8,39 @@ interface DiscountModalProps {
   isOpen: boolean;
   onClose: () => void;
   onConfirm: (discountType: number, discountValue: number, discountReason: string) => void;
+  onRemove?: () => void;
   studentName: string;
   loading?: boolean;
+  currentDiscountType?: number | null;
+  currentDiscountValue?: number | null;
+  currentDiscountReason?: string | null;
 }
 
 export const DiscountModal: React.FC<DiscountModalProps> = ({
   isOpen,
   onClose,
   onConfirm,
+  onRemove,
   studentName,
-  loading = false
+  loading = false,
+  currentDiscountType,
+  currentDiscountValue,
+  currentDiscountReason
 }) => {
-  const [discountType, setDiscountType] = useState<number>(1); // 1 = процент, 2 = фиксированная сумма
-  const [discountValue, setDiscountValue] = useState('');
-  const [discountReason, setDiscountReason] = useState('');
+  const [discountType, setDiscountType] = useState<number>(currentDiscountType || 1); // 1 = процент, 2 = фиксированная сумма
+  const [discountValue, setDiscountValue] = useState(currentDiscountValue?.toString() || '');
+  const [discountReason, setDiscountReason] = useState(currentDiscountReason || '');
   const [errors, setErrors] = useState<{ discountValue?: string; discountReason?: string }>({});
+
+  // Обновляем состояние при изменении props
+  React.useEffect(() => {
+    if (isOpen) {
+      setDiscountType(currentDiscountType || 1);
+      setDiscountValue(currentDiscountValue?.toString() || '');
+      setDiscountReason(currentDiscountReason || '');
+      setErrors({});
+    }
+  }, [isOpen, currentDiscountType, currentDiscountValue, currentDiscountReason]);
 
   const handleDiscountValueChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const value = e.target.value;
@@ -163,6 +181,27 @@ export const DiscountModal: React.FC<DiscountModalProps> = ({
           >
             Отмена
           </button>
+          
+          {/* Кнопка удаления скидки показывается только если у студента есть скидка */}
+          {onRemove && currentDiscountValue && currentDiscountValue > 0 && (
+            <button
+              onClick={() => {
+                if (onRemove) onRemove();
+              }}
+              disabled={loading}
+              className="px-6 py-2.5 text-sm font-medium text-white bg-red-600 hover:bg-red-700 rounded-lg focus:outline-none focus:ring-2 focus:ring-red-300 disabled:opacity-50 disabled:cursor-not-allowed transition-colors flex items-center gap-2"
+            >
+              {loading ? (
+                <>
+                  <div className="w-4 h-4 border-2 border-white/20 border-t-white rounded-full animate-spin"></div>
+                  Удаление...
+                </>
+              ) : (
+                'Удалить скидку'
+              )}
+            </button>
+          )}
+          
           <button
             onClick={handleConfirm}
             disabled={loading}

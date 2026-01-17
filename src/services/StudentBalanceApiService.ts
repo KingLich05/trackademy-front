@@ -53,6 +53,15 @@ export class StudentBalanceApiService {
   }
 
   /**
+   * Удалить скидку у студента
+   */
+  static async removeDiscount(studentId: string, groupId: string): Promise<void> {
+    return AuthenticatedApiService.delete<void>(
+      `/StudentBalance/groups/${groupId}/students/${studentId}/discount`
+    );
+  }
+
+  /**
    * Возврат средств студенту
    */
   static async refundBalance(studentId: string, groupId: string, request: RefundRequest): Promise<void> {
