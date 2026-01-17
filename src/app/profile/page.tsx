@@ -71,8 +71,12 @@ export default function Profile() {
     if (!fullProfileData) {
       setIsLoadingFullData(true);
       try {
-        const fullData = await AuthenticatedApiService.getUserById(user.id);
-        setFullProfileData(fullData);
+        const response = await AuthenticatedApiService.getUserById(user.id);
+        if (response.success && response.data) {
+          setFullProfileData(response.data);
+        } else {
+          throw new Error(response.message || 'Failed to fetch user data');
+        }
       } catch (error) {
         console.error('Failed to fetch full profile data:', error);
         setError('Не удалось загрузить полные данные профиля');
@@ -90,8 +94,10 @@ export default function Profile() {
       // Обновляем данные профиля после сохранения
       await fetchProfileData();
       // Также обновляем полные данные для модалки
-      const fullData = await AuthenticatedApiService.getUserById(user.id);
-      setFullProfileData(fullData);
+      const response = await AuthenticatedApiService.getUserById(user.id);
+      if (response.success && response.data) {
+        setFullProfileData(response.data);
+      }
       
       // Обновляем пользователя в AuthContext с помощью refreshUser
       await refreshUser();

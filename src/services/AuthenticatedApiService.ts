@@ -398,10 +398,6 @@ export class AuthenticatedApiService {
   }
 
   // Profile management methods
-  static async getUserById(id: string): Promise<User> {
-    return this.get(`/User/GetUserById/${id}`);
-  }
-
   static async changePassword(studentId: string, currentPassword: string, newPassword: string): Promise<ApiResponse<boolean>> {
     return this.put('/User/update-password', {
       studentId,
@@ -800,5 +796,9 @@ export class AuthenticatedApiService {
 
   static async deleteDocument(documentId: string): Promise<ApiResponse<void>> {
     return this.delete(`/Document/${documentId}`);
+  }
+
+  static async getUserById(userId: string): Promise<ApiResponse<User>> {
+    return this.get(`/User/GetUserById/${userId}`);
   }
 }
