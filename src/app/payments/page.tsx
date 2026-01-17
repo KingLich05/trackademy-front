@@ -396,6 +396,16 @@ export default function PaymentsPage() {
     return 'bg-gray-50 dark:bg-gray-800';
   };
 
+  // Функция для получения текста статуса заморозки
+  const getFreezeStatusText = (student: GroupedStudent) => {
+    if (!student.isFrozen) return null;
+    
+    const totalGroups = student.groups.length;
+    const frozenGroups = student.groups.filter(group => group.isFrozen).length;
+    
+    return `${frozenGroups}/${totalGroups}`;
+  };
+
   const handleResetFilters = () => {
     setSearchTerm('');
     setSelectedGroupId('');
@@ -715,7 +725,7 @@ export default function PaymentsPage() {
                                 <div className="flex items-center space-x-1">
                                   <AcademicCapIcon className="h-4 w-4 text-blue-600 dark:text-blue-400" />
                                   <span className="inline-flex px-2 py-1 text-xs font-semibold rounded-full bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-200">
-                                    Заморожено
+                                    Заморозка {getFreezeStatusText(student)}
                                   </span>
                                 </div>
                               ) : (
@@ -858,7 +868,7 @@ export default function PaymentsPage() {
                         </div>
                         {student.isFrozen && (
                           <span className="inline-flex px-2 py-1 text-xs font-semibold rounded-full bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-200 mt-1">
-                            Заморожено
+                            Заморозка {getFreezeStatusText(student)}
                           </span>
                         )}
                       </div>
