@@ -6,6 +6,7 @@ import { Organization, OrganizationDetail, OrganizationFormData } from '../types
 import { Room, RoomFormData } from '../types/Room';
 import { Subject, SubjectFormData } from '../types/Subject';
 import { GroupsResponse } from '../types/Group';
+import { StudentProfile } from '../types/StudentProfile';
 import { Assignment, AssignmentFormData, AssignmentsResponse, AssignmentFilters } from '../types/Assignment';
 import { Submission, SubmissionFilters, SubmissionsResponse, GradeSubmissionRequest, ReturnSubmissionRequest } from '../types/Submission';
 import { MyAssignmentsRequest, MyAssignmentsResponse } from '../types/MyAssignments';
@@ -800,5 +801,16 @@ export class AuthenticatedApiService {
 
   static async getUserById(userId: string): Promise<ApiResponse<User>> {
     return this.get(`/User/GetUserById/${userId}`);
+  }
+
+  static async getStudentProfile(userId: string, dateFrom?: string, dateTo?: string): Promise<StudentProfile> {
+    const params = new URLSearchParams();
+    if (dateFrom) params.set('dateFrom', dateFrom);
+    if (dateTo) params.set('dateTo', dateTo);
+    
+    const queryString = params.toString();
+    const url = `/User/student-profile/${userId}${queryString ? `?${queryString}` : ''}`;
+    
+    return this.get<StudentProfile>(url);
   }
 }
