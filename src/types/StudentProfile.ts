@@ -8,29 +8,37 @@ export interface StudentStatus {
 }
 
 export interface StudentFlag {
-  flagId: string;
-  flagName: string;
-  flagType: string;
-  isActive: boolean;
-  setAt: string;
-  setByName: string;
+  id: string;
+  name: string;
+  reason: string;
+  source: number;
+  sourceName: string;
+  changedAt: string;
+  changedByName: string | null;
 }
 
 export interface StudentFlagHistory {
-  flagId: string;
+  id: string;
+  studentFlagId: string;
   flagName: string;
-  flagType: string;
-  action: string;
-  timestamp: string;
-  setByName: string;
+  isActive: boolean;
+  reason: string;
+  source: number;
+  sourceName: string;
+  changedAt: string;
+  changedByName: string | null;
+  removedAt: string | null;
+  removalReason: string | null;
+  removedByName: string | null;
 }
 
 export interface StudentStatusHistory {
   status: number;
   statusName: string;
   reason: string | null;
-  changedAt: string;
-  changedByName: string;
+  validFrom: string;
+  validTo: string | null;
+  changedByName: string | null;
 }
 
 export interface StudentGroupSubject {
@@ -155,6 +163,7 @@ export interface StudentProfile {
   fullName: string;
   phone: string;
   parentPhone: string | null;
+  birthDate: string | null;
   createdAt: string;
   isArchived: boolean;
   role: string;

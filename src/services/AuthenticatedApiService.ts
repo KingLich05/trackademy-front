@@ -12,6 +12,8 @@ import { Submission, SubmissionFilters, SubmissionsResponse, GradeSubmissionRequ
 import { MyAssignmentsRequest, MyAssignmentsResponse } from '../types/MyAssignments';
 import { Material, MaterialsResponse, MaterialEditData } from '../types/Material';
 import { Document, DocumentUploadData } from '../types/Document';
+import { StudentFlag, CreateStudentFlagRequest, UpdateStudentFlagRequest } from '../types/StudentFlag';
+import { SetStudentStatusRequest, SetStudentFlagRequest, RemoveStudentFlagRequest } from '../types/StudentCrm';
 
 interface ApiResponse<T> {
   success: boolean;
@@ -227,6 +229,13 @@ export class AuthenticatedApiService {
 
   static async delete<T>(endpoint: string): Promise<T> {
     return this.request<T>(endpoint, { method: 'DELETE' });
+  }
+
+  static async deleteWithBody<T>(endpoint: string, data: unknown): Promise<T> {
+    return this.request<T>(endpoint, {
+      method: 'DELETE',
+      body: JSON.stringify(data),
+    });
   }
 
   // Download file with authentication
@@ -812,5 +821,35 @@ export class AuthenticatedApiService {
     const url = `/User/student-profile/${userId}${queryString ? `?${queryString}` : ''}`;
     
     return this.get<StudentProfile>(url);
+  }
+
+  // Student Flags API
+  static async getStudentFlags(): Promise<StudentFlag[]> {
+    return this.get<StudentFlag[]>('/StudentFlag');
+  }
+
+  static async createStudentFlag(data: CreateStudentFlagRequest): Promise<StudentFlag> {
+    return this.post<StudentFlag>('/StudentFlag', data);
+  }
+
+  static async updateStudentFlag(id: string, data: UpdateStudentFlagRequest): Promise<StudentFlag> {
+    return this.put<StudentFlag>(`/StudentFlag/${id}`, data);
+  }
+
+  static async deleteStudentFlag(id: string): Promise<void> {
+    return this.delete(`/StudentFlag/${id}`);
+  }
+
+  // Student CRM API
+  static async setStudentStatus(data: SetStudentStatusRequest): Promise<void> {
+    return this.post<void>('/StudentCrm/status', data);
+  }
+
+  static async setStudentFlag(data: SetStudentFlagRequest): Promise<void> {
+    return this.post<void>('/StudentCrm/flag', data);
+  }
+
+  static async removeStudentFlag(data: RemoveStudentFlagRequest): Promise<void> {
+    return this.deleteWithBody('/StudentCrm/flag', data);
   }
 }

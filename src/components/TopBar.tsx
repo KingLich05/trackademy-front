@@ -5,7 +5,7 @@ import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import { useAuth } from '../contexts/AuthContext';
 import { getRoleName } from '../types/Role';
-import { ChevronDownIcon, UserIcon, ArrowRightOnRectangleIcon, PhoneIcon, QuestionMarkCircleIcon } from '@heroicons/react/24/outline';
+import { ChevronDownIcon, UserIcon, ArrowRightOnRectangleIcon, PhoneIcon, QuestionMarkCircleIcon, CogIcon } from '@heroicons/react/24/outline';
 import ThemeToggle from './ThemeToggle';
 import { BaseModal } from './ui/BaseModal';
 
@@ -145,6 +145,18 @@ const TopBar: React.FC = () => {
                         <UserIcon className="w-4 h-4 text-gray-500 dark:text-gray-400 mr-3" />
                         <span>Профиль</span>
                       </Link>
+
+                      {/* Настройки - только для администратора */}
+                      {(user.role === 'Administrator' || user.role === 'Owner') && (
+                        <Link
+                          href="/settings"
+                          onClick={() => setIsDropdownOpen(false)}
+                          className="flex items-center px-4 py-2 text-sm text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors duration-200"
+                        >
+                          <CogIcon className="w-4 h-4 text-gray-500 dark:text-gray-400 mr-3" />
+                          <span>Настройки</span>
+                        </Link>
+                      )}
 
                       {/* Техническая поддержка - только для админов и владельцев */}
                       {(user.roleId === 2 || user.roleId === 4 || user.role === 'Administrator' || user.role === 'Owner') && (
