@@ -538,7 +538,7 @@ export default function StudentDetailPage() {
               
               {studentProfile.activeFlags && studentProfile.activeFlags.length > 0 && (
                 <div className="flex items-center gap-1">
-                  {studentProfile.activeFlags.map((flag: any) => (
+                  {studentProfile.activeFlags.map((flag: import('../../../types/StudentProfile').StudentFlag) => (
                     <div key={flag.id} className="flex items-center gap-1">
                       <span className="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-300">
                         <FlagIcon className="h-3 w-3 mr-1" />
@@ -749,7 +749,7 @@ export default function StudentDetailPage() {
                           <p className="font-medium text-gray-900 dark:text-white">{group.averageGrade}</p>
                         </div>
                       )}
-                      {group.discountValue > 0 ? (
+                      {group.discountValue !== null && group.discountValue > 0 ? (
                         <div>
                           <span className="text-gray-500 dark:text-gray-400">Скидка:</span>
                           <p className="font-medium text-gray-900 dark:text-white">
@@ -954,7 +954,7 @@ export default function StudentDetailPage() {
                 <div className="space-y-3 max-h-96 overflow-y-auto">
                   {studentProfile.flagHistory
                     .sort((a, b) => new Date(b.changedAt).getTime() - new Date(a.changedAt).getTime())
-                    .map((flagRecord: any) => (
+                    .map((flagRecord: import('../../../types/StudentProfile').StudentFlagHistory) => (
                       <div key={flagRecord.id} className="border border-gray-200 dark:border-gray-700 rounded-lg p-3">
                         <div className="flex justify-between items-start mb-2">
                           <div className="flex-1">
@@ -1019,7 +1019,7 @@ export default function StudentDetailPage() {
                 <div className="space-y-3 max-h-96 overflow-y-auto">
                   {studentProfile.statusHistory
                     .sort((a, b) => new Date(b.validFrom).getTime() - new Date(a.validFrom).getTime())
-                    .map((statusRecord: any, index: number) => (
+                    .map((statusRecord: import('../../../types/StudentProfile').StudentStatusHistory, index: number) => (
                       <div key={`${statusRecord.status}-${statusRecord.validFrom}-${index}`} className="border border-gray-200 dark:border-gray-700 rounded-lg p-3">
                         <div className="flex justify-between items-start mb-2">
                           <div className="flex-1">
