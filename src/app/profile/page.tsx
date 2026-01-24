@@ -88,9 +88,8 @@ export default function Profile() {
 
   const handleSaveProfile = async (formData: UserFormData) => {
     if (!user?.id) return;
-    
     try {
-      await AuthenticatedApiService.updateUser(user.id, formData);
+      await AuthenticatedApiService.putUpdateUser(user.id, formData);
       // Обновляем данные профиля после сохранения
       await fetchProfileData();
       // Также обновляем полные данные для модалки
@@ -98,7 +97,6 @@ export default function Profile() {
       if (response.success && response.data) {
         setFullProfileData(response.data);
       }
-      
       // Обновляем пользователя в AuthContext с помощью refreshUser
       await refreshUser();
     } catch (error) {

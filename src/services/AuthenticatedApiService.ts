@@ -275,12 +275,17 @@ export class AuthenticatedApiService {
   }
 
   // User management methods
-  static async updateUser(id: string, userData: UserFormData): Promise<ApiResponse<User>> {
+
+  static async putUpdateUser(id: string, userData: UserFormData): Promise<ApiResponse<User>> {
     return this.put(`/User/update-user/${id}`, userData);
   }
 
   static async deleteUser(id: string): Promise<ApiResponse<boolean>> {
     return this.delete(`/User/${id}`);
+  }
+
+  static async restoreUser(id: string): Promise<ApiResponse<boolean>> {
+    return this.patch(`/User/${id}/restore`, {});
   }
 
   static async createUser(userData: UserFormData): Promise<ApiResponse<User>> {
@@ -296,6 +301,8 @@ export class AuthenticatedApiService {
     roleIds?: number[];
     isTrial?: boolean;
     isDeleted?: boolean;
+    sortBy?: string;
+    sortOrder?: string;
   }): Promise<UsersResponse> {
     const body = {
       pageNumber: filters.pageNumber || 1,
@@ -305,7 +312,9 @@ export class AuthenticatedApiService {
       ...(filters.groupIds && filters.groupIds.length > 0 && { groupIds: filters.groupIds }),
       ...(filters.roleIds && filters.roleIds.length > 0 && { roleIds: filters.roleIds }),
       ...(filters.isTrial !== undefined && { isTrial: filters.isTrial }),
-      ...(filters.isDeleted !== undefined && { isDeleted: filters.isDeleted })
+      ...(filters.isDeleted !== undefined && { isDeleted: filters.isDeleted }),
+      ...(filters.sortBy && { sortBy: filters.sortBy }),
+      ...(filters.sortOrder && { sortOrder: filters.sortOrder })
     };
     
     return this.post('/User/get-users', body);

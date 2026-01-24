@@ -59,7 +59,7 @@ export default function GroupsPage() {
 
   // Состояния для экспорта
   const [isExportModalOpen, setIsExportModalOpen] = useState(false);
-  const [exportGroupId, setExportGroupId] = useState<string>('');
+  const [exportGroupIds, setExportGroupIds] = useState<string[]>([]);
   const [includePayments, setIncludePayments] = useState(true);
 
   // Фильтры для групп
@@ -94,13 +94,13 @@ export default function GroupsPage() {
         throw new Error('Токен авторизации не найден');
       }
 
-      const body: { organizationId: string; includePayments: boolean; groupId?: string } = {
+      const body: { organizationId: string; includePayments: boolean; groupIds?: string[] } = {
         organizationId: user.organizationId,
         includePayments
       };
 
-      if (exportGroupId) {
-        body.groupId = exportGroupId;
+      if (exportGroupIds.length > 0) {
+        body.groupIds = exportGroupIds;
       }
 
       const response = await fetch('https://trackademy.kz/api/Export/groups', {
@@ -127,7 +127,7 @@ export default function GroupsPage() {
       document.body.removeChild(a);
       
       setIsExportModalOpen(false);
-      setExportGroupId('');
+      setExportGroupIds([]);
       setIncludePayments(true);
     } catch (error) {
       console.error('Ошибка при экспорте групп:', error);
@@ -1123,16 +1123,6 @@ export default function GroupsPage() {
               </div>
             </div>
 
-            {/* Информация об оплате - удалено */}
-            <div className="border-t border-gray-700 pt-6">
-              <h3 className="text-lg font-medium text-white mb-4">Дополнительная информация</h3>
-              <div className="bg-gray-700 rounded-lg p-4">
-                <div className="text-gray-400 text-sm">
-                  Группа создана и готова к использованию
-                </div>
-              </div>
-            </div>
-
             {/* Список студентов */}
             <div className="border-t border-gray-700 pt-6">
               <div className="flex items-center justify-between mb-4">
@@ -1245,20 +1235,42 @@ export default function GroupsPage() {
             <div className="p-6 space-y-4">
               <div>
                 <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                  Группа (опционально)
+                  Группы (опционально)
                 </label>
-                <select
-                  value={exportGroupId}
-                  onChange={(e) => setExportGroupId(e.target.value)}
-                  className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                >
-                  <option value="">Все группы</option>
-                  {groups.map(group => (
-                    <option key={group.id} value={group.id}>
-                      {group.name}
-                    </option>
-                  ))}
-                </select>
+                <div className="max-h-60 overflow-y-auto border border-gray-300 dark:border-gray-600 rounded-lg p-3 bg-white dark:bg-gray-700">
+                  <div className="space-y-2">
+                    <label className="flex items-center p-2 hover:bg-gray-50 dark:hover:bg-gray-600 rounded cursor-pointer">
+                      <input
+                        type="checkbox"
+                        checked={exportGroupIds.length === 0}
+                        onChange={() => setExportGroupIds([])}
+                        className="w-4 h-4 text-blue-600 bg-gray-100 border-gray-300 rounded focus:ring-blue-500 dark:focus:ring-blue-600 dark:ring-offset-gray-800 focus:ring-2 dark:bg-gray-700 dark:border-gray-600"
+                      />
+                      <span className="ml-2 text-sm font-medium text-gray-700 dark:text-gray-300">
+                        Все группы
+                      </span>
+                    </label>
+                    {groups.map(group => (
+                      <label key={group.id} className="flex items-center p-2 hover:bg-gray-50 dark:hover:bg-gray-600 rounded cursor-pointer">
+                        <input
+                          type="checkbox"
+                          checked={exportGroupIds.includes(group.id)}
+                          onChange={(e) => {
+                            if (e.target.checked) {
+                              setExportGroupIds(prev => [...prev, group.id]);
+                            } else {
+                              setExportGroupIds(prev => prev.filter(id => id !== group.id));
+                            }
+                          }}
+                          className="w-4 h-4 text-blue-600 bg-gray-100 border-gray-300 rounded focus:ring-blue-500 dark:focus:ring-blue-600 dark:ring-offset-gray-800 focus:ring-2 dark:bg-gray-700 dark:border-gray-600"
+                        />
+                        <span className="ml-2 text-sm text-gray-700 dark:text-gray-300">
+                          {group.name}
+                        </span>
+                      </label>
+                    ))}
+                  </div>
+                </div>
               </div>
 
               <div className="flex items-center">
@@ -1278,7 +1290,7 @@ export default function GroupsPage() {
               <button
                 onClick={() => {
                   setIsExportModalOpen(false);
-                  setExportGroupId('');
+                  setExportGroupIds([]);
                   setIncludePayments(true);
                 }}
                 className="px-4 py-2 text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg transition-colors"

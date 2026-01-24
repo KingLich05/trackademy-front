@@ -163,7 +163,7 @@ export interface StudentProfile {
   fullName: string;
   phone: string;
   parentPhone: string | null;
-  birthDate: string | null;
+  birthday: string | null;
   createdAt: string;
   isArchived: boolean;
   role: string;

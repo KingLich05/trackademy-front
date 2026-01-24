@@ -359,13 +359,14 @@ export default function StudentDetailPage() {
   const handleSaveProfile = async () => {
     setEditingProfile(true);
     try {
-      await AuthenticatedApiService.put(`/User/${userId}`, {
+      await AuthenticatedApiService.putUpdateUser(userId, {
         fullName: profileData.fullName,
         login: profileData.login,
         phone: profileData.phone,
         parentPhone: profileData.parentPhone || null,
-        comment: profileData.comment || null,
-        birthDate: profileData.birthDate || null
+        birthday: profileData.birthDate || null,
+        role: typeof studentProfile?.role === 'number' ? studentProfile.role : 1,
+        isTrial: false
       });
       showSuccess('Профиль студента успешно обновлен');
       setShowEditProfileModal(false);
@@ -619,7 +620,7 @@ export default function StudentDetailPage() {
                 <p className="text-sm font-medium text-gray-500 dark:text-gray-400">Средний балл</p>
                 <p className="text-lg font-bold text-gray-900 dark:text-white">
                   {studentProfile.groupScores.length > 0 
-                    ? Math.round(studentProfile.groupScores.reduce((acc, score) => acc + score.averageGrade, 0) / studentProfile.groupScores.length)
+                    ? (studentProfile.groupScores.reduce((acc, score) => acc + score.averageGrade, 0) / studentProfile.groupScores.length).toFixed(2)
                     : 'Нет данных'}
                 </p>
               </div>
@@ -644,7 +645,7 @@ export default function StudentDetailPage() {
                       phone: studentProfile.phone,
                       parentPhone: studentProfile.parentPhone || '',
                       comment: studentProfile.comment || '',
-                      birthDate: studentProfile.birthDate ? new Date(studentProfile.birthDate).toISOString().split('T')[0] : ''
+                      birthDate: studentProfile.birthday ? new Date(studentProfile.birthday).toISOString().split('T')[0] : ''
                     });
                     setShowEditProfileModal(true);
                   }}
@@ -677,7 +678,7 @@ export default function StudentDetailPage() {
                 <div>
                   <label className="block text-sm font-medium text-gray-500 dark:text-gray-400">Дата рождения</label>
                   <p className="mt-1 text-sm text-gray-900 dark:text-white">
-                    {studentProfile.birthDate ? formatDate(studentProfile.birthDate) : 'Не указана'}
+                    {studentProfile.birthday ? formatDate(studentProfile.birthday) : 'Не указана'}
                   </p>
                 </div>
                 
@@ -746,7 +747,7 @@ export default function StudentDetailPage() {
                       {group.averageGrade && (
                         <div>
                           <span className="text-gray-500 dark:text-gray-400">Средний балл:</span>
-                          <p className="font-medium text-gray-900 dark:text-white">{group.averageGrade}</p>
+                          <p className="font-medium text-gray-900 dark:text-white">{Number(group.averageGrade).toFixed(2)}</p>
                         </div>
                       )}
                       {group.discountValue !== null && group.discountValue > 0 ? (
@@ -1078,7 +1079,12 @@ export default function StudentDetailPage() {
                       </div>
                       <div className="text-right">
                         <p className={`text-sm font-medium ${getTransactionTypeColor(transaction.type)}`}>
-                          {transaction.amount > 0 ? '+' : ''}{formatCurrency(transaction.amount)}
+                          {transaction.type === 3 
+                            ? `-${formatCurrency(Math.abs(transaction.amount))}` 
+                            : transaction.amount > 0 
+                              ? `+${formatCurrency(transaction.amount)}` 
+                              : formatCurrency(transaction.amount)
+                          }
                         </p>
                         <p className="text-xs text-gray-500 dark:text-gray-400">
                           Баланс: {formatCurrency(transaction.balanceAfter)}

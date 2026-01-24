@@ -13,6 +13,7 @@ import { DeleteConfirmationModal } from '../../components/ui/DeleteConfirmationM
 import { BaseModal } from '../../components/ui/BaseModal';
 import { DateRangePicker } from '../../components/ui/DateRangePicker';
 import { SubmissionDetailModal } from '../../components/ui/SubmissionDetailModal';
+import { AssignmentPreviewModal } from '../../components/ui/AssignmentPreviewModal';
 
 export default function HomeworkPage() {
   const { isAuthenticated, user } = useAuth();
@@ -46,6 +47,9 @@ export default function HomeworkPage() {
   const [isSubmissionDetailOpen, setIsSubmissionDetailOpen] = useState(false);
   const [selectedSubmissionId, setSelectedSubmissionId] = useState<string | null>(null);
   const [selectedStudentName, setSelectedStudentName] = useState('');
+
+  // Assignment file preview state
+  const [isAssignmentPreviewOpen, setIsAssignmentPreviewOpen] = useState(false);
 
   // Submissions tab state
   const [submissions, setSubmissions] = useState<Submission[]>([]);
@@ -1180,12 +1184,20 @@ export default function HomeworkPage() {
                         )}
                       </div>
                     </div>
-                    <button
-                      onClick={() => handleDownloadFile(selectedAssignment.id, selectedAssignment.attachmentName!)}
-                      className="px-3 py-1.5 text-sm font-medium text-white bg-purple-500 hover:bg-purple-600 rounded-lg transition-colors"
-                    >
-                      Скачать
-                    </button>
+                    <div className="flex gap-2">
+                      <button
+                        onClick={() => setIsAssignmentPreviewOpen(true)}
+                        className="px-3 py-1.5 text-sm font-medium text-white bg-indigo-500 hover:bg-indigo-600 rounded-lg transition-colors"
+                      >
+                        Превью
+                      </button>
+                      <button
+                        onClick={() => handleDownloadFile(selectedAssignment.id, selectedAssignment.attachmentName!)}
+                        className="px-3 py-1.5 text-sm font-medium text-white bg-purple-500 hover:bg-purple-600 rounded-lg transition-colors"
+                      >
+                        Скачать
+                      </button>
+                    </div>
                   </div>
                 </div>
               </div>
@@ -1383,6 +1395,18 @@ export default function HomeworkPage() {
           reloadSelectedAssignment();
         }}
       />
+
+      {/* Assignment File Preview Modal */}
+      {selectedAssignment?.hasAttachment && (
+        <AssignmentPreviewModal
+          isOpen={isAssignmentPreviewOpen}
+          onClose={() => setIsAssignmentPreviewOpen(false)}
+          assignmentId={selectedAssignment.id}
+          fileName={selectedAssignment.attachmentName || 'assignment.pdf'}
+          fileSize={selectedAssignment.attachmentSize}
+          onDownload={() => handleDownloadFile(selectedAssignment.id, selectedAssignment.attachmentName!)}
+        />
+      )}
     </div>
   );
 }

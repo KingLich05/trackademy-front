@@ -48,7 +48,7 @@ const ProfileEditModal: React.FC<ProfileEditModalProps> = ({
     phone: '',
     parentPhone: '',
     birthday: '',
-    role: 1,
+    role: 0,
     isTrial: false
   });
 
@@ -104,7 +104,7 @@ const ProfileEditModal: React.FC<ProfileEditModalProps> = ({
         login: formData.login,
         fullName: formData.fullName,
         phone: formData.phone,
-        parentPhone: formData.parentPhone || null,
+        parentPhone: formData.role === 1 ? (formData.parentPhone || null) : null,
         birthday: formData.birthday || null,
         role: formData.role,
         isTrial: formData.isTrial

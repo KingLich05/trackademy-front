@@ -48,6 +48,10 @@ export default function StudentsPage() {
   // Archive state
   const [showArchive, setShowArchive] = useState(false);
 
+  // Sorting state
+  const [sortBy, setSortBy] = useState<string>('createddate');
+  const [sortOrder, setSortOrder] = useState<'asc' | 'desc'>('desc');
+
   // Универсальная система модалов для пользователей
   const userModal = useUniversalModal('user', {
     login: '',
@@ -175,7 +179,9 @@ export default function StudentsPage() {
         roleIds: currentFilters.roleIds.length > 0 ? currentFilters.roleIds : undefined,
         groupIds: currentFilters.groupIds.length > 0 ? currentFilters.groupIds : undefined,
         isTrial: currentFilters.isTrial !== undefined ? currentFilters.isTrial : undefined,
-        isDeleted: currentFilters.isDeleted !== undefined ? currentFilters.isDeleted : undefined
+        isDeleted: currentFilters.isDeleted !== undefined ? currentFilters.isDeleted : undefined,
+        sortBy: sortBy,
+        sortOrder: sortOrder
       });
       
       setStudents(data.items);
@@ -198,7 +204,7 @@ export default function StudentsPage() {
       }
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [user?.organizationId, debouncedSearchTerm, isAuthenticated, pageSize, roleIdsStr, groupIdsStr, isTrialStr, isDeletedStr]);
+  }, [user?.organizationId, debouncedSearchTerm, isAuthenticated, pageSize, roleIdsStr, groupIdsStr, isTrialStr, isDeletedStr, sortBy, sortOrder]);
 
   const loadGroups = useCallback(async () => {
     try {
@@ -267,6 +273,18 @@ export default function StudentsPage() {
     setPageSize(newPageSize);
     setCurrentPage(1);
     loadStudents(1, true, newPageSize);
+  };
+
+  const handleSort = (column: string) => {
+    if (sortBy === column) {
+      // Toggle sort order if same column
+      setSortOrder(sortOrder === 'asc' ? 'desc' : 'asc');
+    } else {
+      // Set new column and default to desc
+      setSortBy(column);
+      setSortOrder('desc');
+    }
+    setCurrentPage(1);
   };
 
   const renderPagination = () => {
@@ -396,7 +414,7 @@ export default function StudentsPage() {
       loadStudents(1, true);
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [debouncedSearchTerm, roleIdsStr, groupIdsStr, isTrialStr, isDeletedStr]);
+  }, [debouncedSearchTerm, roleIdsStr, groupIdsStr, isTrialStr, isDeletedStr, sortBy, sortOrder]);
 
   // Debug effect to track user context changes
   useEffect(() => {
@@ -483,7 +501,7 @@ export default function StudentsPage() {
     const cleanFormData = cleanUserFormData(formData);
     
     const result = await updateOperation(
-      () => AuthenticatedApiService.updateUser(id, cleanFormData),
+      () => AuthenticatedApiService.putUpdateUser(id, cleanFormData),
       'пользователя'
     );
     
@@ -521,6 +539,17 @@ export default function StudentsPage() {
   const handleCloseDeleteModal = () => {
     setIsDeleteModalOpen(false);
     setDeletingUser(null);
+  };
+
+  const handleRestore = async (userId: string) => {
+    const result = await updateOperation(
+      () => AuthenticatedApiService.restoreUser(userId),
+      'восстановление пользователя'
+    );
+    
+    if (result.success) {
+      await loadStudents(currentPage, true);
+    }
   };
 
   const handleCloseModal = () => {
@@ -846,8 +875,8 @@ export default function StudentsPage() {
             />
           </div>
 
-          {/* Bulk Add to Group Panel */}
-          {user && canManageUsers(user.role) && selectedStudentIds.length > 0 && (
+          {/* Bulk Add to Group Panel - не показываем в архиве */}
+          {user && canManageUsers(user.role) && selectedStudentIds.length > 0 && !showArchive && (
             <div className="p-4 bg-gradient-to-r from-emerald-50 to-lime-50 dark:from-emerald-900/20 dark:to-lime-900/20 border-b border-emerald-200 dark:border-emerald-800">
               <div className="flex items-center justify-between">
                 <div className="flex items-center space-x-3">
@@ -901,6 +930,8 @@ export default function StudentsPage() {
               } : undefined}
               onEdit={handleEdit}
               onDelete={handleDelete}
+              onRestore={handleRestore}
+              showArchive={showArchive}
               showColumnControls={false}
               columnVisibility={isColumnVisible}
               currentPage={currentPage}
@@ -909,6 +940,9 @@ export default function StudentsPage() {
               onSelectStudent={handleSelectStudent}
               onSelectAll={handleSelectAll}
               onDeselectAll={handleDeselectAll}
+              sortBy={sortBy}
+              sortOrder={sortOrder}
+              onSort={handleSort}
             />
           </div>
 

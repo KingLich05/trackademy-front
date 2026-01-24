@@ -1,7 +1,7 @@
 'use client';
 
 import React from 'react';
-import { UserIcon, PencilIcon, TrashIcon, EyeIcon } from '@heroicons/react/24/outline';
+import { UserIcon, PencilIcon, TrashIcon, EyeIcon, ArrowUturnLeftIcon, ChevronUpIcon, ChevronDownIcon } from '@heroicons/react/24/outline';
 import { User } from '../../types/User';
 import { canManageUsers } from '../../types/Role';
 import { useColumnVisibility, ColumnVisibilityControl } from './ColumnVisibilityControl';
@@ -13,6 +13,8 @@ interface UsersTableProps {
   currentUser?: User;
   onEdit: (user: User) => void;
   onDelete: (user: User) => void;
+  onRestore?: (userId: string) => void;
+  showArchive?: boolean;
   showColumnControls?: boolean;
   columnVisibility?: (columnKey: string) => boolean;
   currentPage?: number;
@@ -21,6 +23,9 @@ interface UsersTableProps {
   onSelectStudent?: (userId: string) => void;
   onSelectAll?: () => void;
   onDeselectAll?: () => void;
+  sortBy?: string;
+  sortOrder?: 'asc' | 'desc';
+  onSort?: (column: string) => void;
 }
 
 export const UsersTable: React.FC<UsersTableProps> = ({
@@ -29,6 +34,8 @@ export const UsersTable: React.FC<UsersTableProps> = ({
   currentUser,
   onEdit,
   onDelete,
+  onRestore,
+  showArchive = false,
   showColumnControls = true,
   columnVisibility,
   currentPage = 1,
@@ -37,6 +44,9 @@ export const UsersTable: React.FC<UsersTableProps> = ({
   onSelectStudent,
   onSelectAll,
   onDeselectAll,
+  sortBy = 'createddate',
+  sortOrder = 'desc',
+  onSort,
 }) => {
   // Конфигурация колонок - используется только если нет внешнего управления
   const { columns, toggleColumn, isColumnVisible: internalIsColumnVisible } = useColumnVisibility([
@@ -80,6 +90,33 @@ export const UsersTable: React.FC<UsersTableProps> = ({
       case 3: return 'bg-blue-100 text-blue-800 dark:bg-blue-900/20 dark:text-blue-400';
       default: return 'bg-gray-100 text-gray-800 dark:bg-gray-900/20 dark:text-gray-400';
     }
+  };
+
+  const renderSortIcon = (column: string) => {
+    if (sortBy !== column) {
+      return null;
+    }
+    return sortOrder === 'asc' ? (
+      <ChevronUpIcon className="h-4 w-4 inline ml-1" />
+    ) : (
+      <ChevronDownIcon className="h-4 w-4 inline ml-1" />
+    );
+  };
+
+  const SortableHeader: React.FC<{column: string; label: string; sortable?: boolean}> = ({column, label, sortable = true}) => {
+    if (!sortable || !onSort) {
+      return <span>{label}</span>;
+    }
+    
+    return (
+      <button 
+        onClick={() => onSort(column)}
+        className="flex items-center hover:text-gray-700 dark:hover:text-gray-200 transition-colors"
+      >
+        <span>{label}</span>
+        {renderSortIcon(column)}
+      </button>
+    );
   };
 
   if (isLoading) {
@@ -135,8 +172,8 @@ export const UsersTable: React.FC<UsersTableProps> = ({
         <table className="w-full divide-y divide-gray-200 dark:divide-gray-700 table-fixed">
           <thead className="bg-gray-50 dark:bg-gray-700/50">
             <tr>
-              {/* Checkbox column для массового выбора */}
-              {onSelectStudent && currentUser && canManageUsers(currentUser.role) && (
+              {/* Checkbox column - только для студентов и не в архиве */}
+              {onSelectStudent && currentUser && canManageUsers(currentUser.role) && !showArchive && (
                 <th className="pl-3 pr-1 py-3 text-left" style={{ width: '50px' }}>
                   <input
                     type="checkbox"
@@ -159,22 +196,22 @@ export const UsersTable: React.FC<UsersTableProps> = ({
               )}
               {isColumnVisible('user') && (
                 <th className="px-3 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider" style={{ width: '25%' }}>
-                  Пользователь
+                  <SortableHeader column="fullname" label="Пользователь" />
                 </th>
               )}
               {isColumnVisible('contacts') && (
                 <th className="px-3 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider" style={{ width: '15%' }}>
-                  Контакты
+                  <SortableHeader column="phone" label="Контакты" />
                 </th>
               )}
               {isColumnVisible('role') && (
                 <th className="px-3 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider" style={{ width: '12%' }}>
-                  Роль
+                  <SortableHeader column="role" label="Роль" />
                 </th>
               )}
               {isColumnVisible('group') && (
                 <th className="px-3 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider" style={{ width: '20%' }}>
-                  Группа
+                  <span>Группа</span>
                 </th>
               )}
               {isColumnVisible('actions') && currentUser && canManageUsers(currentUser.role) && (
@@ -205,8 +242,8 @@ export const UsersTable: React.FC<UsersTableProps> = ({
                     : 'hover:bg-gray-50 dark:hover:bg-gray-700/50'
                 } ${isSelected ? 'bg-emerald-50 dark:bg-emerald-900/20' : ''}`}
               >
-                {/* Checkbox column - только для студентов */}
-                {onSelectStudent && currentUser && canManageUsers(currentUser.role) && (
+                {/* Checkbox column - только для студентов и не в архиве */}
+                {onSelectStudent && currentUser && canManageUsers(currentUser.role) && !showArchive && (
                   <td className="pl-3 pr-1 py-3 whitespace-nowrap" onClick={(e) => e.stopPropagation()}>
                     {isStudent ? (
                       <input
@@ -297,14 +334,35 @@ export const UsersTable: React.FC<UsersTableProps> = ({
                       >
                         <PencilIcon className="h-4 w-4" />
                       </button>
-                      <button
-                        onClick={() => onDelete(user)}
-                        className="p-2 text-red-600 hover:text-red-800 dark:text-red-400 dark:hover:text-red-300 
-                                 hover:bg-red-50 dark:hover:bg-red-900/20 rounded-lg transition-all"
-                        title="Удалить"
-                      >
-                        <TrashIcon className="h-4 w-4" />
-                      </button>
+                      {showArchive && onRestore ? (
+                        <>
+                          <button
+                            onClick={() => onRestore(user.id)}
+                            className="p-2 text-green-600 hover:text-green-800 dark:text-green-400 dark:hover:text-green-300 
+                                     hover:bg-green-50 dark:hover:bg-green-900/20 rounded-lg transition-all"
+                            title="Восстановить"
+                          >
+                            <ArrowUturnLeftIcon className="h-4 w-4" />
+                          </button>
+                          <button
+                            onClick={() => onDelete(user)}
+                            className="p-2 text-red-600 hover:text-red-800 dark:text-red-400 dark:hover:text-red-300 
+                                     hover:bg-red-50 dark:hover:bg-red-900/20 rounded-lg transition-all"
+                            title="Удалить навсегда"
+                          >
+                            <TrashIcon className="h-4 w-4" />
+                          </button>
+                        </>
+                      ) : (
+                        <button
+                          onClick={() => onDelete(user)}
+                          className="p-2 text-red-600 hover:text-red-800 dark:text-red-400 dark:hover:text-red-300 
+                                   hover:bg-red-50 dark:hover:bg-red-900/20 rounded-lg transition-all"
+                          title="Удалить"
+                        >
+                          <TrashIcon className="h-4 w-4" />
+                        </button>
+                      )}
                     </div>
                   </td>
                 )}
@@ -394,13 +452,32 @@ export const UsersTable: React.FC<UsersTableProps> = ({
                     >
                       Редактировать
                     </button>
-                    <button
-                      onClick={() => onDelete(user)}
-                      className="flex-1 px-3 py-2 bg-red-50 dark:bg-red-900/20 text-red-600 dark:text-red-400 
-                               text-sm font-medium rounded-lg hover:bg-red-100 dark:hover:bg-red-900/30 transition-colors"
-                    >
-                      Удалить
-                    </button>
+                    {showArchive && onRestore ? (
+                      <>
+                        <button
+                          onClick={() => onRestore(user.id)}
+                          className="flex-1 px-3 py-2 bg-green-50 dark:bg-green-900/20 text-green-600 dark:text-green-400 
+                                   text-sm font-medium rounded-lg hover:bg-green-100 dark:hover:bg-green-900/30 transition-colors"
+                        >
+                          Восстановить
+                        </button>
+                        <button
+                          onClick={() => onDelete(user)}
+                          className="flex-1 px-3 py-2 bg-red-50 dark:bg-red-900/20 text-red-600 dark:text-red-400 
+                                   text-sm font-medium rounded-lg hover:bg-red-100 dark:hover:bg-red-900/30 transition-colors"
+                        >
+                          Удалить
+                        </button>
+                      </>
+                    ) : (
+                      <button
+                        onClick={() => onDelete(user)}
+                        className="flex-1 px-3 py-2 bg-red-50 dark:bg-red-900/20 text-red-600 dark:text-red-400 
+                                 text-sm font-medium rounded-lg hover:bg-red-100 dark:hover:bg-red-900/30 transition-colors"
+                      >
+                        Удалить
+                      </button>
+                    )}
                   </div>
                 )}
               </div>
