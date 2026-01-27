@@ -532,7 +532,7 @@ export default function RegisterPage() {
               {/* Activation Key Field */}
               <div className="animate-fade-in animate-delay-900">
                 <label htmlFor="activationKey" className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                  Ключ активации
+                  Ключ активации <span className="text-red-500">*</span>
                 </label>
                 <input
                   id="activationKey"
