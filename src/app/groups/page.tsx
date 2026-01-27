@@ -1052,7 +1052,6 @@ export default function GroupsPage() {
         isOpen={isStudentsModalOpen}
         onClose={handleCloseStudentsModal}
         group={selectedGroup}
-        onAddStudents={handleAddStudentsToGroup}
       />
 
 

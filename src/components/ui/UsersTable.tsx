@@ -55,6 +55,7 @@ export const UsersTable: React.FC<UsersTableProps> = ({
     { key: 'contacts', label: 'Контакты' },
     { key: 'role', label: 'Роль' },
     { key: 'group', label: 'Группа' },
+    { key: 'createdDate', label: 'Дата создания' },
     { key: 'actions', label: 'Действия' }
   ]);
 
@@ -214,6 +215,11 @@ export const UsersTable: React.FC<UsersTableProps> = ({
                   <span>Группа</span>
                 </th>
               )}
+              {isColumnVisible('createdDate') && (
+                <th className="px-3 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider" style={{ width: '12%' }}>
+                  <SortableHeader column="createddate" label="Дата создания" />
+                </th>
+              )}
               {isColumnVisible('actions') && currentUser && canManageUsers(currentUser.role) && (
                 <th className="px-3 py-3 text-right text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider" style={{ width: '100px' }}>
                   Действия
@@ -313,6 +319,13 @@ export const UsersTable: React.FC<UsersTableProps> = ({
                         })()
                       : '-'
                     }
+                  </td>
+                )}
+                {isColumnVisible('createdDate') && (
+                  <td className="px-3 py-3 whitespace-nowrap">
+                    <div className="text-sm text-gray-500 dark:text-gray-400">
+                      {new Date(user.createdDate).toLocaleDateString('ru-RU')}
+                    </div>
                   </td>
                 )}
                 {isColumnVisible('actions') && currentUser && canManageUsers(currentUser.role) && (
@@ -432,6 +445,11 @@ export const UsersTable: React.FC<UsersTableProps> = ({
                       Группы: {user.groups.map((group: string | { id: string; name?: string; groupName?: string }) => 
                         typeof group === 'string' ? group : group.name || group.groupName || group
                       ).join(', ')}
+                    </p>
+                  )}
+                  {isColumnVisible('createdDate') && (
+                    <p className="text-sm text-gray-500 dark:text-gray-400">
+                      Создан: {new Date(user.createdDate).toLocaleDateString('ru-RU')}
                     </p>
                   )}
                 </div>

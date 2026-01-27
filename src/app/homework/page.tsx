@@ -398,7 +398,8 @@ export default function HomeworkPage() {
         description: assignment.description,
         groupId: assignment.groupId,
         assignedDate: assignment.assignedDate.split('T')[0],
-        dueDate: assignment.dueDate.split('T')[0]
+        dueDate: assignment.dueDate.split('T')[0],
+        attachmentFile: undefined // При редактировании можно загрузить новый файл
       });
       setModalDueDate(assignment.dueDate.split('T')[0]);
       setIsAssignmentModalOpen(true);
@@ -449,7 +450,8 @@ export default function HomeworkPage() {
           () => AuthenticatedApiService.updateAssignment(editingAssignmentId, {
             description: formData.description,
             assignedDate: assignedDate,
-            dueDate: dueDate
+            dueDate: dueDate,
+            attachmentFile: formData.attachmentFile
           }),
           'задание'
         );
@@ -968,7 +970,7 @@ export default function HomeworkPage() {
 
           <div>
             <label className="block text-sm font-medium text-gray-300 mb-2">
-              Прикрепить файл
+              Прикрепить файл {modalMode === 'edit' && '(необязательно)'}
             </label>
             <input
               type="file"
@@ -980,7 +982,9 @@ export default function HomeworkPage() {
               accept=".pdf,.doc,.docx,.txt,.jpg,.jpeg,.png,.zip,.rar"
             />
             <p className="mt-1 text-xs text-gray-400">
-              Максимальный размер: 10 МБ. Поддерживаемые форматы: PDF, DOC, DOCX, TXT, JPG, PNG, ZIP, RAR
+              {modalMode === 'edit' 
+                ? 'Загрузите новый файл, чтобы заменить существующий. Если файл не выбран, текущий файл останется без изменений.' 
+                : 'Максимальный размер: 10 МБ. Поддерживаемые форматы: PDF, DOC, DOCX, TXT, JPG, PNG, ZIP, RAR'}
             </p>
           </div>
 

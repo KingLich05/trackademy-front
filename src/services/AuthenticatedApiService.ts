@@ -220,6 +220,33 @@ export class AuthenticatedApiService {
     return response.json();
   }
 
+  static async putFormData<T>(endpoint: string, formData: FormData): Promise<T> {
+    const token = this.getAuthToken();
+    const API_BASE_URL = 'https://trackademy.kz/api';
+    const url = `${API_BASE_URL}${endpoint}`;
+
+    const response = await fetch(url, {
+      method: 'PUT',
+      headers: {
+        'Authorization': `Bearer ${token}`,
+        // Don't set Content-Type for FormData, browser will set it with boundary
+      },
+      body: formData,
+    });
+
+    if (!response.ok) {
+      if (response.status === 401) {
+        localStorage.removeItem('authToken');
+        localStorage.removeItem('user');
+        globalThis.location.href = '/login';
+        throw new Error('Authentication expired');
+      }
+      throw new Error(`HTTP error! status: ${response.status}`);
+    }
+
+    return response.json();
+  }
+
   static async put<T>(endpoint: string, data: unknown): Promise<T> {
     return this.request<T>(endpoint, {
       method: 'PUT',
@@ -571,7 +598,20 @@ export class AuthenticatedApiService {
   }
 
   static async updateAssignment(id: string, data: Partial<AssignmentFormData>): Promise<Assignment> {
-    return this.put(`/Assignment/${id}`, data);
+    if (data.attachmentFile) {
+      // Если есть файл, используем FormData
+      const formData = new FormData();
+      if (data.description) formData.append('Description', data.description);
+      if (data.groupId) formData.append('GroupId', data.groupId);
+      if (data.assignedDate) formData.append('AssignedDate', data.assignedDate);
+      if (data.dueDate) formData.append('DueDate', data.dueDate);
+      formData.append('attachmentFile', data.attachmentFile);
+      
+      return this.putFormData(`/Assignment/${id}`, formData);
+    } else {
+      // Без файла - обычный JSON
+      return this.put(`/Assignment/${id}`, data);
+    }
   }
 
   static async deleteAssignment(id: string): Promise<void> {
@@ -817,7 +857,7 @@ export class AuthenticatedApiService {
     return this.delete(`/Document/${documentId}`);
   }
 
-  static async getUserById(userId: string): Promise<ApiResponse<User>> {
+  static async getUserById(userId: string): Promise<User> {
     return this.get(`/User/GetUserById/${userId}`);
   }
 

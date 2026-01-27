@@ -16,6 +16,7 @@ export interface User {
   organizationId?: string;
   organizationName?: string;
   isTrial: boolean;
+  createdDate: string;
 }
 
 export interface UserFormData {

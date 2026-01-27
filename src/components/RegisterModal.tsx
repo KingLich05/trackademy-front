@@ -154,7 +154,7 @@ const RegisterModal: React.FC<RegisterModalProps> = ({ isOpen, onClose }) => {
 
           <div>
             <label htmlFor="fullName" className="block text-sm font-medium text-gray-700 mb-1">
-              Полное имя
+              Полное имя<span className="text-red-500 ml-1">*</span>
             </label>
             <input
               type="text"
@@ -170,7 +170,7 @@ const RegisterModal: React.FC<RegisterModalProps> = ({ isOpen, onClose }) => {
 
           <div>
             <label htmlFor="login" className="block text-sm font-medium text-gray-700 mb-1">
-              Логин
+              Логин<span className="text-red-500 ml-1">*</span>
             </label>
             <input
               type="text"
@@ -186,7 +186,7 @@ const RegisterModal: React.FC<RegisterModalProps> = ({ isOpen, onClose }) => {
 
           <div>
             <label htmlFor="phone" className="block text-sm font-medium text-gray-700 mb-1">
-              Телефон
+              Телефон<span className="text-red-500 ml-1">*</span>
             </label>
             <input
               type="tel"
@@ -202,7 +202,7 @@ const RegisterModal: React.FC<RegisterModalProps> = ({ isOpen, onClose }) => {
 
           <div>
             <label htmlFor="password" className="block text-sm font-medium text-gray-700 mb-1">
-              Пароль
+              Пароль<span className="text-red-500 ml-1">*</span>
             </label>
             <input
               type="password"
@@ -234,7 +234,7 @@ const RegisterModal: React.FC<RegisterModalProps> = ({ isOpen, onClose }) => {
 
           <div>
             <label htmlFor="organizationId" className="block text-sm font-medium text-gray-700 mb-1">
-              Организация (опционально)
+              Организация<span className="text-red-500 ml-1">*</span>
             </label>
             <select
               id="organizationId"

@@ -21,7 +21,6 @@ interface GroupStudentsModalProps {
   onClose: () => void;
   group: Group | null;
   onPaymentCreate?: (studentId: string, studentName: string) => void;
-  onAddStudents?: () => void; // Добавляем новый проп для обработки добавления студентов
 }
 
 interface StudentBalance {
@@ -38,8 +37,6 @@ interface StudentBalance {
   balance: number;
   remainingLessons?: number;
   isFrozen?: boolean;
-  frozenFrom?: string | null;
-  frozenTo?: string | null;
   discountType: number | null;
   discountValue: number | null;
   discountReason: string | null;
@@ -53,8 +50,7 @@ export const GroupStudentsModal: React.FC<GroupStudentsModalProps> = ({
   isOpen,
   onClose,
   group,
-  onPaymentCreate,
-  onAddStudents
+  onPaymentCreate
 }) => {
   const [studentBalances, setStudentBalances] = useState<StudentBalance[]>([]);
   const [loading, setLoading] = useState(false);
@@ -69,7 +65,6 @@ export const GroupStudentsModal: React.FC<GroupStudentsModalProps> = ({
   // Состояния загрузки для операций
   const [addingBalance, setAddingBalance] = useState(false);
   const [applyingDiscount, setApplyingDiscount] = useState(false);
-  const [removingDiscount, setRemovingDiscount] = useState(false);
   const [freezingStudent, setFreezingStudent] = useState(false);
 
   const { showToast, showSuccess, showError } = useToast();
@@ -144,23 +139,6 @@ export const GroupStudentsModal: React.FC<GroupStudentsModalProps> = ({
       showError('Ошибка при применении скидки: ' + ((error as Error)?.message || 'Неизвестная ошибка'));
     } finally {
       setApplyingDiscount(false);
-    }
-  };
-
-  const handleRemoveDiscount = async () => {
-    if (!selectedStudent || !group?.id) return;
-    
-    setRemovingDiscount(true);
-    try {
-      await StudentBalanceApiService.removeDiscount(selectedStudent.student.id, group.id);
-      showSuccess(`Скидка удалена для ${selectedStudent.student.name}`);
-      setIsDiscountOpen(false);
-      // Принудительно перезагружаем данные
-      await loadStudents();
-    } catch (error: unknown) {
-      showError('Ошибка при удалении скидки: ' + ((error as Error)?.message || 'Неизвестная ошибка'));
-    } finally {
-      setRemovingDiscount(false);
     }
   };
 
@@ -263,21 +241,9 @@ export const GroupStudentsModal: React.FC<GroupStudentsModalProps> = ({
             <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-2">
               Нет студентов
             </h3>
-            <p className="text-gray-600 dark:text-gray-400 mb-6">
+            <p className="text-gray-600 dark:text-gray-400">
               В этой группе пока нет студентов
             </p>
-            {onAddStudents && (
-              <button
-                onClick={() => {
-                  onAddStudents();
-                  handleClose();
-                }}
-                className="inline-flex items-center gap-2 px-6 py-3 bg-gradient-to-r from-blue-500 to-purple-600 text-white font-medium rounded-lg shadow-lg hover:shadow-xl transition-all duration-200 hover:scale-105"
-              >
-                <PlusCircleIcon className="h-5 w-5" />
-                Добавить студентов
-              </button>
-            )}
           </div>
         ) : (
           <div className="grid gap-3 max-h-[60vh] overflow-y-auto overflow-x-hidden">
@@ -311,19 +277,10 @@ export const GroupStudentsModal: React.FC<GroupStudentsModalProps> = ({
                             {studentBalance.student.name}
                           </h4>
                           {studentBalance.isFrozen && (
-                            <div className="flex flex-col gap-0.5">
-                              <span className="inline-flex items-center px-1.5 py-0.5 rounded-full text-xs font-medium bg-slate-200 text-slate-700 dark:bg-slate-700 dark:text-slate-300 flex-shrink-0">
-                                <LockClosedIcon className="w-3 h-3 mr-0.5" />
-                                Заморожен
-                              </span>
-                              {(studentBalance.frozenFrom || studentBalance.frozenTo) && (
-                                <span className="text-xs text-slate-600 dark:text-slate-400 whitespace-nowrap">
-                                  {studentBalance.frozenFrom && new Date(studentBalance.frozenFrom).toLocaleDateString('ru-RU')}
-                                  {(studentBalance.frozenFrom && studentBalance.frozenTo) && ' - '}
-                                  {studentBalance.frozenTo && new Date(studentBalance.frozenTo).toLocaleDateString('ru-RU')}
-                                </span>
-                              )}
-                            </div>
+                            <span className="inline-flex items-center px-1.5 py-0.5 rounded-full text-xs font-medium bg-slate-200 text-slate-700 dark:bg-slate-700 dark:text-slate-300 flex-shrink-0">
+                              <LockClosedIcon className="w-3 h-3 mr-0.5" />
+                              Заморожен
+                            </span>
                           )}
                         </div>
                         
@@ -434,9 +391,6 @@ export const GroupStudentsModal: React.FC<GroupStudentsModalProps> = ({
         onConfirm={handleAddBalance}
         studentName={selectedStudent?.student.name || ''}
         subjectPrice={selectedStudent?.subjectPrice}
-        discountedPrice={selectedStudent?.lessonCost}
-        discountType={selectedStudent?.discountType}
-        discountValue={selectedStudent?.discountValue}
         loading={addingBalance}
       />
       
@@ -444,12 +398,8 @@ export const GroupStudentsModal: React.FC<GroupStudentsModalProps> = ({
         isOpen={isDiscountOpen}
         onClose={() => setIsDiscountOpen(false)}
         onConfirm={handleApplyDiscount}
-        onRemove={handleRemoveDiscount}
         studentName={selectedStudent?.student.name || ''}
-        loading={applyingDiscount || removingDiscount}
-        currentDiscountType={selectedStudent?.discountType}
-        currentDiscountValue={selectedStudent?.discountValue}
-        currentDiscountReason={selectedStudent?.discountReason}
+        loading={applyingDiscount}
       />
       
       <FreezeStudentModal

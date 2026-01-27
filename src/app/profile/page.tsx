@@ -64,25 +64,23 @@ export default function Profile() {
   const handleEditProfile = async () => {
     if (!user?.id) return;
     
-    // Сначала открываем модалку с имеющимися данными
-    setIsEditModalOpen(true);
+    // Если полные данные уже загружены, просто открываем модалку
+    if (fullProfileData) {
+      setIsEditModalOpen(true);
+      return;
+    }
     
-    // Затем в фоне загружаем полные данные, если их еще нет
-    if (!fullProfileData) {
-      setIsLoadingFullData(true);
-      try {
-        const response = await AuthenticatedApiService.getUserById(user.id);
-        if (response.success && response.data) {
-          setFullProfileData(response.data);
-        } else {
-          throw new Error(response.message || 'Failed to fetch user data');
-        }
-      } catch (error) {
-        console.error('Failed to fetch full profile data:', error);
-        setError('Не удалось загрузить полные данные профиля');
-      } finally {
-        setIsLoadingFullData(false);
-      }
+    // Иначе сначала загружаем данные, потом открываем модалку
+    setIsLoadingFullData(true);
+    try {
+      const userData = await AuthenticatedApiService.getUserById(user.id);
+      setFullProfileData(userData);
+      setIsEditModalOpen(true);
+    } catch (error) {
+      console.error('Failed to fetch full profile data:', error);
+      setError('Не удалось загрузить полные данные профиля');
+    } finally {
+      setIsLoadingFullData(false);
     }
   };
 
@@ -93,10 +91,8 @@ export default function Profile() {
       // Обновляем данные профиля после сохранения
       await fetchProfileData();
       // Также обновляем полные данные для модалки
-      const response = await AuthenticatedApiService.getUserById(user.id);
-      if (response.success && response.data) {
-        setFullProfileData(response.data);
-      }
+      const userData = await AuthenticatedApiService.getUserById(user.id);
+      setFullProfileData(userData);
       // Обновляем пользователя в AuthContext с помощью refreshUser
       await refreshUser();
     } catch (error) {
@@ -369,12 +365,22 @@ export default function Profile() {
             <div className="flex flex-col gap-4">
               <button 
                 onClick={handleEditProfile}
-                className="w-full bg-gradient-to-r from-purple-500 via-pink-500 to-red-500 text-white px-8 py-4 rounded-xl font-bold text-lg shadow-xl hover:shadow-2xl transition-all duration-300 hover:scale-105 transform flex items-center justify-center"
+                disabled={isLoadingFullData}
+                className="w-full bg-gradient-to-r from-purple-500 via-pink-500 to-red-500 text-white px-8 py-4 rounded-xl font-bold text-lg shadow-xl hover:shadow-2xl transition-all duration-300 hover:scale-105 transform flex items-center justify-center disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:scale-100"
               >
-                <svg className="h-6 w-6 mr-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
-                </svg>
-                Редактировать профиль
+                {isLoadingFullData ? (
+                  <>
+                    <div className="animate-spin rounded-full h-6 w-6 border-2 border-white border-t-transparent mr-3"></div>
+                    Загрузка данных...
+                  </>
+                ) : (
+                  <>
+                    <svg className="h-6 w-6 mr-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
+                    </svg>
+                    Редактировать профиль
+                  </>
+                )}
               </button>
               
               <button 

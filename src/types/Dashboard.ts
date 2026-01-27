@@ -10,6 +10,8 @@ export interface DashboardSummary {
   trialStudentsCount: number;
   lowPerformanceGroupsCount: number;
   totalDebt: number;
+  frozenStudentsCount: number;
+  expiredFreezeCount: number;
   lastUpdated: string;
 }
 

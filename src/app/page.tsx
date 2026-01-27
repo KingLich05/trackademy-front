@@ -441,6 +441,13 @@ export default function Dashboard() {
       value: summary.lowPerformanceGroupsCount,
       icon: ExclamationTriangleIcon,
       color: summary.lowPerformanceGroupsCount > 0 ? 'red' : 'green'
+    },
+    {
+      label: 'Замороженные студенты',
+      value: summary.frozenStudentsCount,
+      icon: ClockIcon,
+      color: 'blue',
+      description: summary.expiredFreezeCount > 0 ? `Истекло заморозок: ${summary.expiredFreezeCount}` : undefined
     }
   ] : [];
 

@@ -165,6 +165,39 @@ export default function RegisterPage() {
     setError('');
     setSuccess('');
 
+    // Валидация даты рождения
+    if (formData.birthday) {
+      const birthdayValue = formData.birthday.trim();
+      
+      // Проверка на полноту даты
+      if (birthdayValue.length !== 10 || birthdayValue.split('-').length !== 3) {
+        setError('Укажите полную дату рождения (год, месяц и день)');
+        setLoading(false);
+        return;
+      }
+      
+      const selectedDate = new Date(birthdayValue);
+      const today = new Date();
+      today.setHours(0, 0, 0, 0);
+      
+      // Проверка на будущее
+      if (selectedDate > today) {
+        setError('Дата рождения не может быть в будущем');
+        setLoading(false);
+        return;
+      }
+      
+      // Проверка на возраст (не более 100 лет)
+      const hundredYearsAgo = new Date();
+      hundredYearsAgo.setFullYear(today.getFullYear() - 100);
+      hundredYearsAgo.setHours(0, 0, 0, 0);
+      
+      if (selectedDate < hundredYearsAgo) {
+        setError('Дата рождения не может быть более 100 лет назад');
+        setLoading(false);
+        return;
+      }
+    }
 
     try {
       const response = await fetch('https://trackademy.kz/api/Auth/register-admin', {
@@ -333,7 +366,7 @@ export default function RegisterPage() {
               {/* Full Name Field */}
               <div className="animate-fade-in animate-delay-300">
                 <label htmlFor="fullName" className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                  Полное имя
+                  Полное имя<span className="text-red-500 ml-1">*</span>
                 </label>
                 <input
                   id="fullName"
@@ -350,7 +383,7 @@ export default function RegisterPage() {
               {/* Login Field */}
               <div className="animate-fade-in animate-delay-400">
                 <label htmlFor="login" className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                  Логин
+                  Логин<span className="text-red-500 ml-1">*</span>
                 </label>
                 <input
                   id="login"
@@ -367,7 +400,7 @@ export default function RegisterPage() {
               {/* Password Field */}
               <div className="animate-fade-in animate-delay-500">
                 <label htmlFor="password" className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                  Пароль
+                  Пароль<span className="text-red-500 ml-1">*</span>
                 </label>
                 <div className="relative">
                   <input
@@ -397,7 +430,7 @@ export default function RegisterPage() {
               {/* Phone Field */}
               <div className="animate-fade-in animate-delay-600">
                 <label htmlFor="phone" className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                  Телефон
+                  Телефон<span className="text-red-500 ml-1">*</span>
                 </label>
                 <input
                   id="phone"
@@ -415,7 +448,7 @@ export default function RegisterPage() {
               {/* Birthday Field */}
               <div className="animate-fade-in animate-delay-700">
                 <label htmlFor="birthday" className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                  Дата рождения
+                  Дата рождения<span className="text-red-500 ml-1">*</span>
                 </label>
                 <input
                   id="birthday"
@@ -424,6 +457,12 @@ export default function RegisterPage() {
                   required
                   value={formData.birthday}
                   onChange={handleChange}
+                  min={(() => {
+                    const date = new Date();
+                    date.setFullYear(date.getFullYear() - 100);
+                    return date.toISOString().split('T')[0];
+                  })()}
+                  max={new Date().toISOString().split('T')[0]}
                   className="w-full px-4 py-3 bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-xl shadow-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 dark:focus:ring-blue-400 dark:focus:border-blue-400 text-gray-900 dark:text-white placeholder-gray-500 dark:placeholder-gray-400 transition-all duration-200"
                 />
               </div>
@@ -431,7 +470,7 @@ export default function RegisterPage() {
               {/* Organization Selection */}
               <div className="animate-fade-in animate-delay-800 relative" ref={organizationDropdownRef}>
                 <label htmlFor="organizationId" className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                  Организация
+                  Организация<span className="text-red-500 ml-1">*</span>
                 </label>
                 <div className="relative">
                   <button

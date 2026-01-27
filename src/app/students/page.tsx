@@ -86,6 +86,7 @@ export default function StudentsPage() {
     { key: 'contacts', label: 'Контакты' },
     { key: 'role', label: 'Роль' },
     { key: 'group', label: 'Группа' },
+    { key: 'createdDate', label: 'Дата создания' },
     { key: 'actions', label: 'Действия', required: true }
   ]);
   
@@ -926,7 +927,8 @@ export default function StudentsPage() {
                 role: user.role === 'Administrator' ? 2 : user.role === 'Owner' ? 4 : user.role === 'Teacher' ? 3 : 1,
                 organizationId: user.organizationId || '',
                 groups: [],
-                isTrial: false
+                isTrial: false,
+                createdDate: new Date().toISOString()
               } : undefined}
               onEdit={handleEdit}
               onDelete={handleDelete}
@@ -997,14 +999,31 @@ export default function StudentsPage() {
             errors.password = 'Пароль обязателен для заполнения';
           }
           
-          // Validate birthday is not in the future
+          // Validate birthday
           if (data.birthday && typeof data.birthday === 'string' && data.birthday.trim() !== '') {
-            const selectedDate = new Date(data.birthday);
-            const today = new Date();
-            today.setHours(0, 0, 0, 0);
+            const birthdayValue = data.birthday.trim();
             
-            if (selectedDate > today) {
-              errors.birthday = 'Дата рождения не может быть в будущем';
+            // Проверка на полноту даты (должна быть в формате YYYY-MM-DD)
+            if (birthdayValue.length !== 10 || birthdayValue.split('-').length !== 3) {
+              errors.birthday = 'Укажите полную дату рождения (год, месяц и день)';
+            } else {
+              const selectedDate = new Date(birthdayValue);
+              const today = new Date();
+              today.setHours(0, 0, 0, 0);
+              
+              // Проверка на будущее
+              if (selectedDate > today) {
+                errors.birthday = 'Дата рождения не может быть в будущем';
+              } else {
+                // Проверка на возраст (не более 100 лет)
+                const hundredYearsAgo = new Date();
+                hundredYearsAgo.setFullYear(today.getFullYear() - 100);
+                hundredYearsAgo.setHours(0, 0, 0, 0);
+                
+                if (selectedDate < hundredYearsAgo) {
+                  errors.birthday = 'Дата рождения не может быть более 100 лет назад';
+                }
+              }
             }
           }
           
@@ -1150,6 +1169,11 @@ export default function StudentsPage() {
                   type="date"
                   value={(formData.birthday as string) || ''}
                   onChange={(e) => setFormData((prev: Record<string, unknown>) => ({ ...prev, birthday: e.target.value }))}
+                  min={(() => {
+                    const date = new Date();
+                    date.setFullYear(date.getFullYear() - 100);
+                    return date.toISOString().split('T')[0];
+                  })()}
                   max={new Date().toISOString().split('T')[0]}
                   className="w-full px-4 py-3 border border-gray-300 dark:border-gray-600 rounded-xl focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-transparent bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
                 />
