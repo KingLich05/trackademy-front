@@ -1,5 +1,5 @@
 import { AuthenticatedApiService } from './AuthenticatedApiService';
-import { StudentBalanceRequest, StudentBalanceResponse, StudentBalanceItem, FlattenedBalance } from '../types/StudentBalance';
+import { StudentBalanceRequest, StudentBalanceResponse, StudentBalanceItem, FlattenedBalance, StudentGroupBalanceDetail } from '../types/StudentBalance';
 
 export interface AddBalanceRequest {
   studentId: string;
@@ -100,5 +100,65 @@ export class StudentBalanceApiService {
     });
     
     return flattened;
+  }
+
+  /**
+   * Получить платежи сгруппированные по предметам и группам
+   */
+  static async getPaymentsGrouped(
+    organizationId: string,
+    request: {
+      pageNumber: number;
+      pageSize: number;
+      subjectId?: string;
+      groupId?: string;
+      studentSearch?: string;
+    }
+  ): Promise<{
+    subjects: Array<{
+      subjectId: string;
+      subjectName: string;
+      totalPaid: number;
+      groups: Array<{
+        groupId: string;
+        groupName: string;
+        groupCode: string;
+        totalPaid: number;
+        students: Array<{
+          studentId: string;
+          studentName: string;
+          studentPhone: string;
+          studentLogin: string;
+          totalPaid: number;
+          currentBalance: number;
+          remainingLessons: number;
+          isFrozen: boolean;
+          frozenFrom: string | null;
+          frozenTo: string | null;
+          freezeReason: string | null;
+          discountType: number | null;
+          discountValue: number | null;
+          discountReason: string | null;
+        }>;
+      }>;
+    }>;
+    totalItems: number;
+    totalPages: number;
+    currentPage: number;
+    pageSize: number;
+  }> {
+    return AuthenticatedApiService.post(
+      `/StudentBalance/organization/${organizationId}/payments-grouped`,
+      request
+    );
+  }
+
+  /**
+   * Получить детальную информацию о балансе студента в конкретной группе
+   */
+  static async getStudentGroupBalanceDetails(studentId: string, groupId: string): Promise<StudentGroupBalanceDetail> {
+    return AuthenticatedApiService.get(
+      `/StudentBalance/${studentId}/group/${groupId}`
+    );
   }
 }

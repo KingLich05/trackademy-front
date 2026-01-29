@@ -95,3 +95,71 @@ export const formatDiscount = (type: number | null, value: number | null): strin
       return 'Неизвестно';
   }
 };
+
+// Детальная информация о балансе студента в группе
+export interface StudentGroupBalanceDetail {
+  id: string;
+  student: {
+    id: string;
+    name: string;
+    phone: string;
+  };
+  group: {
+    id: string;
+    name: string;
+    code: string;
+  };
+  balance: number;
+  discountType: number;
+  discountTypeName: string;
+  discountValue: number;
+  discountReason: string | null;
+  createdAt: string;
+  updatedAt: string;
+  recentAttendances: RecentAttendance[];
+  transactionHistory: TransactionHistory[];
+}
+
+export interface RecentAttendance {
+  id: string;
+  studentId: string;
+  studentName: string;
+  studentLogin: string;
+  groupId: string;
+  lessonId: string;
+  date: string;
+  plannedLessonDate: string;
+  status: number;
+  statusName: string;
+  isPaid: boolean;
+  grade: number | null;
+  comment: string | null;
+  subjectName: string;
+  groupName: string;
+  teacherName: string;
+  startTime: string;
+  endTime: string;
+}
+
+export interface TransactionHistory {
+  id: string;
+  student: {
+    id: string;
+    name: string;
+    phone: string;
+  };
+  group: {
+    id: string;
+    name: string;
+    code: string;
+  };
+  type: number;
+  typeDisplayName: string;
+  amount: number;
+  balanceAfter: number;
+  description: string;
+  operationDate: string;
+  processedBy: string | null;
+  processedByName: string | null;
+  metadata: unknown;
+}
