@@ -1180,6 +1180,11 @@ export default function StudentsPage() {
                 {_errors.birthday && (
                   <p className="mt-1 text-sm text-red-600 dark:text-red-400">{_errors.birthday}</p>
                 )}
+                {!_errors.birthday && (
+                  <p className="mt-2 text-xs text-gray-500 dark:text-gray-400">
+                    Укажите полную дату (год, месяц, день).
+                  </p>
+                )}
               </div>
 
               {/* Password и Trial Student Toggle для студентов при создании */}

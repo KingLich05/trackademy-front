@@ -1254,7 +1254,7 @@ export default function HomeworkPage() {
                         : 'bg-gray-700 text-gray-300 hover:bg-gray-600'
                     }`}
                   >
-                    Сдавшие ({selectedAssignment.studentSubmissions?.filter(s => s.submission !== null).length || 0})
+                    Сдавшие ({selectedAssignment.studentSubmissions?.filter(s => s.submission !== null && s.submission.status !== SubmissionStatus.Draft).length || 0})
                   </button>
                   <button
                     onClick={() => setStudentFilter('notSubmitted')}
@@ -1264,7 +1264,7 @@ export default function HomeworkPage() {
                         : 'bg-gray-700 text-gray-300 hover:bg-gray-600'
                     }`}
                   >
-                    Не сдавшие ({selectedAssignment.studentSubmissions?.filter(s => s.submission === null).length || 0})
+                    Не сдавшие ({selectedAssignment.studentSubmissions?.filter(s => s.submission === null || s.submission.status === SubmissionStatus.Draft).length || 0})
                   </button>
                 </div>
 
@@ -1299,17 +1299,23 @@ export default function HomeworkPage() {
                     <tbody className="bg-gray-800/50 divide-y divide-gray-700">
                       {selectedAssignment.studentSubmissions
                         ?.filter(student => {
-                          if (studentFilter === 'submitted') return student.submission !== null;
-                          if (studentFilter === 'notSubmitted') return student.submission === null;
+                          // Treat drafts as not submitted for teachers
+                          const hasValidSubmission = student.submission !== null && student.submission.status !== SubmissionStatus.Draft;
+                          if (studentFilter === 'submitted') return hasValidSubmission;
+                          if (studentFilter === 'notSubmitted') return !hasValidSubmission;
                           return true;
                         })
-                        .map((student, index) => (
+                        .map((student, index) => {
+                          // Treat draft as null for display purposes
+                          const displaySubmission = student.submission?.status === SubmissionStatus.Draft ? null : student.submission;
+                          
+                          return (
                           <tr 
                             key={student.studentId}
                             className="hover:bg-gray-700/50 cursor-pointer transition-colors"
                             onClick={() => {
-                              if (student.submission) {
-                                setSelectedSubmissionId(student.submission.id);
+                              if (displaySubmission) {
+                                setSelectedSubmissionId(displaySubmission.id);
                                 setSelectedStudentName(student.studentName);
                                 setIsSubmissionDetailOpen(true);
                               }
@@ -1325,15 +1331,15 @@ export default function HomeworkPage() {
                               <div className="text-sm text-gray-300">{student.studentLogin}</div>
                             </td>
                             <td className="px-6 py-4 whitespace-nowrap">
-                              {student.submission ? (
+                              {displaySubmission ? (
                                 <span className={`px-3 py-1 inline-flex text-xs leading-5 font-semibold rounded-full ${
-                                  student.submission.status === 1 ? 'bg-blue-100 text-blue-800 dark:bg-blue-900/30 dark:text-blue-400' :
-                                  student.submission.status === 2 ? 'bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-400' :
-                                  student.submission.status === 3 ? 'bg-yellow-100 text-yellow-800 dark:bg-yellow-900/30 dark:text-yellow-400' :
-                                  student.submission.status === 4 ? 'bg-red-100 text-red-800 dark:bg-red-900/30 dark:text-red-400' :
+                                  displaySubmission.status === 1 ? 'bg-blue-100 text-blue-800 dark:bg-blue-900/30 dark:text-blue-400' :
+                                  displaySubmission.status === 2 ? 'bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-400' :
+                                  displaySubmission.status === 3 ? 'bg-yellow-100 text-yellow-800 dark:bg-yellow-900/30 dark:text-yellow-400' :
+                                  displaySubmission.status === 4 ? 'bg-red-100 text-red-800 dark:bg-red-900/30 dark:text-red-400' :
                                   'bg-gray-100 text-gray-800 dark:bg-gray-800 dark:text-gray-300'
                                 }`}>
-                                  {getStatusLabel(student.submission.status)}
+                                  {getStatusLabel(displaySubmission.status)}
                                 </span>
                               ) : (
                                 <span className="px-3 py-1 inline-flex text-xs leading-5 font-semibold rounded-full bg-gray-100 text-gray-800 dark:bg-gray-800 dark:text-gray-300">
@@ -1342,9 +1348,9 @@ export default function HomeworkPage() {
                               )}
                             </td>
                             <td className="px-6 py-4 whitespace-nowrap">
-                              {student.submission?.score !== null && student.submission?.score !== undefined ? (
+                              {displaySubmission?.score !== null && displaySubmission?.score !== undefined ? (
                                 <div className="flex items-center">
-                                  <span className="text-sm font-medium text-white">{student.submission.score}</span>
+                                  <span className="text-sm font-medium text-white">{displaySubmission.score}</span>
                                   <span className="text-xs text-gray-400 ml-1">/100</span>
                                 </div>
                               ) : (
@@ -1352,18 +1358,19 @@ export default function HomeworkPage() {
                               )}
                             </td>
                             <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-300">
-                              {student.submission?.submittedAt ? formatDate(student.submission.submittedAt) : '—'}
+                              {displaySubmission?.submittedAt ? formatDate(displaySubmission.submittedAt) : '—'}
                             </td>
                             <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-300">
-                              {student.submission?.gradedAt ? formatDate(student.submission.gradedAt) : '—'}
+                              {displaySubmission?.gradedAt ? formatDate(displaySubmission.gradedAt) : '—'}
                             </td>
                           </tr>
-                        ))}
+                        )})}
                     </tbody>
                   </table>
                   {selectedAssignment.studentSubmissions?.filter(student => {
-                    if (studentFilter === 'submitted') return student.submission !== null;
-                    if (studentFilter === 'notSubmitted') return student.submission === null;
+                    const hasValidSubmission = student.submission !== null && student.submission.status !== SubmissionStatus.Draft;
+                    if (studentFilter === 'submitted') return hasValidSubmission;
+                    if (studentFilter === 'notSubmitted') return !hasValidSubmission;
                     return true;
                   }).length === 0 && (
                     <div className="text-center py-8 text-gray-400">

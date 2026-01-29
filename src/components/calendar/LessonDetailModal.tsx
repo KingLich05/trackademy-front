@@ -56,6 +56,13 @@ export default function LessonDetailModal({ lesson, isOpen, onClose, onUpdate }:
     setNoteSuccess(false);
   }, [lesson.id]);
 
+  // Reset to details tab when lesson is cancelled or changes
+  useEffect(() => {
+    if (lesson.lessonStatus === 'Cancelled' && activeTab !== 'details') {
+      setActiveTab('details');
+    }
+  }, [lesson.lessonStatus, lesson.id, activeTab]);
+
   if (!isOpen) return null;
 
   // Check if user can edit notes (Administrator, Teacher or Owner)
@@ -261,7 +268,7 @@ export default function LessonDetailModal({ lesson, isOpen, onClose, onUpdate }:
           >
             Детали
           </button>
-          {!isStudent && (
+          {!isStudent && lesson.lessonStatus !== 'Cancelled' && (
             <>
               <button
                 onClick={() => setActiveTab('attendance')}
