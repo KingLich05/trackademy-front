@@ -18,7 +18,8 @@ import {
   UserGroupIcon,
   PlusCircleIcon,
   ReceiptPercentIcon,
-  ArrowPathIcon
+  ArrowPathIcon,
+  ExclamationTriangleIcon
 } from '@heroicons/react/24/outline';
 import { PageHeaderWithStats } from '../../components/ui/PageHeaderWithStats';
 import { RefundModal } from '../../components/RefundModal';
@@ -359,6 +360,31 @@ export default function PaymentsGroupedPage() {
     return 'bg-white dark:bg-gray-800';
   };
 
+  // Функция для определения статуса предупреждения студента
+  const getStudentWarningStatus = (student: StudentPayment): 'critical' | 'warning' | null => {
+    if (student.currentBalance < 0) return 'critical';
+    if (student.remainingLessons >= 1 && student.remainingLessons <= 2) return 'warning';
+    return null;
+  };
+
+  // Проверяет есть ли проблемы у студентов в группе
+  const hasGroupWarning = (students: StudentPayment[]): 'critical' | 'warning' | null => {
+    const hasCritical = students.some(s => getStudentWarningStatus(s) === 'critical');
+    if (hasCritical) return 'critical';
+    const hasWarning = students.some(s => getStudentWarningStatus(s) === 'warning');
+    if (hasWarning) return 'warning';
+    return null;
+  };
+
+  // Проверяет есть ли проблемы у студентов в предмете
+  const hasSubjectWarning = (groups: GroupPayment[]): 'critical' | 'warning' | null => {
+    const hasCritical = groups.some(g => hasGroupWarning(g.students) === 'critical');
+    if (hasCritical) return 'critical';
+    const hasWarning = groups.some(g => hasGroupWarning(g.students) === 'warning');
+    if (hasWarning) return 'warning';
+    return null;
+  };
+
   const totalPaidAllSubjects = data?.subjects.reduce((sum, subject) => sum + subject.totalPaid, 0) || 0;
 
   if (!isAdmin) {
@@ -497,13 +523,21 @@ export default function PaymentsGroupedPage() {
                       <ChevronRightIcon className="h-5 w-5 text-gray-600 dark:text-gray-400" />
                     )}
                     <AcademicCapIcon className="h-6 w-6 text-blue-600 dark:text-blue-400" />
-                    <div>
-                      <h3 className="font-bold text-lg text-gray-900 dark:text-white">
-                        {subject.subjectName}
-                      </h3>
-                      <p className="text-sm text-gray-600 dark:text-gray-400">
-                        Групп: {subject.groups.length}
-                      </p>
+                    <div className="flex items-center gap-2">
+                      <div>
+                        <h3 className="font-bold text-lg text-gray-900 dark:text-white">
+                          {subject.subjectName}
+                        </h3>
+                        <p className="text-sm text-gray-600 dark:text-gray-400">
+                          Групп: {subject.groups.length}
+                        </p>
+                      </div>
+                      {hasSubjectWarning(subject.groups) === 'critical' && (
+                        <ExclamationTriangleIcon className="h-5 w-5 text-red-500 dark:text-red-400" title="Есть студенты с отрицательным балансом" />
+                      )}
+                      {hasSubjectWarning(subject.groups) === 'warning' && (
+                        <ExclamationTriangleIcon className="h-5 w-5 text-yellow-500 dark:text-yellow-400" title="Есть студенты с низким балансом (1-2 урока)" />
+                      )}
                     </div>
                   </div>
                   <div className="text-right">
@@ -536,13 +570,21 @@ export default function PaymentsGroupedPage() {
                               <ChevronRightIcon className="h-4 w-4 text-gray-600 dark:text-gray-400" />
                             )}
                             <UserGroupIcon className="h-5 w-5 text-purple-600 dark:text-purple-400" />
-                            <div>
-                              <h4 className="font-semibold text-gray-900 dark:text-white">
-                                {group.groupName}
-                              </h4>
-                              <p className="text-xs text-gray-600 dark:text-gray-400">
-                                Код: {group.groupCode} • Студентов: {group.students.length}
-                              </p>
+                            <div className="flex items-center gap-2">
+                              <div>
+                                <h4 className="font-semibold text-gray-900 dark:text-white">
+                                  {group.groupName}
+                                </h4>
+                                <p className="text-xs text-gray-600 dark:text-gray-400">
+                                  Код: {group.groupCode} • Студентов: {group.students.length}
+                                </p>
+                              </div>
+                              {hasGroupWarning(group.students) === 'critical' && (
+                                <ExclamationTriangleIcon className="h-4 w-4 text-red-500 dark:text-red-400" title="Есть студенты с отрицательным балансом" />
+                              )}
+                              {hasGroupWarning(group.students) === 'warning' && (
+                                <ExclamationTriangleIcon className="h-4 w-4 text-yellow-500 dark:text-yellow-400" title="Есть студенты с низким балансом (1-2 урока)" />
+                              )}
                             </div>
                           </div>
                           <div className="text-right">
@@ -597,11 +639,21 @@ export default function PaymentsGroupedPage() {
                                     }`}
                                   >
                                     <td className="px-4 py-3 whitespace-nowrap">
-                                      <div className="text-blue-600 dark:text-blue-400 font-medium">
-                                        {student.studentName}
-                                      </div>
-                                      <div className="text-xs text-gray-500 dark:text-gray-400">
-                                        {student.studentLogin}
+                                      <div className="flex items-center gap-1.5">
+                                        <div>
+                                          <div className="text-blue-600 dark:text-blue-400 font-medium">
+                                            {student.studentName}
+                                          </div>
+                                          <div className="text-xs text-gray-500 dark:text-gray-400">
+                                            {student.studentLogin}
+                                          </div>
+                                        </div>
+                                        {getStudentWarningStatus(student) === 'critical' && (
+                                          <ExclamationTriangleIcon className="h-4 w-4 text-red-500 dark:text-red-400 flex-shrink-0" title="Отрицательный баланс" />
+                                        )}
+                                        {getStudentWarningStatus(student) === 'warning' && (
+                                          <ExclamationTriangleIcon className="h-4 w-4 text-yellow-500 dark:text-yellow-400 flex-shrink-0" title="Осталось 1-2 урока" />
+                                        )}
                                       </div>
                                     </td>
                                     <td className="px-4 py-3 whitespace-nowrap text-sm text-gray-600 dark:text-gray-400">
@@ -837,7 +889,9 @@ export default function PaymentsGroupedPage() {
                             <div className="flex-1">
                               <div className="flex items-center gap-2">
                                 <span className={`px-2 py-1 text-xs font-semibold rounded ${
-                                  transaction.type === 1 
+                                  transaction.typeDisplayName.toLowerCase().includes('возврат')
+                                    ? 'bg-red-100 text-red-800 dark:bg-red-900/30 dark:text-red-400'
+                                    : transaction.type === 1 
                                     ? 'bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-400'
                                     : 'bg-red-100 text-red-800 dark:bg-red-900/30 dark:text-red-400'
                                 }`}>
