@@ -62,8 +62,7 @@ const Sidebar: React.FC = () => {
     { name: 'Посещаемость', href: '/attendance', icon: ClipboardDocumentCheckIcon, activeIcon: ClipboardDocumentCheckIconSolid, requireAuth: true, requireOwner: false, requireAdmin: false, requireStudent: false, hideForStudentTeacher: false, hideForStudent: true },
     { name: 'Домашнее задание', href: isStudent ? '/my-homework' : '/homework', icon: ClipboardDocumentListIcon, activeIcon: ClipboardDocumentListIconSolid, requireAuth: true, requireOwner: false, requireAdmin: false, requireStudent: false, hideForStudentTeacher: false, hideForAdmin: true },
     { name: 'Учебные материалы', href: '/materials', icon: FolderIcon, activeIcon: FolderIconSolid, requireAuth: true, requireOwner: false, requireAdmin: false, requireStudent: false, hideForStudentTeacher: false },
-    { name: 'Платежи', href: '/payments', icon: CurrencyDollarIcon, activeIcon: CurrencyDollarIconSolid, requireAuth: true, requireOwner: false, requireAdmin: false, requireStudent: false, hideForStudentTeacher: true },
-    { name: 'Платежи по предметам', href: '/payments-grouped', icon: CurrencyDollarIcon, activeIcon: CurrencyDollarIconSolid, requireAuth: true, requireOwner: false, requireAdmin: true, requireStudent: false, hideForStudentTeacher: true },
+    { name: 'Платежи', href: '/payments-grouped', icon: CurrencyDollarIcon, activeIcon: CurrencyDollarIconSolid, requireAuth: true, requireOwner: false, requireAdmin: true, requireStudent: false, hideForStudentTeacher: true },
     { name: 'Отчеты', href: '/reports', icon: ChartBarIcon, activeIcon: ChartBarIconSolid, requireAuth: true, requireOwner: false, requireAdmin: true, requireStudent: false, hideForStudentTeacher: true },
   ];
 

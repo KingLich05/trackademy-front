@@ -557,8 +557,8 @@ export default function PaymentsGroupedPage() {
 
                         {/* Students Table */}
                         {expandedGroups.has(group.groupId) && (
-                          <div className="overflow-x-auto">
-                            <table className="min-w-full divide-y divide-gray-200 dark:divide-gray-700">
+                          <div>
+                            <table className="w-full divide-y divide-gray-200 dark:divide-gray-700">
                               <thead className="bg-gray-50 dark:bg-gray-800">
                                 <tr>
                                   <th className="px-4 py-2 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase">
@@ -650,7 +650,7 @@ export default function PaymentsGroupedPage() {
                                       )}
                                     </td>
                                     <td className="px-4 py-3 whitespace-nowrap">
-                                      <div className="flex gap-2">
+                                      <div className="flex gap-1.5 flex-wrap">
                                         <button
                                           onClick={(e) => {
                                             e.stopPropagation();
@@ -661,10 +661,10 @@ export default function PaymentsGroupedPage() {
                                               group.groupName
                                             );
                                           }}
-                                          className="px-3 py-1 bg-green-500 hover:bg-green-600 text-white rounded text-xs font-medium transition-colors flex items-center gap-1"
+                                          className="px-2 py-1 bg-emerald-100 hover:bg-emerald-200 text-emerald-700 dark:bg-emerald-900/30 dark:hover:bg-emerald-900/50 dark:text-emerald-300 rounded text-xs font-medium transition-colors flex items-center gap-1"
                                           title="Пополнить баланс"
                                         >
-                                          <PlusCircleIcon className="h-4 w-4" />
+                                          <PlusCircleIcon className="h-3.5 w-3.5" />
                                           Пополнить
                                         </button>
                                         <button
@@ -677,10 +677,10 @@ export default function PaymentsGroupedPage() {
                                               group.groupName
                                             );
                                           }}
-                                          className="px-3 py-1 bg-blue-500 hover:bg-blue-600 text-white rounded text-xs font-medium transition-colors flex items-center gap-1"
+                                          className="px-2 py-1 bg-blue-100 hover:bg-blue-200 text-blue-700 dark:bg-blue-900/30 dark:hover:bg-blue-900/50 dark:text-blue-300 rounded text-xs font-medium transition-colors flex items-center gap-1"
                                           title="Применить скидку"
                                         >
-                                          <ReceiptPercentIcon className="h-4 w-4" />
+                                          <ReceiptPercentIcon className="h-3.5 w-3.5" />
                                           Скидка
                                         </button>
                                         <button
@@ -695,10 +695,10 @@ export default function PaymentsGroupedPage() {
                                             );
                                           }}
                                           disabled={student.currentBalance <= 0}
-                                          className="px-3 py-1 bg-red-500 hover:bg-red-600 text-white rounded text-xs font-medium disabled:opacity-50 disabled:cursor-not-allowed transition-colors flex items-center gap-1"
+                                          className="px-2 py-1 bg-rose-100 hover:bg-rose-200 text-rose-700 dark:bg-rose-900/30 dark:hover:bg-rose-900/50 dark:text-rose-300 rounded text-xs font-medium disabled:opacity-40 disabled:cursor-not-allowed transition-colors flex items-center gap-1"
                                           title="Возврат средств"
                                         >
-                                          <ArrowPathIcon className="h-4 w-4" />
+                                          <ArrowPathIcon className="h-3.5 w-3.5" />
                                           Возврат
                                         </button>
                                       </div>
