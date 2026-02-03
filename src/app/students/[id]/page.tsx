@@ -6,20 +6,23 @@ import { useAuth } from '../../../contexts/AuthContext';
 import { useToast } from '../../../contexts/ToastContext';
 import { AuthenticatedApiService } from '../../../services/AuthenticatedApiService';
 import { StudentProfile, GroupAttendance, UpcomingLesson, RecentLesson, BalanceHistory, StudentGroup } from '../../../types/StudentProfile';
+import { Group } from '../../../types/Group';
 import { StudentFlag } from '../../../types/StudentFlag';
 import { StudentStatus, getStudentStatusName } from '../../../types/StudentCrm';
-import { ArrowLeftIcon, CalendarIcon, ChartBarIcon, CreditCardIcon, AcademicCapIcon, ClockIcon, BanknotesIcon, PencilIcon, FlagIcon, XMarkIcon, PlusCircleIcon, UserMinusIcon, ReceiptPercentIcon, LockClosedIcon, LockOpenIcon } from '@heroicons/react/24/outline';
+import { ArrowLeftIcon, CalendarIcon, ChartBarIcon, CreditCardIcon, AcademicCapIcon, ClockIcon, BanknotesIcon, PencilIcon, FlagIcon, XMarkIcon, PlusCircleIcon, UserMinusIcon, ReceiptPercentIcon, LockClosedIcon, LockOpenIcon, CurrencyDollarIcon, ArrowRightIcon } from '@heroicons/react/24/outline';
 import { LoadingSpinner } from '../../../components/ui/LoadingSpinner';
 import { BaseModal } from '../../../components/ui/BaseModal';
 import { AddBalanceModal } from '../../../components/AddBalanceModal';
 import { DiscountModal } from '../../../components/DiscountModal';
 import { FreezeStudentModal } from '../../../components/FreezeStudentModal';
+import { RefundModal } from '../../../components/RefundModal';
+import { TransferStudentModal } from '../../../components/TransferStudentModal';
 import { StudentBalanceApiService, AddBalanceRequest, DiscountRequest } from '../../../services/StudentBalanceApiService';
 
 export default function StudentDetailPage() {
   const params = useParams();
   const router = useRouter();
-  const { isAuthenticated } = useAuth();
+  const { isAuthenticated, user } = useAuth();
   const { showError, showSuccess } = useToast();
   const [studentProfile, setStudentProfile] = useState<StudentProfile | null>(null);
   const [isLoading, setIsLoading] = useState(true);
@@ -46,6 +49,16 @@ export default function StudentDetailPage() {
   const [removingDiscount, setRemovingDiscount] = useState(false);
   const [freezingStudent, setFreezingStudent] = useState(false);
   const [removingFromGroup, setRemovingFromGroup] = useState(false);
+  
+  // Модалка возврата средств
+  const [showRefundModal, setShowRefundModal] = useState(false);
+  const [selectedGroupForRefund, setSelectedGroupForRefund] = useState<StudentGroup | null>(null);
+  
+  // Модалка перевода студента
+  const [showTransferModal, setShowTransferModal] = useState(false);
+  const [selectedGroupForTransfer, setSelectedGroupForTransfer] = useState<StudentGroup | null>(null);
+  const [availableGroups, setAvailableGroups] = useState<Group[]>([]);
+  const [transferringStudent, setTransferringStudent] = useState(false);
   
   // Модалка редактирования профиля
   const [showEditProfileModal, setShowEditProfileModal] = useState(false);
@@ -251,6 +264,74 @@ export default function StudentDetailPage() {
   const openAddBalanceModal = (group: StudentGroup) => {
     setSelectedGroupForBalance(group);
     setShowAddBalanceModal(true);
+  };
+
+  const openRefundModal = (group: StudentGroup) => {
+    setSelectedGroupForRefund(group);
+    setShowRefundModal(true);
+  };
+
+  const handleRefundSuccess = () => {
+    setShowRefundModal(false);
+    setSelectedGroupForRefund(null);
+    fetchStudentProfile(); // Перезагружаем профиль
+    showSuccess('Возврат средств успешно выполнен');
+  };
+
+  const loadAvailableGroups = async () => {
+    console.log('loadAvailableGroups called');
+    try {
+      const organizationId = user?.organizationId;
+      console.log('Organization ID:', organizationId);
+      if (!organizationId) {
+        console.error('Organization ID not found');
+        showError('Организация не найдена');
+        return;
+      }
+      console.log('Calling AuthenticatedApiService.getGroups...');
+      const groups = await AuthenticatedApiService.getGroups(organizationId, 1000);
+      console.log('Groups response:', groups);
+      setAvailableGroups(groups?.items || []);
+      console.log('Available groups set:', groups?.items?.length || 0);
+    } catch (error) {
+      console.error('Error loading groups:', error);
+      showError('Ошибка при загрузке групп');
+    }
+  };
+
+  const openTransferModal = (group: StudentGroup) => {
+    console.log('openTransferModal called with group:', group);
+    setSelectedGroupForTransfer(group);
+    setShowTransferModal(true);
+    console.log('About to call loadAvailableGroups...');
+    loadAvailableGroups();
+  };
+
+  const handleTransferStudent = async (toGroupId: string, comment: string, transferBalance: boolean, keepDiscount: boolean) => {
+    if (!selectedGroupForTransfer) return;
+
+    setTransferringStudent(true);
+    try {
+      await AuthenticatedApiService.post('/Group/transfer-student', {
+        studentId: userId,
+        fromGroupId: selectedGroupForTransfer.groupId,
+        toGroupId,
+        comment: comment || undefined,
+        transferBalance,
+        keepDiscount
+      });
+      
+      const targetGroup = availableGroups.find(g => g.id === toGroupId);
+      showSuccess(`Студент переведен в группу "${targetGroup?.name || 'выбранную группу'}"`); 
+      setShowTransferModal(false);
+      setSelectedGroupForTransfer(null);
+      fetchStudentProfile(); // Перезагружаем профиль
+    } catch (error) {
+      console.error('Error transferring student:', error);
+      showError('Ошибка при переводе студента');
+    } finally {
+      setTransferringStudent(false);
+    }
   };
 
   const handleApplyDiscount = async (discountType: number, discountValue: number, discountReason: string) => {
@@ -774,6 +855,26 @@ export default function StudentDetailPage() {
                         Пополнить
                       </button>
                       
+                      {group.balance > 0 && (
+                        <button
+                          onClick={() => openRefundModal(group)}
+                          className="inline-flex items-center gap-1 px-2 py-1 text-xs font-medium text-blue-600 hover:text-blue-700 border border-blue-200 hover:border-blue-300 dark:text-blue-400 dark:border-blue-800 dark:hover:border-blue-700 rounded transition-colors"
+                          title="Возврат средств"
+                        >
+                          <CurrencyDollarIcon className="h-3.5 w-3.5" />
+                          Возврат
+                        </button>
+                      )}
+                      
+                      <button
+                        onClick={() => openTransferModal(group)}
+                        className="inline-flex items-center gap-1 px-2 py-1 text-xs font-medium text-indigo-600 hover:text-indigo-700 border border-indigo-200 hover:border-indigo-300 dark:text-indigo-400 dark:border-indigo-800 dark:hover:border-indigo-700 rounded transition-colors"
+                        title="Перевести в другую группу"
+                      >
+                        <ArrowRightIcon className="h-3.5 w-3.5" />
+                        Перевести
+                      </button>
+                      
                       <button
                         onClick={() => openDiscountModal(group)}
                         className="inline-flex items-center gap-1 px-2 py-1 text-xs font-medium text-purple-600 hover:text-purple-700 border border-purple-200 hover:border-purple-300 dark:text-purple-400 dark:border-purple-800 dark:hover:border-purple-700 rounded transition-colors"
@@ -1244,6 +1345,39 @@ export default function StudentDetailPage() {
         subjectPrice={selectedGroupForBalance?.lessonCost}
         loading={addingBalance}
       />
+
+      {/* Modal для возврата средств */}
+      {showRefundModal && selectedGroupForRefund && (
+        <RefundModal
+          isOpen={showRefundModal}
+          onClose={() => {
+            setShowRefundModal(false);
+            setSelectedGroupForRefund(null);
+          }}
+          studentId={userId}
+          groupId={selectedGroupForRefund.groupId}
+          studentName={studentProfile?.fullName || ''}
+          groupName={selectedGroupForRefund.groupName}
+          availableBalance={selectedGroupForRefund.balance}
+          onRefundSuccess={handleRefundSuccess}
+        />
+      )}
+
+      {/* Modal для перевода студента */}
+      {showTransferModal && selectedGroupForTransfer && (
+        <TransferStudentModal
+          isOpen={showTransferModal}
+          onClose={() => {
+            setShowTransferModal(false);
+            setSelectedGroupForTransfer(null);
+          }}
+          studentName={studentProfile?.fullName || ''}
+          currentGroupName={selectedGroupForTransfer.groupName}
+          availableGroups={availableGroups}
+          onConfirm={handleTransferStudent}
+          loading={transferringStudent}
+        />
+      )}
 
       {/* Modal для скидок */}
       <DiscountModal
