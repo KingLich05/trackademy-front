@@ -143,3 +143,27 @@ export const getAttendanceStatusIcon = (status: AttendanceStatus): string => {
       return '❓';
   }
 };
+
+// Lesson Details Types
+export interface LessonStudent {
+  studentId: string;
+  studentName: string;
+  studentLogin: string;
+  status: AttendanceStatus;
+  statusName: string;
+  grade: number | null;
+  comment: string | null;
+}
+
+export interface LessonDetails {
+  lessonId: string;
+  date: string;
+  startTime: string;
+  endTime: string;
+  groupName: string;
+  groupCode: string;
+  subjectName: string;
+  teacherName: string;
+  presentStudents: LessonStudent[];
+  absentStudents: LessonStudent[];
+}

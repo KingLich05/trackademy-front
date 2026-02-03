@@ -115,7 +115,7 @@ export class StudentBalanceApiService {
       studentSearch?: string;
     }
   ): Promise<{
-    subjects: Array<{
+    items: Array<{
       subjectId: string;
       subjectName: string;
       totalPaid: number;
@@ -142,10 +142,12 @@ export class StudentBalanceApiService {
         }>;
       }>;
     }>;
-    totalItems: number;
-    totalPages: number;
-    currentPage: number;
+    totalCount: number;
+    pageNumber: number;
     pageSize: number;
+    totalPages: number;
+    hasNextPage: boolean;
+    hasPreviousPage: boolean;
   }> {
     return AuthenticatedApiService.post(
       `/StudentBalance/organization/${organizationId}/payments-grouped`,

@@ -62,16 +62,18 @@ interface SubjectPayment {
 }
 
 interface PaymentsGroupedResponse {
-  subjects: SubjectPayment[];
+  items: SubjectPayment[];
+  totalCount: number;
+  pageNumber: number;
+  pageSize: number;
+  totalPages: number;
+  hasNextPage: boolean;
+  hasPreviousPage: boolean;
 }
 
 interface Subject {
   id: string;
   name: string;
-}
-
-interface PaymentsGroupedResponse {
-  subjects: SubjectPayment[];
 }
 
 export default function PaymentsGroupedPage() {
@@ -236,9 +238,9 @@ export default function PaymentsGroupedPage() {
   };
 
   const expandAll = () => {
-    if (data) {
-      const allSubjects = new Set(data.subjects.map(s => s.subjectId));
-      const allGroups = new Set(data.subjects.flatMap(s => s.groups.map(g => g.groupId)));
+    if (data?.items) {
+      const allSubjects = new Set(data.items.map(s => s.subjectId));
+      const allGroups = new Set(data.items.flatMap(s => s.groups.map(g => g.groupId)));
       setExpandedSubjects(allSubjects);
       setExpandedGroups(allGroups);
     }
@@ -385,7 +387,7 @@ export default function PaymentsGroupedPage() {
     return null;
   };
 
-  const totalPaidAllSubjects = data?.subjects.reduce((sum, subject) => sum + subject.totalPaid, 0) || 0;
+  const totalPaidAllSubjects = data?.items?.reduce((sum, subject) => sum + subject.totalPaid, 0) || 0;
 
   if (!isAdmin) {
     return null;
@@ -408,12 +410,12 @@ export default function PaymentsGroupedPage() {
             },
             {
               label: 'Предметов',
-              value: data?.subjects.length || 0,
+              value: data?.items?.length || 0,
               color: 'blue'
             },
             {
               label: 'Групп',
-              value: data?.subjects.reduce((sum, s) => sum + s.groups.length, 0) || 0,
+              value: data?.items?.reduce((sum, s) => sum + s.groups.length, 0) || 0,
               color: 'purple'
             }
           ]}
@@ -500,13 +502,13 @@ export default function PaymentsGroupedPage() {
           <div className="bg-red-50 dark:bg-red-900/20 text-red-600 dark:text-red-400 p-4 rounded-lg">
             {error}
           </div>
-        ) : data?.subjects.length === 0 ? (
+        ) : !data?.items || data.items.length === 0 ? (
           <div className="bg-white dark:bg-gray-800 rounded-xl shadow-lg border border-gray-200 dark:border-gray-700 p-8 text-center">
             <p className="text-gray-500 dark:text-gray-400">Нет данных о платежах</p>
           </div>
         ) : (
           <div className="space-y-4">
-            {data?.subjects.map((subject) => (
+            {data.items.map((subject) => (
               <div
                 key={subject.subjectId}
                 className="bg-white dark:bg-gray-800 rounded-xl shadow-lg border border-gray-200 dark:border-gray-700 overflow-hidden"
@@ -544,7 +546,7 @@ export default function PaymentsGroupedPage() {
                     <div className="text-sm text-gray-600 dark:text-gray-400 mb-1">
                       Всего оплачено
                     </div>
-                    <div className="text-xl font-bold text-green-600 dark:text-green-400">
+                    <div className={`text-xl font-bold ${getBalanceColor(subject.totalPaid)}`}>
                       {formatBalance(subject.totalPaid)}
                     </div>
                   </div>
@@ -591,7 +593,7 @@ export default function PaymentsGroupedPage() {
                             <div className="text-xs text-gray-600 dark:text-gray-400 mb-1">
                               Оплачено
                             </div>
-                            <div className="text-lg font-bold text-green-600 dark:text-green-400">
+                            <div className={`text-lg font-bold ${getBalanceColor(group.totalPaid)}`}>
                               {formatBalance(group.totalPaid)}
                             </div>
                           </div>
@@ -675,9 +677,17 @@ export default function PaymentsGroupedPage() {
                                     <td className="px-4 py-3 whitespace-nowrap">
                                       {student.discountValue && student.discountValue > 0 ? (
                                         <div className="flex items-center gap-1">
-                                          <span className="inline-flex px-2 py-1 text-xs font-semibold rounded-full bg-purple-100 text-purple-800 dark:bg-purple-900/30 dark:text-purple-400">
+                                          <span 
+                                            className="inline-flex px-2 py-1 text-xs font-semibold rounded-full bg-purple-100 text-purple-800 dark:bg-purple-900/30 dark:text-purple-400"
+                                            title={student.discountReason || undefined}
+                                          >
                                             {student.discountType === 1 ? `${student.discountValue}%` : `${student.discountValue.toLocaleString()} ₸`}
                                           </span>
+                                          {student.discountReason && (
+                                            <span className="text-xs text-gray-500 dark:text-gray-400" title={student.discountReason}>
+                                              ({student.discountReason.length > 15 ? student.discountReason.substring(0, 15) + '...' : student.discountReason})
+                                            </span>
+                                          )}
                                         </div>
                                       ) : (
                                         <span className="text-xs text-gray-400 dark:text-gray-500">—</span>
