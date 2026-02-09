@@ -1,36 +1,133 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# 🎓 Trackademy Frontend
 
-## Getting Started
+**Современная система управления учебными центрами**
 
-First, run the development server:
+Trackademy - это полнофункциональная веб-платформа для управления образовательными учреждениями, построенная на современном стеке технологий. Система предназначена для автоматизации процессов образовательных центров в Казахстане.
+
+## 🚀 Стек технологий
+
+- **Framework**: Next.js 15.5.7 с TypeScript
+- **Styling**: TailwindCSS + Glassmorphism Design
+- **Icons**: Heroicons React
+- **State Management**: React Context (Auth, Theme, Toast)
+- **API Integration**: AuthenticatedApiService
+- **Build Tool**: Turbopack
+
+## 🎨 Дизайн-система
+
+- **Modern Glassmorphism** - прозрачные элементы с backdrop-blur эффектами
+- **Gradient-first подход** - градиенты как основа визуальной иерархии  
+- **Dual Theme Support** - светлая/темная тема с плавными переходами
+- **Adaptive Design** - responsive компоненты для всех устройств
+- **Enterprise UX** - профессиональный интерфейс для бизнеса
+
+## 📋 Основной функционал
+
+### 👥 Управление пользователями
+- Регистрация и авторизация
+- Роли: Owner, Admin, Teacher, Student
+- Профили пользователей с фотографиями
+- Система прав доступа
+
+### 🏫 Управление организацией
+- Настройки организации
+- Управление филиалами и кабинетами
+- Расписание занятий
+- Предметы и курсы
+
+### 👨‍🎓 Студенты
+- База данных студентов
+- Перевод между группами
+- Система оплат и возвратов
+- Посещаемость и успеваемость
+
+### 📚 Образовательный процесс
+- Создание и управление группами
+- Домашние задания
+- Материалы курсов
+- Отчетность
+
+## 🛠 Установка и запуск
 
 ```bash
+# Клонирование репозитория
+git clone https://github.com/your-username/trackademy-front.git
+
+# Переход в директорию
+cd trackademy-front
+
+# Установка зависимостей
+npm install
+
+# Запуск dev сервера
 npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+Откройте [http://localhost:3000](http://localhost:3000) для просмотра приложения.
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+## 📁 Структура проекта
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+```
+src/
+├── app/                    # Next.js App Router
+│   ├── api/               # API routes
+│   ├── [feature]/         # Feature-based routing
+│   └── globals.css        # Global styles
+├── components/            # React компоненты
+│   ├── ui/               # Базовые UI компоненты
+│   ├── [feature]/        # Feature-специфичные компоненты
+│   └── index.ts          # Export barrel
+├── contexts/             # React Contexts
+├── hooks/               # Custom hooks
+├── services/            # API services
+├── types/              # TypeScript types
+└── utils/              # Utility functions
+```
 
-## Learn More
+## 🎯 Скрипты
 
-To learn more about Next.js, take a look at the following resources:
+```bash
+npm run dev          # Development server
+npm run build        # Production build
+npm run start        # Start production server
+npm run lint         # ESLint checking
+```
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+## 🔧 Конфигурация
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
+### Environment Variables
+```env
+NEXT_PUBLIC_API_URL=your-api-url
+NEXT_PUBLIC_APP_URL=your-app-url
+```
 
-## Deploy on Vercel
+### Темизация
+Система поддерживает автоматическое переключение между светлой и темной темами на основе системных настроек пользователя.
 
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
+## 📖 Документация
 
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+- **[Анализ дизайна](./DESIGN_ANALYSIS.md)** - подробный анализ дизайн-системы
+- **[API Документация](./docs/api.md)** - описание API endpoints
+- **[Компоненты](./docs/components.md)** - документация компонентов
+
+## 🤝 Вклад в проект
+
+1. Форкните репозиторий
+2. Создайте feature ветку (`git checkout -b feature/amazing-feature`)
+3. Закоммитьте изменения (`git commit -m 'Add amazing feature'`)
+4. Запушьте в ветку (`git push origin feature/amazing-feature`)
+5. Создайте Pull Request
+
+## 📄 Лицензия
+
+Этот проект лицензирован под MIT License - смотрите [LICENSE](LICENSE) файл для деталей.
+
+## 👨‍💻 Команда
+
+- **Frontend Development** - Sultan Kurmanov
+- **UI/UX Design** - Modern Glassmorphism approach
+- **Architecture** - Component-based with TypeScript
+
+---
+
+*Построено с ❤️ для образовательного сообщества Казахстана*
