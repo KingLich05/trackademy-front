@@ -351,7 +351,7 @@ export default function RoomsPage() {
   }
 
   return (
-    <div className="min-h-screen bg-gray-50 dark:bg-gray-900 p-4 md:p-6 page-container">
+    <div className="min-h-screen bg-gray-50 dark:bg-gray-900 page-container max-w-full overflow-x-hidden">
       <div className="w-full space-y-6">
         {/* Modern Header Card */}
         <PageHeaderWithStats
@@ -381,8 +381,8 @@ export default function RoomsPage() {
 
           {/* Desktop Table */}
           <div className="hidden md:block">{!tableLoading && (
-            <div className="overflow-hidden">
-              <table className="min-w-full divide-y divide-gray-200 dark:divide-gray-700">
+            <div className="overflow-x-auto scrollbar-custom">
+              <table className="w-full divide-y divide-gray-200 dark:divide-gray-700">
                 <thead className="bg-gradient-to-r from-gray-50 to-green-50 dark:from-gray-700 dark:to-gray-600">
                   <tr>
                     <th className="px-3 py-4 text-center text-xs font-semibold text-gray-700 dark:text-gray-200 uppercase tracking-wider w-16">

@@ -439,7 +439,7 @@ export default function LessonsPage() {
   }
 
   return (
-    <div className="min-h-screen bg-gray-50 dark:bg-gray-900 p-4 md:p-6 pt-20 md:pt-24">
+    <div className="min-h-screen bg-gray-50 dark:bg-gray-900 pt-16 md:pt-20 max-w-full overflow-x-hidden">
       <div className="w-full space-y-6">
         {/* Modern Header with Gradient */}
         <PageHeaderWithStats

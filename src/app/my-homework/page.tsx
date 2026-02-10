@@ -394,7 +394,7 @@ export default function MyHomeworkPage() {
   }
 
   return (
-    <div className="min-h-screen bg-gray-50 dark:bg-gray-900 p-4 sm:p-6 lg:p-8">
+    <div className="min-h-screen bg-gray-50 dark:bg-gray-900 max-w-full overflow-x-hidden">
       <div className="w-full space-y-6 pt-10 md:pt-12">
         {/* Header */}
         <PageHeaderWithStats

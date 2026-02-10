@@ -80,7 +80,7 @@ export default function AttendancePage() {
   // Toast уведомления для API операций
   const { loadOperation } = useApiToast();
   
-  const [activeTab, setActiveTab] = useState<TabType>('students');
+  const [activeTab, setActiveTab] = useState<TabType>('groups');
   const [loading, setLoading] = useState(false);
   const [attendanceRecords, setAttendanceRecords] = useState<AttendanceRecord[]>([]);
   const [totalCount, setTotalCount] = useState(0);
@@ -337,7 +337,7 @@ export default function AttendancePage() {
   ];
 
   return (
-    <div className="min-h-screen bg-gray-50 dark:bg-gray-900 p-4 md:p-6 page-container pt-20 md:pt-24">
+    <div className="min-h-screen bg-gray-50 dark:bg-gray-900 page-container pt-16 md:pt-20 max-w-full overflow-x-hidden">
       <div className="w-full space-y-6">
         {/* Page Header */}
         <PageHeaderWithStats

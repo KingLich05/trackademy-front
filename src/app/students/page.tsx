@@ -804,8 +804,8 @@ export default function StudentsPage() {
   }
 
   return (
-    <div className="min-h-screen bg-gray-50 dark:bg-gray-900 p-4 md:p-6 page-container">
-      <div className="w-full space-y-6">
+    <div className="min-h-screen bg-gray-50 dark:bg-gray-900 page-container max-w-full overflow-x-hidden">
+      <div className="w-full space-y-4 md:space-y-6 max-w-full">
         {/* Modern Header with Gradient */}
         <PageHeaderWithStats
           title={showArchive ? "Архив пользователей" : "Пользователи"}
@@ -816,23 +816,23 @@ export default function StudentsPage() {
           actionLabel={user && canManageUsers(user.role) ? "Добавить пользователя" : undefined}
           onAction={user && canManageUsers(user.role) ? () => userModal.openCreateModal() : undefined}
           extraActions={
-            <div className="flex items-center gap-3">
+            <div className="flex items-center gap-2">
               {user && canManageUsers(user.role) && (
                 <>
                   <button
                     onClick={handleExportUsers}
-                    className="inline-flex items-center gap-2 px-4 py-2 bg-gradient-to-r from-blue-500 to-cyan-600 text-white rounded-lg hover:shadow-lg transition-all duration-200 hover:scale-105 font-medium"
+                    className="inline-flex items-center gap-1 md:gap-2 px-2 md:px-4 py-1.5 md:py-2 bg-gradient-to-r from-blue-500 to-cyan-600 text-white rounded-lg hover:shadow-lg transition-all duration-200 hover:scale-105 font-medium text-sm"
                     title="Экспорт пользователей"
                   >
-                    <DocumentArrowDownIcon className="w-5 h-5" />
+                    <DocumentArrowDownIcon className="w-4 h-4 md:w-5 md:h-5" />
                     <span className="hidden sm:inline">Экспорт</span>
                   </button>
                   <button
                     onClick={() => setIsImportModalOpen(true)}
-                    className="inline-flex items-center gap-2 px-4 py-2 bg-gradient-to-r from-teal-500 to-emerald-600 text-white rounded-lg hover:shadow-lg transition-all duration-200 hover:scale-105 font-medium"
+                    className="inline-flex items-center gap-1 md:gap-2 px-2 md:px-4 py-1.5 md:py-2 bg-gradient-to-r from-teal-500 to-emerald-600 text-white rounded-lg hover:shadow-lg transition-all duration-200 hover:scale-105 font-medium text-sm"
                     title="Импорт пользователей"
                   >
-                    <ArrowUpTrayIcon className="w-5 h-5" />
+                    <ArrowUpTrayIcon className="w-4 h-4 md:w-5 md:h-5" />
                     <span className="hidden sm:inline">Импорт</span>
                   </button>
                 </>
@@ -843,19 +843,22 @@ export default function StudentsPage() {
                   setFilters(prev => ({ ...prev, isDeleted: !showArchive }));
                   setCurrentPage(1);
                 }}
-                className={`px-4 py-2 rounded-lg font-medium transition-all duration-200 ${
+                className={`px-2 md:px-4 py-1.5 md:py-2 rounded-lg font-medium transition-all duration-200 text-sm ${
                   showArchive
                     ? 'bg-red-500 hover:bg-red-600 text-white shadow-lg'
                     : 'bg-gray-100 hover:bg-gray-200 dark:bg-gray-700 dark:hover:bg-gray-600 text-gray-700 dark:text-gray-300'
                 }`}
               >
-                {showArchive ? 'Показать активные' : 'Архив'}
+                <span className="hidden sm:inline">{showArchive ? 'Показать активные' : 'Архив'}</span>
+                <span className="sm:hidden">{showArchive ? 'Активные' : 'Архив'}</span>
               </button>
-              <ColumnVisibilityControl
-                columns={columns}
-                onColumnToggle={toggleColumn}
-                variant="header"
-              />
+              <div className="hidden md:block">
+                <ColumnVisibilityControl
+                  columns={columns}
+                  onColumnToggle={toggleColumn}
+                  variant="header"
+                />
+              </div>
             </div>
           }
           stats={[
@@ -866,9 +869,9 @@ export default function StudentsPage() {
         />
 
         {/* Content Card */}
-        <div className="bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700 overflow-hidden">
+        <div className="bg-white dark:bg-gray-800 rounded-lg md:rounded-xl shadow-sm border border-gray-200 dark:border-gray-700 overflow-hidden">
           {/* Filters Section - ВСЕГДА доступна */}
-          <div className="p-6 border-b border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-700/50">
+          <div className="p-3 sm:p-4 md:p-6 border-b border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-700/50">
             <UserFilters
               onFilterChange={handleFilterChange}
               groups={groups}
@@ -878,24 +881,24 @@ export default function StudentsPage() {
 
           {/* Bulk Add to Group Panel - не показываем в архиве */}
           {user && canManageUsers(user.role) && selectedStudentIds.length > 0 && !showArchive && (
-            <div className="p-4 bg-gradient-to-r from-emerald-50 to-lime-50 dark:from-emerald-900/20 dark:to-lime-900/20 border-b border-emerald-200 dark:border-emerald-800">
-              <div className="flex items-center justify-between">
-                <div className="flex items-center space-x-3">
-                  <div className="flex items-center justify-center w-10 h-10 bg-emerald-500 rounded-lg text-white font-bold">
+            <div className="p-3 sm:p-4 bg-gradient-to-r from-emerald-50 to-lime-50 dark:from-emerald-900/20 dark:to-lime-900/20 border-b border-emerald-200 dark:border-emerald-800">
+              <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3">
+                <div className="flex items-center space-x-2 sm:space-x-3">
+                  <div className="flex items-center justify-center w-8 h-8 sm:w-10 sm:h-10 bg-emerald-500 rounded-lg text-white text-sm sm:text-base font-bold">
                     {selectedStudentIds.length}
                   </div>
                   <div>
-                    <p className="text-sm font-semibold text-gray-900 dark:text-white">
+                    <p className="text-xs sm:text-sm font-semibold text-gray-900 dark:text-white">
                       Выбрано студентов: {selectedStudentIds.length}
                     </p>
-                    <p className="text-xs text-gray-600 dark:text-gray-400">
+                    <p className="text-xs text-gray-600 dark:text-gray-400 hidden sm:block">
                       Нажмите кнопку для массового добавления в группу
                     </p>
                   </div>
                 </div>
                 <button
                   onClick={() => setIsGroupSelectionModalOpen(true)}
-                  className="px-6 py-2.5 text-sm font-semibold text-white bg-gradient-to-r from-emerald-500 to-lime-600 rounded-lg hover:shadow-lg hover:scale-105 focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:ring-offset-2 transition-all duration-200"
+                  className="w-full sm:w-auto px-4 sm:px-6 py-2 sm:py-2.5 text-xs sm:text-sm font-semibold text-white bg-gradient-to-r from-emerald-500 to-lime-600 rounded-lg hover:shadow-lg hover:scale-105 focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:ring-offset-2 transition-all duration-200"
                 >
                   Добавить в группу
                 </button>

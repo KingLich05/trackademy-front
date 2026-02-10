@@ -394,7 +394,7 @@ export default function PaymentsGroupedPage() {
   }
 
   return (
-    <div className="min-h-screen bg-gray-50 dark:bg-gray-900 p-4 md:p-6">
+    <div className="min-h-screen bg-gray-50 dark:bg-gray-900 max-w-full overflow-x-hidden">
       <div className="max-w-7xl mx-auto mt-6">
         <PageHeaderWithStats
           title="Платежи по предметам"
@@ -601,7 +601,7 @@ export default function PaymentsGroupedPage() {
 
                         {/* Students Table */}
                         {expandedGroups.has(group.groupId) && (
-                          <div>
+                          <div className="overflow-x-auto scrollbar-custom">
                             <table className="w-full divide-y divide-gray-200 dark:divide-gray-700">
                               <thead className="bg-gray-50 dark:bg-gray-800">
                                 <tr>

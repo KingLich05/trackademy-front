@@ -693,7 +693,7 @@ export default function HomeworkPage() {
   }
 
   return (
-    <div className="min-h-screen bg-gray-50 dark:bg-gray-900 p-4 md:p-6 pt-20 md:pt-24">
+    <div className="min-h-screen bg-gray-50 dark:bg-gray-900 pt-16 md:pt-20 max-w-full overflow-x-hidden">
       <div className="w-full space-y-6">
         <PageHeaderWithStats
           title="Домашнее задание"
@@ -780,7 +780,7 @@ export default function HomeworkPage() {
 
               {!tableLoading && assignments.length > 0 && (
                 <div className="overflow-x-auto">
-                  <table className="min-w-full divide-y divide-gray-200 dark:divide-gray-700">
+                  <table className="w-full divide-y divide-gray-200 dark:divide-gray-700">
                     <thead className="bg-gradient-to-r from-purple-50 to-indigo-50 dark:from-purple-900/30 dark:to-indigo-900/30">
                       <tr>
                         <th className="px-6 py-3 text-left text-xs font-medium text-purple-700 dark:text-purple-300 uppercase tracking-wider">
@@ -1270,7 +1270,7 @@ export default function HomeworkPage() {
 
                 {/* Students Table */}
                 <div className="overflow-x-auto rounded-lg border border-gray-700">
-                  <table className="min-w-full divide-y divide-gray-700">
+                  <table className="w-full divide-y divide-gray-700">
                     <thead className="bg-gray-700/50">
                       <tr>
                         <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-300 uppercase tracking-wider">

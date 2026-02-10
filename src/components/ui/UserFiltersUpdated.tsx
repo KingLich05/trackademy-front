@@ -102,19 +102,19 @@ export const UserFilters: React.FC<UserFiltersProps> = ({
   const hasActiveFilters = filters.search || filters.roleIds.length > 0 || filters.groupIds.length > 0 || filters.isTrial !== undefined;
 
   return (
-    <div className="space-y-4">
+    <div className="space-y-3 sm:space-y-4">
       {/* Search Bar */}
       <div className="relative">
         <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-          <MagnifyingGlassIcon className="h-5 w-5 text-gray-400 dark:text-gray-500" />
+          <MagnifyingGlassIcon className="h-4 w-4 sm:h-5 sm:w-5 text-gray-400 dark:text-gray-500" />
         </div>
         <input
           type="text"
           placeholder="Поиск пользователей..."
           value={filters.search}
           onChange={(e) => handleSearchChange(e.target.value)}
-          className="block w-full pl-10 pr-3 py-3 border border-gray-300 dark:border-gray-600 
-                   rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white 
+          className="block w-full pl-9 sm:pl-10 pr-3 py-2 sm:py-3 border border-gray-300 dark:border-gray-600 
+                   rounded-lg bg-white dark:bg-gray-700 text-sm sm:text-base text-gray-900 dark:text-white 
                    placeholder-gray-500 dark:placeholder-gray-400 
                    focus:ring-2 focus:ring-blue-500 focus:border-transparent
                    shadow-sm hover:shadow-md transition-all duration-200"
@@ -123,17 +123,18 @@ export const UserFilters: React.FC<UserFiltersProps> = ({
       </div>
 
       {/* Filter Controls */}
-      <div className="flex items-center justify-between">
+      <div className="flex items-center justify-between gap-2">
         <button
           onClick={() => setShowAdvanced(!showAdvanced)}
-          className="inline-flex items-center px-4 py-2 bg-gray-100 dark:bg-gray-700 
+          className="inline-flex items-center px-3 sm:px-4 py-1.5 sm:py-2 bg-gray-100 dark:bg-gray-700 
                    text-gray-700 dark:text-gray-300 rounded-lg hover:bg-gray-200 dark:hover:bg-gray-600 
-                   transition-colors duration-200 shadow-sm"
+                   transition-colors duration-200 shadow-sm text-sm"
         >
-          <FunnelIcon className="h-4 w-4 mr-2" />
-          Фильтры
+          <FunnelIcon className="h-3 w-3 sm:h-4 sm:w-4 mr-1 sm:mr-2" />
+          <span className="hidden sm:inline">Фильтры</span>
+          <span className="sm:hidden">Фильтр</span>
           {hasActiveFilters && (
-            <span className="ml-2 inline-flex items-center justify-center px-2 py-1 text-xs font-medium 
+            <span className="ml-1 sm:ml-2 inline-flex items-center justify-center px-1.5 sm:px-2 py-0.5 sm:py-1 text-xs font-medium 
                            bg-blue-100 dark:bg-blue-900/50 text-blue-800 dark:text-blue-300 rounded-full">
               {(filters.roleIds.length + filters.groupIds.length) || ''}
             </span>
@@ -143,19 +144,19 @@ export const UserFilters: React.FC<UserFiltersProps> = ({
         {hasActiveFilters && (
           <button
             onClick={clearFilters}
-            className="inline-flex items-center px-3 py-2 text-sm text-gray-600 dark:text-gray-400 
+            className="inline-flex items-center px-2 sm:px-3 py-1.5 sm:py-2 text-xs sm:text-sm text-gray-600 dark:text-gray-400 
                      hover:text-red-600 dark:hover:text-red-400 transition-colors"
           >
-            <XMarkIcon className="h-4 w-4 mr-1" />
-            Очистить
+            <XMarkIcon className="h-3 w-3 sm:h-4 sm:w-4 mr-1" />
+            <span className="hidden sm:inline">Очистить</span>
           </button>
         )}
       </div>
 
       {/* Advanced Filters */}
       {showAdvanced && (
-        <div className="space-y-4 p-4 bg-gray-50 dark:bg-gray-700/50 rounded-lg border border-gray-200 dark:border-gray-600">
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+        <div className="space-y-3 sm:space-y-4 p-3 sm:p-4 bg-gray-50 dark:bg-gray-700/50 rounded-lg border border-gray-200 dark:border-gray-600">
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-3 sm:gap-4">
             {/* Role Filter */}
             <div>
               <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">

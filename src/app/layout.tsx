@@ -1,7 +1,14 @@
 import { Inter } from 'next/font/google';
-import { Metadata } from 'next';
+import { Metadata, Viewport } from 'next';
 import './globals.css';
 import { ServerActionErrorBoundary } from '../components/ServerActionErrorBoundary';
+
+export const viewport: Viewport = {
+  width: 'device-width',
+  initialScale: 0.75,
+  maximumScale: 5,
+  userScalable: true,
+};
 
 export const metadata: Metadata = {
   metadataBase: new URL('https://trackademy.kz'),

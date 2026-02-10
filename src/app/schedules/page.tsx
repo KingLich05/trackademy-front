@@ -514,16 +514,23 @@ export default function SchedulesPage() {
       organizationId: user?.organizationId || ''
     };
     
-    const result = await createOperation(
-      () => AuthenticatedApiService.post('/Schedule/create-schedule', scheduleData),
-      'расписание'
-    );
-    
-    // Always reload data and close modal regardless of result
-    if (result.success) {
+    try {
+      // Вызываем API напрямую для обработки ошибок
+      await AuthenticatedApiService.post('/Schedule/create-schedule', scheduleData);
+      
+      // Если успех - показываем уведомление
+      await createOperation(() => Promise.resolve(), 'расписание');
+      
+      // Перезагружаем данные и закрываем модалку
       await loadSchedules(currentPage, true);
+      scheduleModal.closeModal();
+    } catch (error) {
+      // При ошибке показываем toast уведомление
+      await createOperation(() => Promise.reject(error), 'расписание');
+      
+      // И пробрасываем ошибку для отображения в красном баннере модалки
+      throw error;
     }
-    scheduleModal.closeModal();
   };
 
   const handleSaveEdit = async (formData: Record<string, unknown>) => {
@@ -551,16 +558,23 @@ export default function SchedulesPage() {
       );
       
       if (scheduleToEdit) {
-        const result = await updateOperation(
-          () => AuthenticatedApiService.put(`/Schedule/update-schedule/${scheduleToEdit.id}`, updateData),
-          'расписание'
-        );
-        
-        // Always reload data and close modal regardless of result
-        if (result.success) {
+        try {
+          // Вызываем API напрямую для обработки ошибок
+          await AuthenticatedApiService.put(`/Schedule/update-schedule/${scheduleToEdit.id}`, updateData);
+          
+          // Если успех - показываем уведомление
+          await updateOperation(() => Promise.resolve(), 'расписание');
+          
+          // Перезагружаем данные и закрываем модалку
           await loadSchedules(currentPage, true);
+          scheduleModal.closeModal();
+        } catch (error) {
+          // При ошибке показываем toast уведомление
+          await updateOperation(() => Promise.reject(error), 'расписание');
+          
+          // И пробрасываем ошибку для отображения в красном баннере модалки
+          throw error;
         }
-        scheduleModal.closeModal();
       }
     }
   };
@@ -776,7 +790,7 @@ export default function SchedulesPage() {
   }
 
   return (
-    <div className="min-h-screen bg-gray-50 dark:bg-gray-900 p-4 md:p-6 page-content">
+    <div className="min-h-screen bg-gray-50 dark:bg-gray-900 page-content max-w-full overflow-x-hidden">
       <div className="w-full space-y-6">
         {/* Modern Header Card */}
         <PageHeaderWithStats
@@ -1282,7 +1296,7 @@ export default function SchedulesPage() {
               {/* Days of Week */}
               <div>
                 <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
-                  Дни недели
+                  Дни недели <span className="text-red-500">*</span>
                 </label>
                 <div data-field="daysOfWeek">
                   <DaysOfWeekSelector
@@ -1301,7 +1315,7 @@ export default function SchedulesPage() {
               {/* Start Time */}
               <div>
                 <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
-                  Время начала
+                  Время начала <span className="text-red-500">*</span>
                 </label>
                 <TimeInput
                   value={formData.startTime || ''}
@@ -1316,7 +1330,7 @@ export default function SchedulesPage() {
               {/* End Time */}
               <div>
                 <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
-                  Время окончания
+                  Время окончания <span className="text-red-500">*</span>
                 </label>
                 <TimeInput
                   value={formData.endTime || ''}
@@ -1331,7 +1345,7 @@ export default function SchedulesPage() {
               {/* Effective From */}
               <div>
                 <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
-                  Действует с
+                  Действует с <span className="text-red-500">*</span>
                 </label>
                 <input
                   type="date"
@@ -1375,7 +1389,7 @@ export default function SchedulesPage() {
               {/* Group Selection */}
               <div>
                 <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
-                  Группа
+                  Группа <span className="text-red-500">*</span>
                 </label>
                 <select
                   value={formData.groupId || ''}
@@ -1403,7 +1417,7 @@ export default function SchedulesPage() {
               {/* Teacher Selection */}
               <div>
                 <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
-                  Преподаватель
+                  Преподаватель <span className="text-red-500">*</span>
                 </label>
                 <select
                   value={formData.teacherId || ''}
@@ -1431,7 +1445,7 @@ export default function SchedulesPage() {
               {/* Room Selection */}
               <div>
                 <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
-                  Аудитория
+                  Аудитория <span className="text-red-500">*</span>
                 </label>
                 <select
                   value={formData.roomId || ''}

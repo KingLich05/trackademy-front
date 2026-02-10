@@ -2,7 +2,7 @@
 
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
-import { BuildingOfficeIcon, HomeModernIcon, HomeIcon, AcademicCapIcon, BookOpenIcon, UserGroupIcon, CalendarDaysIcon, CalendarIcon, ClipboardDocumentCheckIcon, CurrencyDollarIcon, ClipboardDocumentListIcon, ShoppingBagIcon, DocumentTextIcon, ChartBarIcon, FolderIcon } from '@heroicons/react/24/outline';
+import { BuildingOfficeIcon, HomeModernIcon, HomeIcon, AcademicCapIcon, BookOpenIcon, UserGroupIcon, CalendarDaysIcon, CalendarIcon, ClipboardDocumentCheckIcon, CurrencyDollarIcon, ClipboardDocumentListIcon, ShoppingBagIcon, DocumentTextIcon, ChartBarIcon, FolderIcon, Bars3Icon, XMarkIcon } from '@heroicons/react/24/outline';
 import { BuildingOfficeIcon as BuildingOfficeIconSolid, HomeModernIcon as HomeModernIconSolid, HomeIcon as HomeIconSolid, AcademicCapIcon as AcademicCapIconSolid, BookOpenIcon as BookOpenIconSolid, UserGroupIcon as UserGroupIconSolid, CalendarDaysIcon as CalendarDaysIconSolid, CalendarIcon as CalendarIconSolid, ClipboardDocumentCheckIcon as ClipboardDocumentCheckIconSolid, CurrencyDollarIcon as CurrencyDollarIconSolid, ClipboardDocumentListIcon as ClipboardDocumentListIconSolid, ShoppingBagIcon as ShoppingBagIconSolid, DocumentTextIcon as DocumentTextIconSolid, ChartBarIcon as ChartBarIconSolid, FolderIcon as FolderIconSolid } from '@heroicons/react/24/solid';
 import { useAuth } from '../contexts/AuthContext';
 import { useState } from 'react';
@@ -13,6 +13,7 @@ const Sidebar: React.FC = () => {
   const pathname = usePathname();
   const { isAuthenticated, user } = useAuth();
   const [showRegisterModal, setShowRegisterModal] = useState(false);
+  const [showMoreMenu, setShowMoreMenu] = useState(false);
 
   // Don't show sidebar if user is not authenticated
   if (!isAuthenticated) {
@@ -122,7 +123,7 @@ const Sidebar: React.FC = () => {
       {/* Modern Bottom Navigation Bar - Mobile Only */}
       <div className="lg:hidden fixed bottom-0 left-0 right-0 z-30 bg-white/90 dark:bg-gray-900/90 backdrop-blur-lg border-t border-gray-200/50 dark:border-gray-700/50 shadow-2xl">
         <div className="flex items-center justify-around py-2">
-          {navigation.slice(0, 5).map((item) => {
+          {navigation.slice(0, 4).map((item) => {
             const active = isActive(item.href);
             const IconComponent = active ? item.activeIcon : item.icon;
             
@@ -130,7 +131,7 @@ const Sidebar: React.FC = () => {
               <Link
                 key={item.name}
                 href={item.href}
-                className="flex flex-col items-center py-2 px-3 transition-all duration-300 hover:scale-105"
+                className="flex flex-col items-center py-2 px-2 transition-all duration-300 hover:scale-105"
               >
                 <div className={`p-2 rounded-xl transition-all duration-300 ${
                   active 
@@ -139,7 +140,7 @@ const Sidebar: React.FC = () => {
                 }`}>
                   <IconComponent className="h-5 w-5" />
                 </div>
-                <span className={`text-xs mt-1 transition-colors duration-300 ${
+                <span className={`text-[10px] mt-1 transition-colors duration-300 truncate max-w-[60px] ${
                   active ? 'text-blue-600 dark:text-blue-400 font-medium' : 'text-gray-500 dark:text-gray-400'
                 }`}>
                   {item.name}
@@ -147,8 +148,84 @@ const Sidebar: React.FC = () => {
               </Link>
             );
           })}
+          
+          {/* More button if there are more than 4 items */}
+          {navigation.length > 4 && (
+            <button
+              onClick={() => setShowMoreMenu(!showMoreMenu)}
+              className="flex flex-col items-center py-2 px-2 transition-all duration-300 hover:scale-105"
+            >
+              <div className={`p-2 rounded-xl transition-all duration-300 ${
+                showMoreMenu
+                  ? 'bg-gradient-to-r from-blue-500 to-purple-600 text-white shadow-lg scale-110' 
+                  : 'text-gray-500 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-800'
+              }`}>
+                {showMoreMenu ? <XMarkIcon className="h-5 w-5" /> : <Bars3Icon className="h-5 w-5" />}
+              </div>
+              <span className={`text-[10px] mt-1 transition-colors duration-300 ${
+                showMoreMenu ? 'text-blue-600 dark:text-blue-400 font-medium' : 'text-gray-500 dark:text-gray-400'
+              }`}>
+                {showMoreMenu ? 'Закрыть' : 'Ещё'}
+              </span>
+            </button>
+          )}
         </div>
       </div>
+
+      {/* More Menu Modal - Mobile Only */}
+      {showMoreMenu && (
+        <>
+          {/* Backdrop */}
+          <div 
+            className="lg:hidden fixed inset-0 bg-black/50 backdrop-blur-sm z-40 animate-fadeIn"
+            onClick={() => setShowMoreMenu(false)}
+          />
+          
+          {/* Menu Panel */}
+          <div className="lg:hidden fixed bottom-16 left-0 right-0 z-50 bg-white dark:bg-gray-900 rounded-t-3xl shadow-2xl border-t border-gray-200 dark:border-gray-700 max-h-[70vh] overflow-y-auto animate-slideUp">
+            <div className="sticky top-0 bg-white dark:bg-gray-900 border-b border-gray-200 dark:border-gray-700 px-6 py-4 flex items-center justify-between">
+              <h3 className="text-lg font-semibold text-gray-900 dark:text-white">Все разделы</h3>
+              <button
+                onClick={() => setShowMoreMenu(false)}
+                className="p-2 text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors"
+              >
+                <XMarkIcon className="h-6 w-6" />
+              </button>
+            </div>
+            
+            <div className="p-4 grid grid-cols-3 gap-3">
+              {navigation.map((item) => {
+                const active = isActive(item.href);
+                const IconComponent = active ? item.activeIcon : item.icon;
+                
+                return (
+                  <Link
+                    key={item.name}
+                    href={item.href}
+                    onClick={() => setShowMoreMenu(false)}
+                    className={`flex flex-col items-center p-4 rounded-2xl transition-all duration-300 ${
+                      active 
+                        ? 'bg-gradient-to-br from-blue-500 to-purple-600 text-white shadow-lg scale-105' 
+                        : 'bg-gray-50 dark:bg-gray-800 text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700'
+                    }`}
+                  >
+                    <div className={`p-3 rounded-xl mb-2 ${
+                      active ? 'bg-white/20' : 'bg-white dark:bg-gray-700'
+                    }`}>
+                      <IconComponent className={`h-6 w-6 ${active ? 'text-white' : 'text-gray-600 dark:text-gray-300'}`} />
+                    </div>
+                    <span className={`text-xs text-center font-medium leading-tight ${
+                      active ? 'text-white' : 'text-gray-600 dark:text-gray-400'
+                    }`}>
+                      {item.name}
+                    </span>
+                  </Link>
+                );
+              })}
+            </div>
+          </div>
+        </>
+      )}
 
       {/* Modern Desktop Sidebar */}
       <div className="hidden lg:flex lg:fixed lg:left-0 lg:top-0 lg:h-screen lg:w-64 lg:flex-col transition-all duration-300 

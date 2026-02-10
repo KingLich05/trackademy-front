@@ -558,8 +558,8 @@ export default function Dashboard() {
   }
 
   return (
-    <div className="min-h-screen bg-gray-50 dark:bg-gray-900 px-4 md:px-6 py-4 md:py-6 pt-20 md:pt-24">
-      <div className="w-full space-y-6">
+    <div className="min-h-screen bg-gray-50 dark:bg-gray-900 px-4 md:px-6 py-4 md:py-6 pt-20 md:pt-24 max-w-full overflow-x-hidden">
+      <div className="w-full space-y-6 max-w-full">
         {isStudent && studentSummary ? (
           /* Student Dashboard */
           <>

@@ -64,29 +64,29 @@ export const PageHeaderWithStats: React.FC<PageHeaderWithStatsProps> = ({
   extraActions
 }) => {
   return (
-    <div className="bg-white/80 dark:bg-gray-800/80 backdrop-blur-sm shadow-lg rounded-xl border border-gray-200/50 dark:border-gray-700/50 overflow-hidden">
-      <div className={`${getGradientClasses(gradientFrom, gradientTo)} px-6 py-4`}>
-        <div className="flex justify-between items-center">
-          <div className="flex items-center space-x-3">
-            <div className="p-2 bg-white/20 rounded-lg">
-              <Icon className="h-6 w-6 text-white" />
+    <div className="bg-white/80 dark:bg-gray-800/80 backdrop-blur-sm shadow-lg rounded-lg md:rounded-xl border border-gray-200/50 dark:border-gray-700/50 overflow-hidden">
+      <div className={`${getGradientClasses(gradientFrom, gradientTo)} px-3 sm:px-4 md:px-6 py-3 md:py-4`}>
+        <div className="flex justify-between items-start md:items-center gap-2">
+          <div className="flex items-center space-x-2 md:space-x-3 flex-1 min-w-0">
+            <div className="p-1.5 md:p-2 bg-white/20 rounded-lg flex-shrink-0">
+              <Icon className="h-5 w-5 md:h-6 md:w-6 text-white" />
             </div>
-            <div>
-              <h1 className="text-xl font-bold text-white">{title}</h1>
-              <p className="text-white/80 text-sm">{subtitle}</p>
+            <div className="min-w-0">
+              <h1 className="text-base sm:text-lg md:text-xl font-bold text-white truncate">{title}</h1>
+              <p className="text-white/80 text-xs sm:text-sm truncate">{subtitle}</p>
             </div>
           </div>
-          <div className="flex items-center space-x-3">
+          <div className="flex items-center space-x-2 md:space-x-3 flex-shrink-0">
             {extraActions}
             {actionLabel && onAction && (
               <button 
                 onClick={onAction}
-                className="bg-white/20 hover:bg-white/30 text-white px-4 py-2 rounded-lg text-sm font-medium transition-all duration-200 flex items-center backdrop-blur-sm border border-white/20 hover:scale-105 shadow-lg"
+                className="bg-white/20 hover:bg-white/30 text-white px-2 md:px-4 py-1.5 md:py-2 rounded-lg text-xs md:text-sm font-medium transition-all duration-200 flex items-center backdrop-blur-sm border border-white/20 hover:scale-105 shadow-lg whitespace-nowrap"
               >
-                <svg className="h-4 w-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <svg className="h-3 w-3 md:h-4 md:w-4 md:mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
                 </svg>
-                {actionLabel}
+                <span className="hidden sm:inline">{actionLabel}</span>
               </button>
             )}
           </div>
@@ -94,7 +94,7 @@ export const PageHeaderWithStats: React.FC<PageHeaderWithStatsProps> = ({
       </div>
       
       {/* Stats Section */}
-      <div className="p-6 bg-gradient-to-r from-gray-50 to-gray-100 dark:from-gray-800 dark:to-gray-700">
+      <div className="p-3 sm:p-4 md:p-6 bg-gradient-to-r from-gray-50 to-gray-100 dark:from-gray-800 dark:to-gray-700">
         <div className={`grid gap-4 ${
           stats.length === 1 ? 'grid-cols-1' :
           stats.length === 2 ? 'grid-cols-1 md:grid-cols-2' :
@@ -104,8 +104,8 @@ export const PageHeaderWithStats: React.FC<PageHeaderWithStatsProps> = ({
         }`}>
           {stats.map((stat, index) => (
             <div key={index} className="text-center">
-              <div className={`text-2xl font-bold ${getColorClasses(stat.color)}`}>{stat.value}</div>
-              <div className="text-sm text-gray-600 dark:text-gray-400">{stat.label}</div>
+              <div className={`text-lg sm:text-xl md:text-2xl font-bold ${getColorClasses(stat.color)}`}>{stat.value}</div>
+              <div className="text-xs sm:text-sm text-gray-600 dark:text-gray-400">{stat.label}</div>
             </div>
           ))}
         </div>

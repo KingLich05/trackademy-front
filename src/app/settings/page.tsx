@@ -156,7 +156,7 @@ export default function SettingsPage() {
   }
 
   return (
-    <div className="min-h-screen bg-gray-50 dark:bg-gray-900 p-4 sm:p-6 lg:p-8 page-container">
+    <div className="min-h-screen bg-gray-50 dark:bg-gray-900 page-container max-w-full overflow-x-hidden">
       <div className="max-w-7xl mx-auto">
         {/* Header */}
         <div className="mb-8">

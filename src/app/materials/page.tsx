@@ -296,7 +296,7 @@ export default function MaterialsPage() {
   const canUploadMaterial = user && roleValue !== 1;
 
   return (
-    <div className="min-h-screen bg-gray-50 dark:bg-gray-900 p-4 md:p-6">
+    <div className="min-h-screen bg-gray-50 dark:bg-gray-900 max-w-full overflow-x-hidden">
       <div className="w-full space-y-6 mt-16">
         <PageHeaderWithStats
           title="Учебные материалы"

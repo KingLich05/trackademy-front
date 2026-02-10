@@ -374,7 +374,7 @@ export default function SubjectsPage() {
   }
 
   return (
-    <div className="min-h-screen bg-gray-50 dark:bg-gray-900 p-4 md:p-6 page-container">
+    <div className="min-h-screen bg-gray-50 dark:bg-gray-900 page-container max-w-full overflow-x-hidden">
       <div className="w-full space-y-6">
         {/* Modern Header Card */}
         <PageHeaderWithStats
