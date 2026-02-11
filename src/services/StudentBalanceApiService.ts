@@ -118,6 +118,7 @@ export class StudentBalanceApiService {
     items: Array<{
       subjectId: string;
       subjectName: string;
+      price: number;
       totalPaid: number;
       groups: Array<{
         groupId: string;

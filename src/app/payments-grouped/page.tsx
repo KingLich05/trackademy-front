@@ -60,6 +60,7 @@ interface GroupPayment {
 interface SubjectPayment {
   subjectId: string;
   subjectName: string;
+  price: number;
   totalPaid: number;
   groups: GroupPayment[];
 }
@@ -126,6 +127,9 @@ export default function PaymentsGroupedPage() {
     groupId: string;
     studentName: string;
     groupName: string;
+    subjectPrice: number;
+    discountType: number | null;
+    discountValue: number | null;
   } | null>(null);
 
   // Discount modal state
@@ -135,6 +139,9 @@ export default function PaymentsGroupedPage() {
     groupId: string;
     studentName: string;
     groupName: string;
+    discountType: number | null;
+    discountValue: number | null;
+    discountReason: string | null;
   } | null>(null);
 
   // Export modal state
@@ -220,6 +227,27 @@ export default function PaymentsGroupedPage() {
     }
   }, [loadData, user?.organizationId]);
 
+  // Calculate discounted price based on discount type
+  const calculateDiscountedPrice = (
+    basePrice: number, 
+    discountType: number | null, 
+    discountValue: number | null
+  ): number => {
+    if (!discountType || !discountValue || discountValue <= 0) {
+      return basePrice;
+    }
+
+    if (discountType === 1) {
+      // Percentage discount
+      return basePrice - (basePrice * discountValue / 100);
+    } else if (discountType === 2) {
+      // Fixed amount discount
+      return Math.max(0, basePrice - discountValue);
+    }
+
+    return basePrice;
+  };
+
   const toggleSubject = (subjectId: string) => {
     setExpandedSubjects(prev => {
       const newSet = new Set(prev);
@@ -291,12 +319,23 @@ export default function PaymentsGroupedPage() {
     showSuccess('Возврат успешно выполнен');
   };
 
-  const handleAddBalanceClick = (studentId: string, groupId: string, studentName: string, groupName: string) => {
+  const handleAddBalanceClick = (
+    studentId: string, 
+    groupId: string, 
+    studentName: string, 
+    groupName: string,
+    subjectPrice: number,
+    discountType: number | null,
+    discountValue: number | null
+  ) => {
     setAddBalanceData({
       studentId,
       groupId,
       studentName,
-      groupName
+      groupName,
+      subjectPrice,
+      discountType,
+      discountValue
     });
     setShowAddBalanceModal(true);
   };
@@ -320,12 +359,23 @@ export default function PaymentsGroupedPage() {
     }
   };
 
-  const handleDiscountClick = (studentId: string, groupId: string, studentName: string, groupName: string) => {
+  const handleDiscountClick = (
+    studentId: string, 
+    groupId: string, 
+    studentName: string, 
+    groupName: string,
+    discountType: number | null,
+    discountValue: number | null,
+    discountReason: string | null
+  ) => {
     setDiscountData({
       studentId,
       groupId,
       studentName,
-      groupName
+      groupName,
+      discountType,
+      discountValue,
+      discountReason
     });
     setShowDiscountModal(true);
   };
@@ -347,6 +397,23 @@ export default function PaymentsGroupedPage() {
       loadData();
     } catch (error: unknown) {
       showError('Ошибка при применении скидки: ' + ((error as Error)?.message || 'Неизвестная ошибка'));
+      throw error;
+    }
+  };
+
+  const handleDiscountRemove = async () => {
+    if (!discountData) return;
+
+    try {
+      await StudentBalanceApiService.removeDiscount(
+        discountData.studentId,
+        discountData.groupId
+      );
+      showSuccess('Скидка успешно удалена');
+      setShowDiscountModal(false);
+      loadData();
+    } catch (error: unknown) {
+      showError('Ошибка при удалении скидки: ' + ((error as Error)?.message || 'Неизвестная ошибка'));
       throw error;
     }
   };
@@ -763,7 +830,10 @@ export default function PaymentsGroupedPage() {
                                               student.studentId,
                                               group.groupId,
                                               student.studentName,
-                                              group.groupName
+                                              group.groupName,
+                                              subject.price,
+                                              student.discountType,
+                                              student.discountValue
                                             );
                                           }}
                                           className="px-2 py-1 bg-emerald-100 hover:bg-emerald-200 text-emerald-700 dark:bg-emerald-900/30 dark:hover:bg-emerald-900/50 dark:text-emerald-300 rounded text-xs font-medium transition-colors flex items-center gap-1"
@@ -779,7 +849,10 @@ export default function PaymentsGroupedPage() {
                                               student.studentId,
                                               group.groupId,
                                               student.studentName,
-                                              group.groupName
+                                              group.groupName,
+                                              student.discountType,
+                                              student.discountValue,
+                                              student.discountReason
                                             );
                                           }}
                                           className="px-2 py-1 bg-blue-100 hover:bg-blue-200 text-blue-700 dark:bg-blue-900/30 dark:hover:bg-blue-900/50 dark:text-blue-300 rounded text-xs font-medium transition-colors flex items-center gap-1"
@@ -1011,6 +1084,14 @@ export default function PaymentsGroupedPage() {
           onClose={() => setShowAddBalanceModal(false)}
           onConfirm={handleAddBalanceConfirm}
           studentName={addBalanceData.studentName}
+          subjectPrice={addBalanceData.subjectPrice}
+          discountedPrice={calculateDiscountedPrice(
+            addBalanceData.subjectPrice,
+            addBalanceData.discountType,
+            addBalanceData.discountValue
+          )}
+          discountType={addBalanceData.discountType}
+          discountValue={addBalanceData.discountValue}
         />
       )}
 
@@ -1020,7 +1101,11 @@ export default function PaymentsGroupedPage() {
           isOpen={showDiscountModal}
           onClose={() => setShowDiscountModal(false)}
           onConfirm={handleDiscountConfirm}
+          onRemove={handleDiscountRemove}
           studentName={discountData.studentName}
+          currentDiscountType={discountData.discountType}
+          currentDiscountValue={discountData.discountValue}
+          currentDiscountReason={discountData.discountReason}
         />
       )}
 
