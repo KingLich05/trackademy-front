@@ -411,166 +411,234 @@ export const ScheduleCalendar: React.FC<ScheduleCalendarProps> = ({
     const weekStart = startOfWeek(currentDate);
     const weekDays = getDaysInRange(weekStart, new Date(weekStart.getTime() + 6 * 24 * 60 * 60 * 1000));
     const hours = Array.from({ length: 16 }, (_, i) => i + 8); // 8:00 to 23:00
+    const dayNames = ['Пн', 'Вт', 'Ср', 'Чт', 'Пт', 'Сб', 'Вс'];
+
+    // Calculate position for time slot (used for overlapping schedules block)
+    const getTimeSlotPosition = (startTime: string, endTime: string) => {
+      const [startHour, startMin] = startTime.split(':').map(Number);
+      const [endHour, endMin] = endTime.split(':').map(Number);
+      
+      const startTotalMin = startHour * 60 + startMin;
+      const endTotalMin = endHour * 60 + endMin;
+      
+      // First time slot is 08:00 (8 * 60 = 480 minutes from midnight)
+      const firstSlotMin = 8 * 60;
+      
+      // Calculate position relative to the first time slot
+      const topOffset = ((startTotalMin - firstSlotMin) / 60) * 60; // 60px per hour
+      const height = ((endTotalMin - startTotalMin) / 60) * 60; // 60px per hour
+      
+      return {
+        top: Math.max(0, topOffset), // Ensure non-negative
+        height: Math.max(25, height) // Minimum 25px for very short schedules
+      };
+    };
+
+    // Calculate schedule position
+    const getSchedulePosition = (schedule: Schedule) => {
+      const [startHour, startMin] = schedule.startTime.split(':').map(Number);
+      const [endHour, endMin] = schedule.endTime.split(':').map(Number);
+      
+      const startTotalMin = startHour * 60 + startMin;
+      const endTotalMin = endHour * 60 + endMin;
+      
+      // First time slot is 08:00 (8 * 60 = 480 minutes from midnight)
+      const firstSlotMin = 8 * 60;
+      
+      // Calculate position relative to the first time slot
+      const topOffset = ((startTotalMin - firstSlotMin) / 60) * 60; // 60px per hour
+      const height = ((endTotalMin - startTotalMin) / 60) * 60; // 60px per hour
+      
+      return {
+        top: Math.max(0, topOffset), // Ensure non-negative
+        height: Math.max(25, height) // Minimum 25px for very short schedules
+      };
+    };
 
     return (
       <div className="bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700 overflow-hidden">
         {/* Header with days */}
-        <div className="grid grid-cols-8 border-b border-gray-200 dark:border-gray-600">
-          {/* Empty cell for time column */}
-          <div className="border-r border-gray-200 dark:border-gray-600 bg-gray-50 dark:bg-gray-700 p-3">
-            <span className="text-xs font-medium text-gray-500 dark:text-gray-400">Время</span>
-          </div>
-          {weekDays.map((day, index) => {
-            const isToday = day.toDateString() === new Date().toDateString();
-            
-            return (
-              <div key={index} className="border-r border-gray-200 dark:border-gray-600 last:border-r-0">
-                <div className={`p-3 text-center ${
-                  isToday ? 'bg-violet-50 dark:bg-violet-900/20' : 'bg-gray-50 dark:bg-gray-700'
-                }`}>
-                  <div className="text-xs font-medium text-gray-500 dark:text-gray-400 uppercase">
-                    {day.toLocaleDateString('ru-RU', { weekday: 'short' })}
-                  </div>
-                  <div className={`text-lg font-semibold ${
-                    isToday ? 'text-violet-600 dark:text-violet-400' : 'text-gray-900 dark:text-white'
+        <div className="sticky top-0 bg-white dark:bg-gray-800 border-b border-gray-200 dark:border-gray-700 z-10">
+          <div className="flex">
+            {/* Time column header */}
+            <div className="w-16 flex-shrink-0 p-2 border-r border-gray-200 dark:border-gray-700">
+              <div className="text-xs text-gray-500 dark:text-gray-400">Время</div>
+            </div>
+
+            {/* Day headers */}
+            {weekDays.map((day, index) => {
+              const dayOfWeek = day.getDay() || 7;
+              const daySchedules = getSchedulesForDay(dayOfWeek, day);
+              const isToday = day.toDateString() === new Date().toDateString();
+              
+              return (
+                <div
+                  key={index}
+                  className="flex-1 p-2 border-r border-gray-200 dark:border-gray-700 last:border-r-0"
+                >
+                  <div className={`text-center ${
+                    isToday ? 'text-violet-600 dark:text-violet-400 font-semibold' : 'text-gray-900 dark:text-white'
                   }`}>
-                    {day.getDate()}
+                    <div className="text-sm font-medium">{dayNames[index]}</div>
+                    <div className={`text-lg ${
+                      isToday ? 'bg-violet-600 text-white rounded-full w-8 h-8 flex items-center justify-center mx-auto' : ''
+                    }`}>
+                      {day.getDate()}
+                    </div>
+                    <div className="text-xs text-gray-500 dark:text-gray-400 mt-1">
+                      {daySchedules.length} занятий
+                    </div>
                   </div>
                 </div>
-              </div>
-            );
-          })}
+              );
+            })}
+          </div>
         </div>
 
-        {/* Time grid with relative positioning for lessons */}
+        {/* Time grid with relative positioning for schedules */}
         <div className="relative">
-          {/* Background grid */}
-          <div className="grid grid-cols-8">
-            {hours.map((hour) => (
-              <React.Fragment key={hour}>
-                {/* Time column */}
-                <div className="border-r border-b border-gray-200 dark:border-gray-600 bg-gray-50 dark:bg-gray-700 p-2 text-center min-h-[64px]">
-                  <span className="text-sm font-medium text-gray-600 dark:text-gray-400">
-                    {hour.toString().padStart(2, '0')}:00
-                  </span>
-                </div>
-                
-                {/* Day columns (empty cells for background) */}
-                {weekDays.map((day, dayIndex) => (
-                  <div 
-                    key={`${dayIndex}-${hour}`} 
-                    className="border-r border-b border-gray-200 dark:border-gray-600 last:border-r-0 min-h-[64px]"
-                  />
-                ))}
-              </React.Fragment>
-            ))}
-          </div>
+          {/* Background grid - 60px per hour */}
+          {hours.map((hour) => (
+            <div
+              key={hour}
+              className="flex border-b border-gray-100 dark:border-gray-700 min-h-[60px]"
+            >
+              {/* Time label */}
+              <div className="w-16 flex-shrink-0 p-2 text-sm text-gray-500 dark:text-gray-400 border-r border-gray-100 dark:border-gray-700">
+                {hour.toString().padStart(2, '0')}:00
+              </div>
 
-          {/* Lessons overlay - separate container for each day */}
+              {/* Day columns */}
+              {weekDays.map((day, dayIndex) => (
+                <div
+                  key={`${dayIndex}-${hour}`}
+                  className="flex-1 p-1 border-r border-gray-100 dark:border-gray-700 last:border-r-0 relative"
+                >
+                  {/* This space will be filled by absolutely positioned schedules */}
+                </div>
+              ))}
+            </div>
+          ))}
+
+          {/* Absolutely positioned schedules for each day */}
           {weekDays.map((day, dayIndex) => {
             const dayOfWeek = day.getDay() || 7;
             const daySchedules = getSchedulesForDay(dayOfWeek, day);
+            const timeSlotGroups = groupOverlappingSchedules(daySchedules);
 
             return (
               <div
-                key={`lessons-${dayIndex}`}
+                key={`schedules-${dayIndex}`}
                 className="absolute inset-0 pointer-events-none"
                 style={{
-                  left: `calc(12.5% + ${dayIndex} * 12.5%)`, // 12.5% = 100% / 8 columns
-                  width: 'calc(12.5% - 2px)',
+                  left: `calc(4rem + ${dayIndex} * (100% - 4rem) / 7)`, // 4rem = w-16 for time column
+                  width: `calc((100% - 4rem) / 7 - 2px)`, // Equal width minus borders
                   height: '100%',
                   zIndex: 10
                 }}
               >
-                {daySchedules.map((schedule) => {
-                  // Extract hours and minutes from time string "HH:mm:ss" or "HH:mm"
-                  const startParts = schedule.startTime.split(':');
-                  const endParts = schedule.endTime.split(':');
+                {timeSlotGroups.map((slot, idx) => {
+                  const hasOverlap = slot.schedules.length > 1;
+                  // Use slot's min/max times for overlapping schedules block
+                  const position = hasOverlap 
+                    ? getTimeSlotPosition(slot.startTime, slot.endTime)
+                    : getSchedulePosition(slot.schedules[0]);
                   
-                  const startHours = parseInt(startParts[0], 10);
-                  const startMinutes = parseInt(startParts[1], 10);
-                  const endHours = parseInt(endParts[0], 10);
-                  const endMinutes = parseInt(endParts[1], 10);
-                  
-                  // Calculate hours from day start (8:00)
-                  const startFromDayBegin = (startHours - 8) + (startMinutes / 60);
-                  const endFromDayBegin = (endHours - 8) + (endMinutes / 60);
-                  
-                  // Each hour = 64px in week view
-                  const topOffset = startFromDayBegin * 64;
-                  const height = Math.max(60, (endFromDayBegin - startFromDayBegin) * 64);
-                  
-                  return (
-                    <div
-                      key={`schedule-${schedule.id}`}
-                      className="absolute left-1 right-1 pointer-events-auto bg-gradient-to-r from-violet-100 to-violet-50 dark:from-violet-900/40 dark:to-violet-900/20 rounded border-l-4 border-violet-500 cursor-pointer hover:from-violet-200 hover:to-violet-100 dark:hover:from-violet-900/60 dark:hover:to-violet-900/30 transition-all shadow-sm hover:shadow-md p-2 relative group"
-                      style={{
-                        top: `${topOffset}px`,
-                        height: `${height}px`
-                      }}
-                      onClick={() => onEventClick?.(schedule)}
-                      title={`${schedule.subject.subjectName}\n${schedule.group.name}\n${formatTimeRange(schedule.startTime, schedule.endTime)}\n${schedule.room.name}\n${schedule.teacher.name}`}
-                    >
-                      {/* Tooltip при наведении */}
-                      <div className="absolute left-0 top-full mt-1 hidden group-hover:block z-50 bg-gray-900 text-white text-xs rounded p-2 shadow-lg min-w-[200px]">
-                        <div className="font-semibold mb-1">{schedule.subject.subjectName}</div>
-                        <div>Группа: {schedule.group.name}</div>
-                        <div>Время: {formatTimeRange(schedule.startTime, schedule.endTime)}</div>
-                        <div>Кабинет: {schedule.room.name}</div>
-                        <div>Преподаватель: {schedule.teacher.name}</div>
-                      </div>
-
-                      <div className="h-full overflow-hidden flex flex-col justify-center p-1">
-                        {height >= 80 && (
-                          <>
-                            <div className="font-medium text-violet-800 dark:text-violet-300 truncate text-xs mb-0.5">
-                              {schedule.subject.subjectName}
-                            </div>
-                            <div className="text-violet-600 dark:text-violet-400 text-[10px] truncate">
-                              👥 {schedule.group.name}
-                            </div>
-                            <div className="text-violet-600 dark:text-violet-400 text-[10px]">
-                              🕐 {formatTimeRange(schedule.startTime, schedule.endTime)}
-                            </div>
-                            <div className="text-violet-600 dark:text-violet-400 text-[10px] truncate">
-                              📍 {schedule.room.name}
-                            </div>
-                            <div className="text-violet-600 dark:text-violet-400 text-[10px] truncate">
-                              👨‍🏫 {schedule.teacher.name}
-                            </div>
-                          </>
-                        )}
-                        {height >= 60 && height < 80 && (
-                          <>
-                            <div className="font-medium text-violet-800 dark:text-violet-300 truncate text-xs mb-0.5">
-                              {schedule.subject.subjectName}
-                            </div>
-                            <div className="text-violet-600 dark:text-violet-400 text-[10px]">
-                              🕐 {formatTimeRange(schedule.startTime, schedule.endTime)}
-                            </div>
-                            <div className="text-violet-600 dark:text-violet-400 text-[10px] truncate">
-                              📍 {schedule.room.name}
-                            </div>
-                          </>
-                        )}
-                        {height >= 35 && height < 60 && (
-                          <>
-                            <div className="font-medium text-violet-800 dark:text-violet-300 truncate text-[10px]">
-                              {schedule.subject.subjectName}
-                            </div>
-                            <div className="text-violet-600 dark:text-violet-400 text-[9px]">
-                              🕐 {formatTimeRange(schedule.startTime, schedule.endTime)}
-                            </div>
-                          </>
-                        )}
-                        {height < 35 && (
-                          <div className="font-medium text-violet-800 dark:text-violet-300 truncate text-[10px]">
-                            {schedule.subject.subjectName}
+                  if (hasOverlap) {
+                    // Получаем все предметы для отображения
+                    const subjects = slot.schedules.map(s => s.subject.subjectName).join(', ');
+                    
+                    return (
+                      <div
+                        key={`overlap-${idx}`}
+                        className="absolute left-1 right-1 pointer-events-auto cursor-pointer"
+                        style={{
+                          top: `${position.top}px`,
+                          height: `${position.height}px`
+                        }}
+                        onClick={() => setOverlappingModal({
+                          isOpen: true,
+                          schedules: slot.schedules,
+                          timeSlot: `${formatTimeRange(slot.startTime, slot.endTime)}`
+                        })}
+                        title={`${slot.schedules.length} накладывающихся ${slot.schedules.length === 1 ? 'занятие' : slot.schedules.length < 5 ? 'занятия' : 'занятий'} (${formatTimeRange(slot.startTime, slot.endTime)})\n${subjects}`}
+                      >
+                        <div className="w-full h-full p-1.5 rounded text-xs bg-gradient-to-r from-amber-50 to-amber-100 dark:from-amber-900/30 dark:to-amber-800/30 border border-amber-300 dark:border-amber-600 hover:shadow-sm transition-all overflow-hidden">
+                          <div className="flex flex-col h-full justify-center gap-0.5">
+                            <span className="font-semibold text-amber-900 dark:text-amber-100 truncate text-center">
+                              {formatTimeRange(slot.startTime, slot.endTime)}
+                            </span>
+                            <span className="text-amber-700 dark:text-amber-300 text-[10px] truncate text-center">
+                              {subjects}
+                            </span>
                           </div>
-                        )}
+                        </div>
                       </div>
-                    </div>
-                  );
+                    );
+                  } else {
+                    const schedule = slot.schedules[0];
+                    const schedulePosition = getSchedulePosition(schedule);
+                    
+                    return (
+                      <div
+                        key={schedule.id}
+                        className="absolute left-1 right-1 pointer-events-auto"
+                        style={{
+                          top: `${schedulePosition.top}px`,
+                          height: `${schedulePosition.height}px`
+                        }}
+                      >
+                        <div
+                          onClick={() => onEventClick?.(schedule)}
+                          className="w-full h-full p-1 rounded text-xs cursor-pointer hover:shadow-sm transition-all bg-white dark:bg-gray-700 border border-gray-200 dark:border-gray-600 overflow-hidden relative group"
+                          style={{ 
+                            borderLeftColor: '#8b5cf6', 
+                            borderLeftWidth: '3px',
+                            boxSizing: 'border-box'
+                          }}
+                          title={`${schedule.subject.subjectName}\n${schedule.group.name}\n${formatTimeRange(schedule.startTime, schedule.endTime)}\n${schedule.room.name}\n${schedule.teacher.name}`}
+                        >
+                          {/* Tooltip при наведении */}
+                          <div className="absolute left-0 top-full mt-1 hidden group-hover:block z-50 bg-gray-900 text-white text-xs rounded p-2 shadow-lg min-w-[200px]">
+                            <div className="font-semibold mb-1">{schedule.subject.subjectName}</div>
+                            <div>Группа: {schedule.group.name}</div>
+                            <div>Время: {formatTimeRange(schedule.startTime, schedule.endTime)}</div>
+                            <div>Кабинет: {schedule.room.name}</div>
+                            <div>Преподаватель: {schedule.teacher.name}</div>
+                          </div>
+
+                          <div className="flex flex-col h-full justify-center">
+                            {schedulePosition.height >= 60 && (
+                              <>
+                                <div className="flex items-center justify-between mb-0.5">
+                                  <span className="font-medium text-gray-900 dark:text-white truncate">
+                                    {schedule.subject.subjectName}
+                                  </span>
+                                </div>
+                                <div className="text-gray-500 dark:text-gray-400 text-[10px]">
+                                  {formatTimeRange(schedule.startTime, schedule.endTime)}
+                                </div>
+                              </>
+                            )}
+
+                            {schedulePosition.height >= 35 && schedulePosition.height < 60 && (
+                              <div className="flex items-center justify-between">
+                                <span className="font-medium text-gray-900 dark:text-white truncate flex-1">
+                                  {schedule.subject.subjectName}
+                                </span>
+                              </div>
+                            )}
+
+                            {schedulePosition.height < 35 && (
+                              <span className="font-medium text-gray-900 dark:text-white truncate text-[10px]">
+                                {schedule.subject.subjectName}
+                              </span>
+                            )}
+                          </div>
+                        </div>
+                      </div>
+                    );
+                  }
                 })}
               </div>
             );
