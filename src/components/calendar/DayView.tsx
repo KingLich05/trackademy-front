@@ -99,29 +99,28 @@ export default function DayView({ date, lessons, onLessonClick }: DayViewProps) 
     // First time slot is 08:00 (8 * 60 = 480 minutes from midnight)
     const firstSlotMin = 8 * 60;
     
-    // Calculate position relative to the first time slot (120px per hour for better visibility)
-    const topOffset = ((startTotalMin - firstSlotMin) / 60) * 120;
-    const height = ((endTotalMin - startTotalMin) / 60) * 120;
+    // Calculate position relative to the first time slot (80px per hour for compact display)
+    const topOffset = ((startTotalMin - firstSlotMin) / 60) * 80;
+    const height = ((endTotalMin - startTotalMin) / 60) * 80;
     
     return {
       top: Math.max(0, topOffset), // Ensure non-negative
-      height: Math.max(60, height) // Minimum 60px for very short lessons
+      height: Math.max(40, height) // Minimum 40px for very short lessons
     };
   };
 
   return (
-    <div className="flex flex-col h-full">
+    <div className="flex flex-col h-full bg-white dark:bg-gray-900">
       {/* Day header */}
-      <div className="sticky top-0 bg-white dark:bg-gray-800 border-b border-gray-200 dark:border-gray-700 p-4 z-10">
+      <div className="sticky top-0 bg-white dark:bg-gray-800 border-b border-gray-200 dark:border-gray-700 px-6 py-4 z-10">
         <h3 className="text-lg font-semibold text-gray-900 dark:text-white">
           {date.toLocaleDateString('ru-RU', { 
             weekday: 'long', 
             day: 'numeric', 
-            month: 'long', 
-            year: 'numeric' 
+            month: 'long'
           })}
         </h3>
-        <p className="text-sm text-gray-500 dark:text-gray-400">
+        <p className="text-sm text-gray-500 dark:text-gray-400 mt-1">
           Занятий: {dayLessons.length}
         </p>
       </div>
@@ -133,10 +132,10 @@ export default function DayView({ date, lessons, onLessonClick }: DayViewProps) 
           {timeSlots.map((timeSlot) => (
             <div
               key={timeSlot}
-              className="flex border-b border-gray-100 dark:border-gray-700 h-[120px]"
+              className="flex border-b border-gray-100 dark:border-gray-700 h-[80px]"
             >
               {/* Time label */}
-              <div className="w-16 flex-shrink-0 flex items-center justify-end pr-3 text-sm font-medium text-gray-600 dark:text-gray-300 border-r border-gray-200 dark:border-gray-600">
+              <div className="w-16 flex-shrink-0 flex items-start pt-1 justify-end pr-3 text-xs font-medium text-gray-500 dark:text-gray-400 border-r border-gray-200 dark:border-gray-700">
                 {timeSlot}
               </div>
 
@@ -223,16 +222,16 @@ function LessonBlock({ lesson, onClick, height }: LessonBlockProps) {
   const subjectColor = generateSubjectColor(lesson.subject.subjectName);
   const statusColor = getLessonStatusColor(lesson.lessonStatus);
   
-  // Определяем уровни отображения в зависимости от высоты (обновлено для 120px на час)
-  const showFull = !height || height >= 140; // Вся информация (70+ минут)
-  const showMedium = height && height >= 100 && height < 140; // Без преподавателя (50-70 минут)
-  const showCompact = height && height >= 80 && height < 100; // Только предмет, группа, время (40-50 минут)
-  const showMinimal = height && height < 80; // Только предмет и время (меньше 40 минут)
+  // Определяем уровни отображения в зависимости от высоты (обновлено для 80px на час)
+  const showFull = !height || height >= 93; // Вся информация (70+ минут)
+  const showMedium = height && height >= 67 && height < 93; // Без преподавателя (50-70 минут)
+  const showCompact = height && height >= 53 && height < 67; // Только предмет, группа, время (40-50 минут)
+  const showMinimal = height && height < 53; // Только предмет и время (меньше 40 минут)
 
   return (
     <div
       onClick={onClick}
-      className="p-2 rounded-lg border-l-4 cursor-pointer hover:shadow-md transition-all relative group
+      className="p-2.5 rounded-lg border-l-4 cursor-pointer hover:shadow-md transition-shadow relative group
                  bg-white dark:bg-gray-700 border border-gray-200 dark:border-gray-600 overflow-hidden"
       style={{ 
         borderLeftColor: subjectColor,
@@ -242,28 +241,27 @@ function LessonBlock({ lesson, onClick, height }: LessonBlockProps) {
       }}
     >
       {/* Tooltip при наведении */}
-      <div className="absolute left-full ml-2 top-0 hidden group-hover:block z-50 bg-gray-900 text-white text-xs rounded-lg p-3 shadow-xl min-w-[240px] whitespace-nowrap">
-        <div className="font-semibold text-sm mb-2 text-violet-300">{lesson.subject.subjectName}</div>
-        <div className="space-y-1">
-          <div><span className="text-gray-400">Группа:</span> {lesson.group.name}</div>
-          <div><span className="text-gray-400">Время:</span> {formatTime(lesson.startTime)} - {formatTime(lesson.endTime)}</div>
-          <div><span className="text-gray-400">Преподаватель:</span> {lesson.teacher.name}</div>
-          <div><span className="text-gray-400">Кабинет:</span> {lesson.room.name}</div>
+      <div className="absolute left-full ml-2 top-0 hidden group-hover:block z-50 bg-gray-900 text-white text-xs rounded-lg p-3 shadow-xl min-w-[220px] whitespace-nowrap">
+        <div className="font-semibold mb-2">{lesson.subject.subjectName}</div>
+        <div className="space-y-1 text-gray-300">
+          <div>Группа: {lesson.group.name}</div>
+          <div>Время: {formatTime(lesson.startTime)} - {formatTime(lesson.endTime)}</div>
+          <div>Учитель: {lesson.teacher.name}</div>
+          <div>Кабинет: {lesson.room.name}</div>
           {lesson.note && (
-            <div className="mt-2 pt-2 border-t border-gray-700">
-              <span className="text-gray-400">💬 Комментарий:</span>
-              <div className="mt-1 text-blue-300">{lesson.note}</div>
+            <div className="mt-2 pt-2 border-t border-gray-700 text-blue-300">
+              {lesson.note}
             </div>
           )}
         </div>
       </div>
 
-      <div className="flex flex-col h-full justify-between gap-1">
+      <div className="flex flex-col h-full justify-between gap-1.5">
         {/* Заголовок с предметом и статусом */}
         <div className="flex items-start justify-between gap-2">
           <div className="flex-1 min-w-0">
             <div className="flex items-center gap-1.5">
-              <h4 className="font-semibold text-gray-900 dark:text-white text-sm leading-tight line-clamp-2">
+              <h4 className="font-semibold text-gray-900 dark:text-white text-[13px] leading-snug break-words">
                 {lesson.subject.subjectName}
               </h4>
               {lesson.note && (
@@ -275,7 +273,7 @@ function LessonBlock({ lesson, onClick, height }: LessonBlockProps) {
           </div>
           
           <div
-            className="w-2.5 h-2.5 rounded-full flex-shrink-0 mt-1"
+            className="w-2.5 h-2.5 rounded-full flex-shrink-0 mt-0.5"
             style={{ backgroundColor: statusColor }}
             title={lesson.lessonStatus}
           />
@@ -284,16 +282,16 @@ function LessonBlock({ lesson, onClick, height }: LessonBlockProps) {
         {/* Информация в зависимости от высоты */}
         {showFull && (
           <>
-            <div className="text-xs text-gray-600 dark:text-gray-300 leading-tight line-clamp-1">
+            <div className="text-[12px] text-gray-800 dark:text-gray-200 leading-relaxed truncate" title={lesson.group.name}>
               👥 {lesson.group.name}
             </div>
-            <div className="text-xs text-gray-500 dark:text-gray-400 leading-tight">
+            <div className="text-[12px] text-gray-700 dark:text-gray-300 leading-relaxed font-medium">
               🕐 {formatTime(lesson.startTime)} - {formatTime(lesson.endTime)}
             </div>
-            <div className="text-xs text-gray-500 dark:text-gray-400 leading-tight line-clamp-1">
+            <div className="text-[11px] text-gray-600 dark:text-gray-400 leading-relaxed truncate" title={lesson.room.name}>
               📍 {lesson.room.name}
             </div>
-            <div className="text-xs text-gray-500 dark:text-gray-400 leading-tight line-clamp-1">
+            <div className="text-[11px] text-gray-600 dark:text-gray-400 leading-relaxed truncate" title={lesson.teacher.name}>
               👨‍🏫 {lesson.teacher.name}
             </div>
           </>
@@ -301,13 +299,13 @@ function LessonBlock({ lesson, onClick, height }: LessonBlockProps) {
 
         {showMedium && (
           <>
-            <div className="text-xs text-gray-600 dark:text-gray-300 leading-tight line-clamp-1">
+            <div className="text-[12px] text-gray-800 dark:text-gray-200 leading-relaxed truncate" title={lesson.group.name}>
               👥 {lesson.group.name}
             </div>
-            <div className="text-xs text-gray-500 dark:text-gray-400 leading-tight">
+            <div className="text-[12px] text-gray-700 dark:text-gray-300 leading-relaxed font-medium">
               🕐 {formatTime(lesson.startTime)} - {formatTime(lesson.endTime)}
             </div>
-            <div className="text-xs text-gray-500 dark:text-gray-400 leading-tight line-clamp-1">
+            <div className="text-[11px] text-gray-600 dark:text-gray-400 leading-relaxed truncate" title={lesson.room.name}>
               📍 {lesson.room.name}
             </div>
           </>
@@ -315,18 +313,18 @@ function LessonBlock({ lesson, onClick, height }: LessonBlockProps) {
 
         {showCompact && (
           <>
-            <div className="text-xs text-gray-600 dark:text-gray-300 leading-tight line-clamp-1">
-              {lesson.group.name}
+            <div className="text-[12px] text-gray-800 dark:text-gray-200 leading-relaxed truncate" title={lesson.group.name}>
+              👥 {lesson.group.name}
             </div>
-            <div className="text-xs text-gray-500 dark:text-gray-400 leading-tight">
-              {formatTime(lesson.startTime)} - {formatTime(lesson.endTime)}
+            <div className="text-[12px] text-gray-700 dark:text-gray-300 leading-relaxed font-medium">
+              🕐 {formatTime(lesson.startTime)} - {formatTime(lesson.endTime)}
             </div>
           </>
         )}
 
         {showMinimal && (
-          <div className="text-[10px] text-gray-500 dark:text-gray-400 leading-tight">
-            {formatTime(lesson.startTime)} - {formatTime(lesson.endTime)}
+          <div className="text-[11px] text-gray-700 dark:text-gray-300 leading-relaxed font-medium">
+            🕐 {formatTime(lesson.startTime)} - {formatTime(lesson.endTime)}
           </div>
         )}
       </div>
