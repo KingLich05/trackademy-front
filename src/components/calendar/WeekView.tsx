@@ -119,13 +119,13 @@ export default function WeekView({ date, lessons, onLessonClick }: WeekViewProps
     // First time slot is 08:00 (8 * 60 = 480 minutes from midnight)
     const firstSlotMin = 8 * 60;
     
-    // Calculate position relative to the first time slot
-    const topOffset = ((startTotalMin - firstSlotMin) / 60) * 60; // 60px per hour
-    const height = ((endTotalMin - startTotalMin) / 60) * 60; // 60px per hour
+    // Calculate position relative to the first time slot (120px per hour for consistency with DayView)
+    const topOffset = ((startTotalMin - firstSlotMin) / 60) * 120;
+    const height = ((endTotalMin - startTotalMin) / 60) * 120;
     
     return {
       top: Math.max(0, topOffset), // Ensure non-negative
-      height: Math.max(25, height) // Minimum 25px for very short lessons
+      height: Math.max(60, height) // Minimum 60px for very short lessons
     };
   };
 
@@ -140,13 +140,13 @@ export default function WeekView({ date, lessons, onLessonClick }: WeekViewProps
     // First time slot is 08:00 (8 * 60 = 480 minutes from midnight)
     const firstSlotMin = 8 * 60;
     
-    // Calculate position relative to the first time slot
-    const topOffset = ((startTotalMin - firstSlotMin) / 60) * 60; // 60px per hour
-    const height = ((endTotalMin - startTotalMin) / 60) * 60; // 60px per hour
+    // Calculate position relative to the first time slot (120px per hour for consistency with DayView)
+    const topOffset = ((startTotalMin - firstSlotMin) / 60) * 120;
+    const height = ((endTotalMin - startTotalMin) / 60) * 120;
     
     return {
       top: Math.max(0, topOffset), // Ensure non-negative
-      height: Math.max(25, height) // Minimum 25px for very short lessons
+      height: Math.max(60, height) // Minimum 60px for very short lessons
     };
   };
 
@@ -192,7 +192,7 @@ export default function WeekView({ date, lessons, onLessonClick }: WeekViewProps
           {timeSlots.map((timeSlot) => (
             <div
               key={timeSlot}
-              className="flex border-b border-gray-100 dark:border-gray-700 min-h-[60px]"
+              className="flex border-b border-gray-100 dark:border-gray-700 min-h-[120px]"
             >
               {/* Time label */}
               <div className="w-16 flex-shrink-0 p-2 text-sm text-gray-500 dark:text-gray-400 border-r border-gray-100 dark:border-gray-700">
@@ -323,10 +323,10 @@ function WeekLessonBlock({ lesson, onClick, height }: WeekLessonBlockProps) {
   const subjectColor = generateSubjectColor(lesson.subject.subjectName);
   const statusColor = getLessonStatusColor(lesson.lessonStatus);
   
-  // Определяем, что показывать в зависимости от высоты блока
-  const showFullInfo = !height || height >= 60; // Полная информация
-  const showMinimal = height && height < 60 && height >= 35; // Только предмет и статус
-  const showOnlySubject = height && height < 35; // Только предмет
+  // Определяем, что показывать в зависимости от высоты блока (120px per hour scale)
+  const showFullInfo = !height || height >= 120; // Полная информация
+  const showMinimal = height && height < 120 && height >= 70; // Только предмет и статус
+  const showOnlySubject = height && height < 70; // Только предмет
 
   return (
     <div

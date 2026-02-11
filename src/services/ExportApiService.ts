@@ -58,7 +58,46 @@ export class ExportApiService {
     return new Blob(['Экспорт расписаний'], { type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' });
   }
 
+  /**
+   * Экспорт платежей
+   */
+  static async exportPayments(
+    organizationId: string,
+    startDate?: string,
+    endDate?: string,
+    groupIds?: string[],
+    paymentType?: number
+  ): Promise<Blob> {
+    const requestBody: {
+      organizationId: string;
+      startDate?: string;
+      endDate?: string;
+      groupIds?: string[];
+      paymentType?: number;
+    } = {
+      organizationId
+    };
 
+    if (startDate) {
+      requestBody.startDate = startDate;
+    }
+    if (endDate) {
+      requestBody.endDate = endDate;
+    }
+    if (groupIds && groupIds.length > 0) {
+      requestBody.groupIds = groupIds;
+    }
+    if (paymentType) {
+      requestBody.paymentType = paymentType;
+    }
+
+    const response = await AuthenticatedApiService.postBlob(
+      '/Export/payments',
+      requestBody
+    );
+
+    return response;
+  }
 
   /**
    * Универсальная функция для скачивания файла
@@ -83,7 +122,8 @@ export class ExportApiService {
       users: 'пользователи',
       groups: 'группы',
       attendance: 'посещаемость',
-      schedules: 'расписания'
+      schedules: 'расписания',
+      payments: 'платежи'
     };
     
     const typeName = typeNames[type] || type;

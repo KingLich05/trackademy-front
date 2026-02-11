@@ -22,8 +22,6 @@ import { useApiToast } from '../../hooks/useApiToast';
 import { Room } from '../../types/Room';
 import { DeleteConfirmationModal } from '../../components/ui/DeleteConfirmationModal';
 import { DaysOfWeekDisplay } from '../../components/ui/DaysOfWeekDisplay';
-import { ScheduleCalendar } from '../../components/ui/ScheduleCalendar';
-import { ViewToggle, ViewMode } from '../../components/ui/ViewToggle';
 import UniversalModal from '../../components/ui/UniversalModal';
 import { useUniversalModal } from '../../hooks/useUniversalModal';
 import { TimeInput } from '../../components/ui/TimeInput';
@@ -60,7 +58,6 @@ export default function SchedulesPage() {
   // Modal states
   const [deletingSchedule, setDeletingSchedule] = useState<Schedule | null>(null);
   const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false);
-  const [currentView, setCurrentView] = useState<ViewMode>('table');
 
   // Универсальная система модалов для расписаний
   const scheduleModal = useUniversalModal('schedule', {
@@ -197,20 +194,6 @@ export default function SchedulesPage() {
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [isAuthenticated, user?.organizationId]);
-
-  // Reload data when view changes
-  useEffect(() => {
-    if (isAuthenticated && user?.organizationId) {
-      // For table view, use pagination
-      if (currentView === 'table') {
-        loadSchedules(currentPage, true);
-      } else {
-        // For calendar views, load all data
-        loadSchedules(1, false);
-      }
-    }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [currentView]);
 
   // Reload data when archive mode changes
   useEffect(() => {
@@ -1057,14 +1040,6 @@ export default function SchedulesPage() {
           {/* Desktop Table View */}
           {!tableLoading && (
             <div className="hidden md:block">
-              {/* View Toggle */}
-              <div className="p-6 border-b border-gray-200 dark:border-gray-700">
-                <ViewToggle 
-                  currentView={currentView}
-                  onViewChange={setCurrentView}
-                />
-              </div>
-
               {schedules.length === 0 ? (
                 <div className="text-center py-16 p-6">
                   <div className="p-4 bg-violet-100 dark:bg-violet-900/30 rounded-full w-16 h-16 mx-auto mb-6">
@@ -1085,8 +1060,7 @@ export default function SchedulesPage() {
               ) : (
                 <>
                   {/* Table View */}
-                  {currentView === 'table' && (
-                    <div className="overflow-x-auto scrollbar-custom">
+                  <div className="overflow-x-auto scrollbar-custom">
                       <table className="w-full divide-y divide-gray-200 dark:divide-gray-700 table-fixed">
                     <thead className="bg-gradient-to-r from-gray-50 to-violet-50 dark:from-gray-700 dark:to-gray-600">
                       <tr>
@@ -1242,26 +1216,14 @@ export default function SchedulesPage() {
                       ))}
                     </tbody>
                   </table>
-                    </div>
-                  )}
-
-                  {/* Calendar Views */}
-                  {currentView !== 'table' && (
-                    <div className="p-6">
-                      <ScheduleCalendar
-                        schedules={schedules}
-                        viewType={currentView}
-                        onEventClick={(schedule: Schedule) => handleEditUniversal(schedule.id)}
-                      />
-                    </div>
-                  )}
+                  </div>
                 </>
               )}
             </div>
           )}
 
-        {/* Pagination - only for table view */}
-        {currentView === 'table' && renderPagination()}
+        {/* Pagination */}
+        {renderPagination()}
         </div>
 
         {/* Delete Confirmation Modal */}

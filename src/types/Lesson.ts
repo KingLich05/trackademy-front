@@ -33,6 +33,7 @@ export interface LessonStudent {
   grade: number | null; // 1-100, nullable
   comment: string | null; // макс 500 символов, nullable
   isFrozen: boolean; // новое поле для заморозки студента
+  remainingLessons: number; // количество оставшихся занятий у студента
 }
 
 export type AttendanceStatus = 1 | 2 | 3 | 4; // 1 = присутствовал, 2 = отсутствовал, 3 = опоздал, 4 = отсутствовал по уважительной причине

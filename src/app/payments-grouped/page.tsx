@@ -5,6 +5,7 @@ import { useAuth } from '../../contexts/AuthContext';
 import { useRouter } from 'next/navigation';
 import { StudentBalanceApiService } from '../../services/StudentBalanceApiService';
 import { AuthenticatedApiService } from '../../services/AuthenticatedApiService';
+import { ExportApiService } from '../../services/ExportApiService';
 import { Group } from '../../types/Group';
 import { StudentGroupBalanceDetail } from '../../types/StudentBalance';
 import { 
@@ -19,12 +20,14 @@ import {
   PlusCircleIcon,
   ReceiptPercentIcon,
   ArrowPathIcon,
-  ExclamationTriangleIcon
+  ExclamationTriangleIcon,
+  DocumentArrowDownIcon
 } from '@heroicons/react/24/outline';
 import { PageHeaderWithStats } from '../../components/ui/PageHeaderWithStats';
 import { RefundModal } from '../../components/RefundModal';
 import { AddBalanceModal } from '../../components/AddBalanceModal';
 import { DiscountModal } from '../../components/DiscountModal';
+import { ExportPaymentsModal, ExportPaymentsParams } from '../../components/ExportPaymentsModal';
 import { useDebounce } from '../../hooks/useDebounce';
 import { useToast } from '../../contexts/ToastContext';
 
@@ -133,6 +136,10 @@ export default function PaymentsGroupedPage() {
     studentName: string;
     groupName: string;
   } | null>(null);
+
+  // Export modal state
+  const [showExportModal, setShowExportModal] = useState(false);
+  const [isExporting, setIsExporting] = useState(false);
 
   const { showSuccess, showError } = useToast();
   
@@ -344,6 +351,33 @@ export default function PaymentsGroupedPage() {
     }
   };
 
+  const handleExport = async (params: ExportPaymentsParams) => {
+    if (!user?.organizationId) return;
+
+    setIsExporting(true);
+    try {
+      const blob = await ExportApiService.exportPayments(
+        user.organizationId,
+        params.startDate,
+        params.endDate,
+        params.groupIds,
+        params.paymentType
+      );
+      
+      ExportApiService.downloadFile(
+        blob,
+        ExportApiService.getExportFilename('payments', 'xlsx')
+      );
+      
+      showSuccess('Файл успешно экспортирован');
+      setShowExportModal(false);
+    } catch (error: unknown) {
+      showError('Ошибка при экспорте платежей: ' + ((error as Error)?.message || 'Неизвестная ошибка'));
+    } finally {
+      setIsExporting(false);
+    }
+  };
+
   const formatBalance = (amount: number): string => {
     return new Intl.NumberFormat('ru-RU', {
       minimumFractionDigits: 2,
@@ -419,6 +453,15 @@ export default function PaymentsGroupedPage() {
               color: 'purple'
             }
           ]}
+          extraActions={
+            <button
+              onClick={() => setShowExportModal(true)}
+              className="flex items-center gap-2 px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg font-medium transition-colors shadow-md hover:shadow-lg"
+            >
+              <DocumentArrowDownIcon className="h-5 w-5" />
+              Экспорт
+            </button>
+          }
         />
 
         {/* Filters */}
@@ -980,6 +1023,15 @@ export default function PaymentsGroupedPage() {
           studentName={discountData.studentName}
         />
       )}
+
+      {/* Export Payments Modal */}
+      <ExportPaymentsModal
+        isOpen={showExportModal}
+        onClose={() => setShowExportModal(false)}
+        onExport={handleExport}
+        groups={groups}
+        isExporting={isExporting}
+      />
     </div>
   );
 }

@@ -276,17 +276,28 @@ export const ScheduleCalendar: React.FC<ScheduleCalendarProps> = ({
                 
                 {/* Absolutely positioned schedules */}
                 <div className="absolute inset-0 left-16 pointer-events-none">
-                  {daySchedules.map((schedule) => {
-                    const position = getSchedulePosition(schedule);
+                  {groupOverlappingSchedules(daySchedules).map((slot, slotIdx) => {
+                    const overlappingCount = slot.schedules.length;
+                    
+                    return slot.schedules.map((schedule, scheduleIdx) => {
+                      const position = getSchedulePosition(schedule);
+                      
+                      // Calculate column width and position for overlapping schedules
+                      const columnWidth = overlappingCount > 1 ? `${100 / overlappingCount}%` : '100%';
+                      const leftOffset = overlappingCount > 1 ? `${(scheduleIdx / overlappingCount) * 100}%` : '0';
                       
                       return (
                         <div
                           key={schedule.id}
-                          className="absolute left-2 right-2 pointer-events-auto bg-white dark:bg-gray-700 rounded-lg border-l-4 border-violet-500 shadow-sm cursor-pointer hover:shadow-md transition-all duration-200 overflow-hidden group"
+                          className="absolute pointer-events-auto bg-white dark:bg-gray-700 rounded-lg border-l-4 border-violet-500 shadow-sm cursor-pointer hover:shadow-md transition-all duration-200 overflow-hidden group"
                           style={{
                             top: `${position.top}px`,
                             height: `${position.height}px`,
-                            zIndex: 10
+                            left: leftOffset,
+                            width: columnWidth,
+                            paddingLeft: scheduleIdx > 0 ? '2px' : '8px',
+                            paddingRight: scheduleIdx < overlappingCount - 1 ? '2px' : '8px',
+                            zIndex: 10 + scheduleIdx
                           }}
                           onClick={() => onEventClick?.(schedule)}
                         >
@@ -372,7 +383,8 @@ export const ScheduleCalendar: React.FC<ScheduleCalendarProps> = ({
                           </div>
                         </div>
                       );
-                    })}
+                    });
+                  })}
                 </div>
               </div>
             </div>

@@ -1041,6 +1041,15 @@ function AttendanceTab({ students, attendedStudents, absentStudents, unmarkedStu
                   <span className="font-medium text-gray-900 dark:text-white block">
                     {student.fullName}
                   </span>
+                  <div className={`text-xs font-medium mt-1 ${
+                    student.remainingLessons === 0 
+                      ? 'text-red-600 dark:text-red-400' 
+                      : student.remainingLessons <= 2 
+                      ? 'text-yellow-600 dark:text-yellow-400' 
+                      : 'text-gray-500 dark:text-gray-400'
+                  }`}>
+                    Осталось занятий: {student.remainingLessons}
+                  </div>
                 </div>
               </div>
               

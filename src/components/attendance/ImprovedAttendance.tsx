@@ -348,16 +348,29 @@ export default function ImprovedAttendance({ lesson, onUpdate, onClose }: Improv
                             </span>
                           )}
                         </div>
-                        {hasChanges && !student.isFrozen && (
-                          <div className="text-xs text-blue-600 dark:text-blue-400">
-                            Изменено
-                          </div>
-                        )}
-                        {student.isFrozen && (
-                          <div className="text-xs text-blue-600 dark:text-blue-400">
-                            Посещаемость недоступна
-                          </div>
-                        )}
+                        <div className="flex items-center gap-2 mt-1">
+                          {hasChanges && !student.isFrozen && (
+                            <div className="text-xs text-blue-600 dark:text-blue-400">
+                              Изменено
+                            </div>
+                          )}
+                          {student.isFrozen && (
+                            <div className="text-xs text-blue-600 dark:text-blue-400">
+                              Посещаемость недоступна
+                            </div>
+                          )}
+                          {!student.isFrozen && (
+                            <div className={`text-xs font-medium ${
+                              student.remainingLessons === 0 
+                                ? 'text-red-600 dark:text-red-400' 
+                                : student.remainingLessons <= 2 
+                                ? 'text-yellow-600 dark:text-yellow-400' 
+                                : 'text-gray-500 dark:text-gray-400'
+                            }`}>
+                              Осталось занятий: {student.remainingLessons}
+                            </div>
+                          )}
+                        </div>
                       </div>
                     </div>
                     

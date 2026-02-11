@@ -193,6 +193,28 @@ export class AuthenticatedApiService {
     });
   }
 
+  static async postBlob(endpoint: string, data: unknown): Promise<Blob> {
+    const API_BASE_URL = 'https://trackademy.kz/api';
+    const url = `${API_BASE_URL}${endpoint}`;
+    
+    const config: RequestInit = {
+      method: 'POST',
+      headers: this.getAuthHeaders(),
+      body: JSON.stringify(data),
+    };
+
+    const response = await fetch(url, config);
+    
+    if (!response.ok) {
+      if (response.status === 401) {
+        window.location.href = '/login';
+      }
+      throw new Error(`HTTP error! status: ${response.status}`);
+    }
+    
+    return await response.blob();
+  }
+
   static async postFormData<T>(endpoint: string, formData: FormData): Promise<T> {
     const token = this.getAuthToken();
     const API_BASE_URL = 'https://trackademy.kz/api';
