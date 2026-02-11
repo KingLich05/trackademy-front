@@ -263,7 +263,7 @@ function LessonBlock({ lesson, onClick, height }: LessonBlockProps) {
         <div className="flex items-start justify-between gap-2">
           <div className="flex-1 min-w-0">
             <div className="flex items-center gap-1.5">
-              <h4 className="font-semibold text-gray-900 dark:text-white truncate text-sm">
+              <h4 className="font-semibold text-gray-900 dark:text-white text-sm leading-tight line-clamp-2">
                 {lesson.subject.subjectName}
               </h4>
               {lesson.note && (
@@ -284,16 +284,16 @@ function LessonBlock({ lesson, onClick, height }: LessonBlockProps) {
         {/* Информация в зависимости от высоты */}
         {showFull && (
           <>
-            <div className="text-xs text-gray-600 dark:text-gray-300 truncate">
+            <div className="text-xs text-gray-600 dark:text-gray-300 leading-tight line-clamp-1">
               👥 {lesson.group.name}
             </div>
-            <div className="text-xs text-gray-500 dark:text-gray-400">
+            <div className="text-xs text-gray-500 dark:text-gray-400 leading-tight">
               🕐 {formatTime(lesson.startTime)} - {formatTime(lesson.endTime)}
             </div>
-            <div className="text-xs text-gray-500 dark:text-gray-400 truncate">
+            <div className="text-xs text-gray-500 dark:text-gray-400 leading-tight line-clamp-1">
               📍 {lesson.room.name}
             </div>
-            <div className="text-xs text-gray-500 dark:text-gray-400 truncate">
+            <div className="text-xs text-gray-500 dark:text-gray-400 leading-tight line-clamp-1">
               👨‍🏫 {lesson.teacher.name}
             </div>
           </>
@@ -301,13 +301,13 @@ function LessonBlock({ lesson, onClick, height }: LessonBlockProps) {
 
         {showMedium && (
           <>
-            <div className="text-xs text-gray-600 dark:text-gray-300 truncate">
+            <div className="text-xs text-gray-600 dark:text-gray-300 leading-tight line-clamp-1">
               👥 {lesson.group.name}
             </div>
-            <div className="text-xs text-gray-500 dark:text-gray-400">
+            <div className="text-xs text-gray-500 dark:text-gray-400 leading-tight">
               🕐 {formatTime(lesson.startTime)} - {formatTime(lesson.endTime)}
             </div>
-            <div className="text-xs text-gray-500 dark:text-gray-400 truncate">
+            <div className="text-xs text-gray-500 dark:text-gray-400 leading-tight line-clamp-1">
               📍 {lesson.room.name}
             </div>
           </>
@@ -315,17 +315,17 @@ function LessonBlock({ lesson, onClick, height }: LessonBlockProps) {
 
         {showCompact && (
           <>
-            <div className="text-xs text-gray-600 dark:text-gray-300 truncate">
+            <div className="text-xs text-gray-600 dark:text-gray-300 leading-tight line-clamp-1">
               {lesson.group.name}
             </div>
-            <div className="text-xs text-gray-500 dark:text-gray-400">
+            <div className="text-xs text-gray-500 dark:text-gray-400 leading-tight">
               {formatTime(lesson.startTime)} - {formatTime(lesson.endTime)}
             </div>
           </>
         )}
 
         {showMinimal && (
-          <div className="text-[10px] text-gray-500 dark:text-gray-400">
+          <div className="text-[10px] text-gray-500 dark:text-gray-400 leading-tight">
             {formatTime(lesson.startTime)} - {formatTime(lesson.endTime)}
           </div>
         )}

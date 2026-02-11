@@ -523,6 +523,13 @@ export class AuthenticatedApiService {
     });
   }
 
+  static async restoreLesson(lessonId: string, restoreReason: string): Promise<ApiResponse<boolean>> {
+    return this.patch(`/Lesson/${lessonId}/restore-lesson`, {
+      lessonStatus: 1,
+      cancelReason: restoreReason
+    });
+  }
+
   static async replaceTeacher(lessonId: string, newTeacherId: string, replaceReason: string): Promise<ApiResponse<boolean>> {
     return this.patch(`/Lesson/${lessonId}/replace-teacher`, {
       newTeacherId,

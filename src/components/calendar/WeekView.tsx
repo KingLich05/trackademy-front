@@ -351,12 +351,12 @@ function WeekLessonBlock({ lesson, onClick, height }: WeekLessonBlockProps) {
         {lesson.note && <div className="mt-1 text-gray-300">💬 {lesson.note}</div>}
       </div>
 
-      <div className="flex flex-col h-full justify-center">
+      <div className="flex flex-col h-full justify-center gap-0.5 py-0.5">
         {showFullInfo && (
           <>
             <div className="flex items-center justify-between mb-0.5">
               <div className="flex items-center gap-1 flex-1 min-w-0">
-                <span className="font-medium text-gray-900 dark:text-white truncate">
+                <span className="font-medium text-gray-900 dark:text-white text-xs leading-tight line-clamp-2">
                   {lesson.subject.subjectName}
                 </span>
                 {lesson.note && (
@@ -365,23 +365,34 @@ function WeekLessonBlock({ lesson, onClick, height }: WeekLessonBlockProps) {
               </div>
               <div className="w-2 h-2 rounded-full ml-1 flex-shrink-0" style={{ backgroundColor: statusColor }} />
             </div>
-            <div className="text-gray-500 dark:text-gray-400 text-[10px]">
-              {formatTime(lesson.startTime)}-{formatTime(lesson.endTime)}
+            <div className="text-gray-700 dark:text-gray-300 text-[10px] leading-tight line-clamp-1">
+              👥 {lesson.group.name}
+            </div>
+            <div className="text-gray-600 dark:text-gray-400 text-[10px] leading-tight">
+              🕐 {formatTime(lesson.startTime)}-{formatTime(lesson.endTime)}
+            </div>
+            <div className="text-gray-600 dark:text-gray-400 text-[10px] leading-tight line-clamp-1">
+              📍 {lesson.room.name}
             </div>
           </>
         )}
 
         {showMinimal && (
-          <div className="flex items-center justify-between">
-            <span className="font-medium text-gray-900 dark:text-white truncate flex-1">
-              {lesson.subject.subjectName}
-            </span>
-            <div className="w-2 h-2 rounded-full ml-1 flex-shrink-0" style={{ backgroundColor: statusColor }} />
-          </div>
+          <>
+            <div className="flex items-center justify-between">
+              <span className="font-medium text-gray-900 dark:text-white text-xs leading-tight line-clamp-2 flex-1">
+                {lesson.subject.subjectName}
+              </span>
+              <div className="w-2 h-2 rounded-full ml-1 flex-shrink-0" style={{ backgroundColor: statusColor }} />
+            </div>
+            <div className="text-gray-600 dark:text-gray-400 text-[10px] leading-tight">
+              {formatTime(lesson.startTime)}-{formatTime(lesson.endTime)}
+            </div>
+          </>
         )}
 
         {showOnlySubject && (
-          <span className="font-medium text-gray-900 dark:text-white truncate text-[10px]">
+          <span className="font-medium text-gray-900 dark:text-white text-[10px] leading-tight line-clamp-2">
             {lesson.subject.subjectName}
           </span>
         )}

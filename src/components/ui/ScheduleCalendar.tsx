@@ -296,7 +296,8 @@ export const ScheduleCalendar: React.FC<ScheduleCalendarProps> = ({
                               height: `${position.height}px`,
                               left: `calc(${idx * columnWidth}% + 0.5%)`,
                               width: `calc(${columnWidth}% - 1%)`,
-                              zIndex: 10
+                              zIndex: 10,
+                              boxSizing: 'border-box'
                             }}
                             onClick={() => onEventClick?.(schedule)}
                           >
@@ -311,67 +312,61 @@ export const ScheduleCalendar: React.FC<ScheduleCalendarProps> = ({
                               </div>
                             </div>
 
-                            <div className="p-2 h-full flex flex-col justify-between overflow-hidden gap-1.5">
+                            <div className="p-2.5 h-full flex flex-col justify-start overflow-hidden gap-1">
                               {position.height >= 140 && (
                                 <>
-                                  <h4 className="font-semibold text-gray-900 dark:text-white text-lg truncate">
+                                  <h4 className="font-semibold text-gray-900 dark:text-white text-sm leading-tight line-clamp-2">
                                     {schedule.subject.subjectName}
                                   </h4>
-                                  <div className="text-base text-gray-700 dark:text-gray-300 truncate">
+                                  <div className="text-xs text-gray-700 dark:text-gray-300 leading-tight line-clamp-1">
                                     👥 {schedule.group.name}
                                   </div>
-                                  <div className="text-base text-gray-600 dark:text-gray-400">
+                                  <div className="text-xs text-gray-600 dark:text-gray-400 leading-tight">
                                     🕐 {formatTimeRange(schedule.startTime, schedule.endTime)}
                                   </div>
-                                  <div className="text-base text-gray-600 dark:text-gray-400 truncate">
+                                  <div className="text-xs text-gray-600 dark:text-gray-400 leading-tight line-clamp-1">
                                     📍 {schedule.room.name}
                                   </div>
-                                  <div className="text-base text-gray-600 dark:text-gray-400 truncate">
+                                  <div className="text-xs text-gray-600 dark:text-gray-400 leading-tight line-clamp-1">
                                     👨‍🏫 {schedule.teacher.name}
                                   </div>
                                 </>
                               )}
                               {position.height >= 100 && position.height < 140 && (
                                 <>
-                                  <h4 className="font-semibold text-gray-900 dark:text-white text-base truncate">
+                                  <h4 className="font-semibold text-gray-900 dark:text-white text-xs leading-tight line-clamp-2">
                                     {schedule.subject.subjectName}
                                   </h4>
-                                  <div className="text-sm text-gray-700 dark:text-gray-300 truncate">
+                                  <div className="text-[11px] text-gray-700 dark:text-gray-300 leading-tight line-clamp-1">
                                     👥 {schedule.group.name}
                                   </div>
-                                  <div className="text-sm text-gray-600 dark:text-gray-400">
+                                  <div className="text-[11px] text-gray-600 dark:text-gray-400 leading-tight">
                                     🕐 {formatTimeRange(schedule.startTime, schedule.endTime)}
                                   </div>
-                                  <div className="text-sm text-gray-600 dark:text-gray-400 truncate">
+                                  <div className="text-[11px] text-gray-600 dark:text-gray-400 leading-tight line-clamp-1">
                                     📍 {schedule.room.name}
-                                  </div>
-                                  <div className="text-sm text-gray-600 dark:text-gray-400 truncate">
-                                    👨‍🏫 {schedule.teacher.name}
                                   </div>
                                 </>
                               )}
                               {position.height >= 80 && position.height < 100 && (
                                 <>
-                                  <h4 className="font-semibold text-gray-900 dark:text-white text-sm truncate">
+                                  <h4 className="font-semibold text-gray-900 dark:text-white text-xs leading-tight line-clamp-2">
                                     {schedule.subject.subjectName}
                                   </h4>
-                                  <div className="text-xs text-gray-700 dark:text-gray-300 truncate">
+                                  <div className="text-[10px] text-gray-700 dark:text-gray-300 leading-tight line-clamp-1">
                                     👥 {schedule.group.name}
                                   </div>
-                                  <div className="text-xs text-gray-600 dark:text-gray-400">
+                                  <div className="text-[10px] text-gray-600 dark:text-gray-400 leading-tight">
                                     🕐 {formatTimeRange(schedule.startTime, schedule.endTime)}
-                                  </div>
-                                  <div className="text-xs text-gray-600 dark:text-gray-400 truncate">
-                                    📍 {schedule.room.name}
                                   </div>
                                 </>
                               )}
                               {position.height < 80 && (
                                 <>
-                                  <h4 className="font-medium text-gray-900 dark:text-white text-xs truncate">
+                                  <h4 className="font-medium text-gray-900 dark:text-white text-xs leading-tight line-clamp-1">
                                     {schedule.subject.subjectName}
                                   </h4>
-                                  <div className="text-[10px] text-gray-600 dark:text-gray-400">
+                                  <div className="text-[10px] text-gray-600 dark:text-gray-400 leading-tight">
                                     {formatTimeRange(schedule.startTime, schedule.endTime)}
                                   </div>
                                 </>
@@ -607,32 +602,53 @@ export const ScheduleCalendar: React.FC<ScheduleCalendarProps> = ({
                             <div>Преподаватель: {schedule.teacher.name}</div>
                           </div>
 
-                          <div className="flex flex-col h-full justify-center">
-                            {schedulePosition.height >= 60 && (
+                          <div className="flex flex-col h-full justify-start gap-0.5 py-0.5">
+                            {schedulePosition.height >= 90 && (
                               <>
-                                <div className="flex items-center justify-between mb-0.5">
-                                  <span className="font-medium text-gray-900 dark:text-white truncate">
-                                    {schedule.subject.subjectName}
-                                  </span>
+                                <div className="font-semibold text-gray-900 dark:text-white text-xs leading-tight line-clamp-2">
+                                  {schedule.subject.subjectName}
                                 </div>
-                                <div className="text-gray-500 dark:text-gray-400 text-[10px]">
+                                <div className="text-gray-700 dark:text-gray-300 text-[10px] leading-tight line-clamp-1">
+                                  👥 {schedule.group.name}
+                                </div>
+                                <div className="text-gray-600 dark:text-gray-400 text-[10px] leading-tight">
+                                  🕐 {formatTimeRange(schedule.startTime, schedule.endTime)}
+                                </div>
+                                <div className="text-gray-600 dark:text-gray-400 text-[10px] leading-tight line-clamp-1">
+                                  📍 {schedule.room.name}
+                                </div>
+                              </>
+                            )}
+
+                            {schedulePosition.height >= 60 && schedulePosition.height < 90 && (
+                              <>
+                                <div className="font-semibold text-gray-900 dark:text-white text-xs leading-tight line-clamp-2">
+                                  {schedule.subject.subjectName}
+                                </div>
+                                <div className="text-gray-700 dark:text-gray-300 text-[10px] leading-tight line-clamp-1">
+                                  👥 {schedule.group.name}
+                                </div>
+                                <div className="text-gray-600 dark:text-gray-400 text-[10px] leading-tight">
+                                  🕐 {formatTimeRange(schedule.startTime, schedule.endTime)}
+                                </div>
+                              </>
+                            )}
+
+                            {schedulePosition.height >= 40 && schedulePosition.height < 60 && (
+                              <>
+                                <div className="font-semibold text-gray-900 dark:text-white text-[11px] leading-tight line-clamp-2">
+                                  {schedule.subject.subjectName}
+                                </div>
+                                <div className="text-gray-600 dark:text-gray-400 text-[9px] leading-tight">
                                   {formatTimeRange(schedule.startTime, schedule.endTime)}
                                 </div>
                               </>
                             )}
 
-                            {schedulePosition.height >= 35 && schedulePosition.height < 60 && (
-                              <div className="flex items-center justify-between">
-                                <span className="font-medium text-gray-900 dark:text-white truncate flex-1">
-                                  {schedule.subject.subjectName}
-                                </span>
-                              </div>
-                            )}
-
-                            {schedulePosition.height < 35 && (
-                              <span className="font-medium text-gray-900 dark:text-white truncate text-[10px]">
+                            {schedulePosition.height < 40 && (
+                              <div className="font-medium text-gray-900 dark:text-white text-[10px] leading-tight line-clamp-2">
                                 {schedule.subject.subjectName}
-                              </span>
+                              </div>
                             )}
                           </div>
                         </div>

@@ -6,6 +6,7 @@ import { useRouter } from 'next/navigation';
 import { useToast } from '../../contexts/ToastContext';
 import { AuthenticatedApiService } from '../../services/AuthenticatedApiService';
 import { StudentFlag, CreateStudentFlagRequest } from '../../types/StudentFlag';
+import { OrganizationDetail } from '../../types/Organization';
 import { CogIcon, BuildingOfficeIcon, ChevronRightIcon, FlagIcon, PlusIcon, PencilIcon, TrashIcon } from '@heroicons/react/24/outline';
 import { BaseModal } from '../../components/ui/BaseModal';
 
@@ -20,6 +21,8 @@ export default function SettingsPage() {
   const [showEditFlagModal, setShowEditFlagModal] = useState(false);
   const [editingFlag, setEditingFlag] = useState<StudentFlag | null>(null);
   const [flagName, setFlagName] = useState('');
+  const [organization, setOrganization] = useState<OrganizationDetail | null>(null);
+  const [isLoadingOrganization, setIsLoadingOrganization] = useState(false);
 
   useEffect(() => {
     if (!isAuthenticated) {
@@ -36,6 +39,10 @@ export default function SettingsPage() {
     if (activeTab === 'student-flags') {
       loadStudentFlags();
     }
+    
+    if (activeTab === 'organization') {
+      loadOrganization();
+    }
   }, [isAuthenticated, user, router, activeTab]);
 
   const loadStudentFlags = async () => {
@@ -48,6 +55,24 @@ export default function SettingsPage() {
       showError('Ошибка при загрузке флагов студентов');
     } finally {
       setIsLoadingFlags(false);
+    }
+  };
+
+  const loadOrganization = async () => {
+    if (!user?.organizationId) {
+      showError('Не найден ID организации');
+      return;
+    }
+
+    try {
+      setIsLoadingOrganization(true);
+      const orgData = await AuthenticatedApiService.getOrganizationById(user.organizationId);
+      setOrganization(orgData);
+    } catch (error) {
+      console.error('Error loading organization:', error);
+      showError('Ошибка при загрузке данных организации');
+    } finally {
+      setIsLoadingOrganization(false);
     }
   };
 
@@ -277,80 +302,58 @@ export default function SettingsPage() {
                       Настройки организации
                     </h3>
                     <p className="text-gray-600 dark:text-gray-400">
-                      Информация об организации и брендинг
+                      Информация об организации
                     </p>
                   </div>
 
-                  <div className="space-y-6">
-                    <div className="border border-gray-200 dark:border-gray-700 rounded-lg p-4">
-                      <h4 className="font-medium text-gray-900 dark:text-white mb-2">
-                        Название организации
-                      </h4>
-                      <input
-                        type="text"
-                        defaultValue="Trackademy"
-                        className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-blue-500 focus:border-blue-500"
-                      />
+                  {isLoadingOrganization ? (
+                    <div className="flex items-center justify-center py-12">
+                      <div className="inline-block animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"></div>
+                      <p className="text-gray-600 dark:text-gray-400 ml-3">Загрузка данных организации...</p>
                     </div>
+                  ) : organization ? (
+                    <div className="space-y-6">
+                      <div className="border border-gray-200 dark:border-gray-700 rounded-lg p-4">
+                        <h4 className="font-medium text-gray-900 dark:text-white mb-2">
+                          Название организации
+                        </h4>
+                        <p className="text-gray-900 dark:text-white text-lg">
+                          {organization.name}
+                        </p>
+                      </div>
 
-                    <div className="border border-gray-200 dark:border-gray-700 rounded-lg p-4">
-                      <h4 className="font-medium text-gray-900 dark:text-white mb-2">
-                        Логотип
-                      </h4>
-                      <div className="flex items-center gap-4">
-                        <div className="w-16 h-16 bg-gradient-to-br from-blue-500 to-purple-600 rounded-lg flex items-center justify-center">
-                          <span className="text-white font-bold text-xl">T</span>
-                        </div>
-                        <div>
-                          <button className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors">
-                            Изменить логотип
-                          </button>
-                          <p className="text-xs text-gray-600 dark:text-gray-400 mt-1">
-                            PNG, JPG до 2МБ. Рекомендуемый размер: 200x200px
-                          </p>
+                      <div className="border border-gray-200 dark:border-gray-700 rounded-lg p-4">
+                        <h4 className="font-medium text-gray-900 dark:text-white mb-2">
+                          Контактная информация
+                        </h4>
+                        <div className="space-y-4">
+                          <div>
+                            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                              Телефон
+                            </label>
+                            <p className="text-gray-900 dark:text-white">
+                              {organization.phone || 'Не указан'}
+                            </p>
+                          </div>
                         </div>
                       </div>
-                    </div>
 
-                    <div className="border border-gray-200 dark:border-gray-700 rounded-lg p-4">
-                      <h4 className="font-medium text-gray-900 dark:text-white mb-2">
-                        Контактная информация
-                      </h4>
-                      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                        <div>
-                          <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
-                            Телефон
-                          </label>
-                          <input
-                            type="text"
-                            placeholder="+7 (XXX) XXX-XX-XX"
-                            className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-blue-500 focus:border-blue-500"
-                          />
-                        </div>
-                        <div>
-                          <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
-                            Email
-                          </label>
-                          <input
-                            type="email"
-                            placeholder="info@trackademy.kz"
-                            className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-blue-500 focus:border-blue-500"
-                          />
-                        </div>
+                      <div className="border border-gray-200 dark:border-gray-700 rounded-lg p-4">
+                        <h4 className="font-medium text-gray-900 dark:text-white mb-2">
+                          Адрес
+                        </h4>
+                        <p className="text-gray-900 dark:text-white whitespace-pre-line">
+                          {organization.address || 'Не указан'}
+                        </p>
                       </div>
                     </div>
-
-                    <div className="border border-gray-200 dark:border-gray-700 rounded-lg p-4">
-                      <h4 className="font-medium text-gray-900 dark:text-white mb-2">
-                        Адрес
-                      </h4>
-                      <textarea
-                        rows={3}
-                        placeholder="Введите полный адрес организации"
-                        className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-blue-500 focus:border-blue-500"
-                      />
+                  ) : (
+                    <div className="text-center py-12">
+                      <p className="text-gray-600 dark:text-gray-400">
+                        Не удалось загрузить данные организации
+                      </p>
                     </div>
-                  </div>
+                  )}
                 </div>
               )}
 
