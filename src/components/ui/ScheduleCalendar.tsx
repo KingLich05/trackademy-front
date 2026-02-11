@@ -49,7 +49,7 @@ export const ScheduleCalendar: React.FC<ScheduleCalendarProps> = ({
     return start1Time < end2Time && start2Time < end1Time;
   };
 
-  // Group overlapping schedules into time slots
+  // Group overlapping schedules into time slots with enhanced overlap detection
   const groupOverlappingSchedules = (schedulesList: Schedule[]): TimeSlot[] => {
     if (schedulesList.length === 0) return [];
     
@@ -71,7 +71,7 @@ export const ScheduleCalendar: React.FC<ScheduleCalendarProps> = ({
       let groupStartTime = sorted[i].startTime;
       let groupEndTime = sorted[i].endTime;
       
-      // Ищем расписания, которые НАПРЯМУЮ пересекаются с временным окном группы
+      // Ищем расписания, которые пересекаются с временным окном группы (транзитивное перекрытие)
       let changed = true;
       while (changed) {
         changed = false;
@@ -191,7 +191,7 @@ export const ScheduleCalendar: React.FC<ScheduleCalendarProps> = ({
     const daySchedules = getSchedulesForDay(dayOfWeek, currentDate);
     const hours = Array.from({ length: 16 }, (_, i) => i + 8); // 8:00 to 23:00
 
-    // Calculate schedule position - each hour slot is exactly 60px
+    // Calculate schedule position - each hour slot is exactly 120px (increased for better visibility)
     const getSchedulePosition = (schedule: Schedule) => {
       // Extract hours and minutes from time string "HH:mm:ss" or "HH:mm"
       const startParts = schedule.startTime.split(':');
@@ -202,15 +202,15 @@ export const ScheduleCalendar: React.FC<ScheduleCalendarProps> = ({
       const endHours = parseInt(endParts[0], 10);
       const endMinutes = parseInt(endParts[1], 10);
       
-      // Прямой расчет: 08:00=0px, 09:00=60px, 10:00=120px, 11:00=180px, 12:00=240px
-      // 1 час = 60px, минуты конвертируем пропорционально
-      const top = ((startHours - 8) + (startMinutes / 60)) * 60;
-      const endTop = ((endHours - 8) + (endMinutes / 60)) * 60;
-      const height = Math.max(30, endTop - top);
+      // Прямой расчет: 08:00=0px, 09:00=120px, 10:00=240px, 11:00=360px, 12:00=480px
+      // 1 час = 120px, минуты конвертируем пропорционально
+      const top = ((startHours - 8) + (startMinutes / 60)) * 120;
+      const endTop = ((endHours - 8) + (endMinutes / 60)) * 120;
+      const height = Math.max(60, endTop - top);
       
       return {
         top: Math.max(0, top),
-        height: Math.max(30, height)
+        height: Math.max(60, height)
       };
     };
 
@@ -260,7 +260,7 @@ export const ScheduleCalendar: React.FC<ScheduleCalendarProps> = ({
                 {hours.map((hour) => (
                   <div
                     key={hour}
-                    className="flex h-[60px]"
+                    className="flex h-[120px]"
                   >
                     {/* Time label */}
                     <div className="w-16 flex-shrink-0 flex items-center justify-end pr-3 text-sm text-gray-500 dark:text-gray-400 border-r border-gray-100 dark:border-gray-700">
@@ -274,102 +274,114 @@ export const ScheduleCalendar: React.FC<ScheduleCalendarProps> = ({
                   </div>
                 ))}
                 
-                {/* Absolutely positioned schedules */}
+                {/* Absolutely positioned schedules with column layout for overlaps */}
                 <div className="absolute inset-0 left-16 pointer-events-none">
-                  {daySchedules.map((schedule) => {
-                    const position = getSchedulePosition(schedule);
+                  {(() => {
+                    // Group overlapping schedules
+                    const grouped = groupOverlappingSchedules(daySchedules);
+                    
+                    return grouped.flatMap(group => {
+                      const scheduleCount = group.schedules.length;
+                      const columnWidth = 100 / scheduleCount; // percentage width for each column
                       
-                      return (
-                        <div
-                          key={schedule.id}
-                          className="absolute left-2 right-2 pointer-events-auto bg-white dark:bg-gray-700 rounded-lg border-l-4 border-violet-500 shadow-sm cursor-pointer hover:shadow-md transition-all duration-200 overflow-hidden group"
-                          style={{
-                            top: `${position.top}px`,
-                            height: `${position.height}px`,
-                            zIndex: 10
-                          }}
-                          onClick={() => onEventClick?.(schedule)}
-                        >
-                          {/* Tooltip при наведении */}
-                          <div className="absolute left-full ml-2 top-0 hidden group-hover:block z-50 bg-gray-900 text-white text-xs rounded-lg p-3 shadow-xl min-w-[240px] whitespace-nowrap">
-                            <div className="font-semibold text-sm mb-2 text-violet-300">{schedule.subject.subjectName}</div>
-                            <div className="space-y-1">
-                              <div><span className="text-gray-400">Группа:</span> {schedule.group.name}</div>
-                              <div><span className="text-gray-400">Время:</span> {formatTimeRange(schedule.startTime, schedule.endTime)}</div>
-                              <div><span className="text-gray-400">Кабинет:</span> {schedule.room.name}</div>
-                              <div><span className="text-gray-400">Преподаватель:</span> {schedule.teacher.name}</div>
+                      return group.schedules.map((schedule, idx) => {
+                        const position = getSchedulePosition(schedule);
+                        
+                        return (
+                          <div
+                            key={schedule.id}
+                            className="absolute pointer-events-auto bg-white dark:bg-gray-700 rounded-lg border-l-4 border-violet-500 shadow-sm cursor-pointer hover:shadow-md transition-all duration-200 overflow-hidden group"
+                            style={{
+                              top: `${position.top}px`,
+                              height: `${position.height}px`,
+                              left: `calc(${idx * columnWidth}% + 0.5%)`,
+                              width: `calc(${columnWidth}% - 1%)`,
+                              zIndex: 10
+                            }}
+                            onClick={() => onEventClick?.(schedule)}
+                          >
+                            {/* Tooltip при наведении */}
+                            <div className="absolute left-full ml-2 top-0 hidden group-hover:block z-50 bg-gray-900 text-white text-xs rounded-lg p-3 shadow-xl min-w-[240px] whitespace-nowrap">
+                              <div className="font-semibold text-sm mb-2 text-violet-300">{schedule.subject.subjectName}</div>
+                              <div className="space-y-1">
+                                <div><span className="text-gray-400">Группа:</span> {schedule.group.name}</div>
+                                <div><span className="text-gray-400">Время:</span> {formatTimeRange(schedule.startTime, schedule.endTime)}</div>
+                                <div><span className="text-gray-400">Кабинет:</span> {schedule.room.name}</div>
+                                <div><span className="text-gray-400">Преподаватель:</span> {schedule.teacher.name}</div>
+                              </div>
+                            </div>
+
+                            <div className="p-2 h-full flex flex-col justify-between overflow-hidden gap-1.5">
+                              {position.height >= 140 && (
+                                <>
+                                  <h4 className="font-semibold text-gray-900 dark:text-white text-lg truncate">
+                                    {schedule.subject.subjectName}
+                                  </h4>
+                                  <div className="text-base text-gray-700 dark:text-gray-300 truncate">
+                                    👥 {schedule.group.name}
+                                  </div>
+                                  <div className="text-base text-gray-600 dark:text-gray-400">
+                                    🕐 {formatTimeRange(schedule.startTime, schedule.endTime)}
+                                  </div>
+                                  <div className="text-base text-gray-600 dark:text-gray-400 truncate">
+                                    📍 {schedule.room.name}
+                                  </div>
+                                  <div className="text-base text-gray-600 dark:text-gray-400 truncate">
+                                    👨‍🏫 {schedule.teacher.name}
+                                  </div>
+                                </>
+                              )}
+                              {position.height >= 100 && position.height < 140 && (
+                                <>
+                                  <h4 className="font-semibold text-gray-900 dark:text-white text-base truncate">
+                                    {schedule.subject.subjectName}
+                                  </h4>
+                                  <div className="text-sm text-gray-700 dark:text-gray-300 truncate">
+                                    👥 {schedule.group.name}
+                                  </div>
+                                  <div className="text-sm text-gray-600 dark:text-gray-400">
+                                    🕐 {formatTimeRange(schedule.startTime, schedule.endTime)}
+                                  </div>
+                                  <div className="text-sm text-gray-600 dark:text-gray-400 truncate">
+                                    📍 {schedule.room.name}
+                                  </div>
+                                  <div className="text-sm text-gray-600 dark:text-gray-400 truncate">
+                                    👨‍🏫 {schedule.teacher.name}
+                                  </div>
+                                </>
+                              )}
+                              {position.height >= 80 && position.height < 100 && (
+                                <>
+                                  <h4 className="font-semibold text-gray-900 dark:text-white text-sm truncate">
+                                    {schedule.subject.subjectName}
+                                  </h4>
+                                  <div className="text-xs text-gray-700 dark:text-gray-300 truncate">
+                                    👥 {schedule.group.name}
+                                  </div>
+                                  <div className="text-xs text-gray-600 dark:text-gray-400">
+                                    🕐 {formatTimeRange(schedule.startTime, schedule.endTime)}
+                                  </div>
+                                  <div className="text-xs text-gray-600 dark:text-gray-400 truncate">
+                                    📍 {schedule.room.name}
+                                  </div>
+                                </>
+                              )}
+                              {position.height < 80 && (
+                                <>
+                                  <h4 className="font-medium text-gray-900 dark:text-white text-xs truncate">
+                                    {schedule.subject.subjectName}
+                                  </h4>
+                                  <div className="text-[10px] text-gray-600 dark:text-gray-400">
+                                    {formatTimeRange(schedule.startTime, schedule.endTime)}
+                                  </div>
+                                </>
+                              )}
                             </div>
                           </div>
-
-                          <div className="p-2 h-full flex flex-col justify-between overflow-hidden gap-1.5">
-                            {position.height >= 100 && (
-                              <>
-                                <h4 className="font-semibold text-gray-900 dark:text-white text-lg truncate">
-                                  {schedule.subject.subjectName}
-                                </h4>
-                                <div className="text-base text-gray-700 dark:text-gray-300 truncate">
-                                  👥 {schedule.group.name}
-                                </div>
-                                <div className="text-base text-gray-600 dark:text-gray-400">
-                                  🕐 {formatTimeRange(schedule.startTime, schedule.endTime)}
-                                </div>
-                                <div className="text-base text-gray-600 dark:text-gray-400 truncate">
-                                  📍 {schedule.room.name}
-                                </div>
-                                <div className="text-base text-gray-600 dark:text-gray-400 truncate">
-                                  👨‍🏫 {schedule.teacher.name}
-                                </div>
-                              </>
-                            )}
-                            {position.height >= 70 && position.height < 100 && (
-                              <>
-                                <h4 className="font-semibold text-gray-900 dark:text-white text-base truncate">
-                                  {schedule.subject.subjectName}
-                                </h4>
-                                <div className="text-sm text-gray-700 dark:text-gray-300 truncate">
-                                  👥 {schedule.group.name}
-                                </div>
-                                <div className="text-sm text-gray-600 dark:text-gray-400">
-                                  🕐 {formatTimeRange(schedule.startTime, schedule.endTime)}
-                                </div>
-                                <div className="text-sm text-gray-600 dark:text-gray-400 truncate">
-                                  📍 {schedule.room.name}
-                                </div>
-                                <div className="text-sm text-gray-600 dark:text-gray-400 truncate">
-                                  👨‍🏫 {schedule.teacher.name}
-                                </div>
-                              </>
-                            )}
-                            {position.height >= 45 && position.height < 70 && (
-                              <>
-                                <h4 className="font-semibold text-gray-900 dark:text-white text-sm truncate">
-                                  {schedule.subject.subjectName}
-                                </h4>
-                                <div className="text-xs text-gray-700 dark:text-gray-300 truncate">
-                                  👥 {schedule.group.name}
-                                </div>
-                                <div className="text-xs text-gray-600 dark:text-gray-400">
-                                  🕐 {formatTimeRange(schedule.startTime, schedule.endTime)}
-                                </div>
-                                <div className="text-xs text-gray-600 dark:text-gray-400 truncate">
-                                  📍 {schedule.room.name}
-                                </div>
-                              </>
-                            )}
-                            {position.height < 45 && (
-                              <>
-                                <h4 className="font-medium text-gray-900 dark:text-white text-xs truncate">
-                                  {schedule.subject.subjectName}
-                                </h4>
-                                <div className="text-[10px] text-gray-600 dark:text-gray-400">
-                                  {formatTimeRange(schedule.startTime, schedule.endTime)}
-                                </div>
-                              </>
-                            )}
-                          </div>
-                        </div>
-                      );
-                    })}
+                        );
+                      });
+                    });
+                  })()}
                 </div>
               </div>
             </div>

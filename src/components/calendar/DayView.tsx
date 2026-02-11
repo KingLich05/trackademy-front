@@ -30,7 +30,7 @@ function timeRangesOverlap(start1: string, end1: string, start2: string, end2: s
   return s1 < e2 && s2 < e1;
 }
 
-// Group overlapping lessons together
+// Group overlapping lessons together - improved version
 function groupOverlappingLessons(lessonsList: Lesson[]): TimeSlot[] {
   if (lessonsList.length === 0) return [];
   
@@ -49,16 +49,23 @@ function groupOverlappingLessons(lessonsList: Lesson[]): TimeSlot[] {
     const overlapping: Lesson[] = [sorted[i]];
     used.add(sorted[i].id);
     
-    for (let j = i + 1; j < sorted.length; j++) {
-      if (used.has(sorted[j].id)) continue;
-      
-      const hasOverlap = overlapping.some(lesson => 
-        timeRangesOverlap(lesson.startTime, lesson.endTime, sorted[j].startTime, sorted[j].endTime)
-      );
-      
-      if (hasOverlap) {
-        overlapping.push(sorted[j]);
-        used.add(sorted[j].id);
+    // Continue checking for overlaps until no more are found
+    let foundNew = true;
+    while (foundNew) {
+      foundNew = false;
+      for (let j = 0; j < sorted.length; j++) {
+        if (used.has(sorted[j].id)) continue;
+        
+        // Check if sorted[j] overlaps with ANY lesson in the overlapping group
+        const hasOverlap = overlapping.some(lesson => 
+          timeRangesOverlap(lesson.startTime, lesson.endTime, sorted[j].startTime, sorted[j].endTime)
+        );
+        
+        if (hasOverlap) {
+          overlapping.push(sorted[j]);
+          used.add(sorted[j].id);
+          foundNew = true;
+        }
       }
     }
     
@@ -92,34 +99,13 @@ export default function DayView({ date, lessons, onLessonClick }: DayViewProps) 
     // First time slot is 08:00 (8 * 60 = 480 minutes from midnight)
     const firstSlotMin = 8 * 60;
     
-    // Calculate position relative to the first time slot
-    const topOffset = ((startTotalMin - firstSlotMin) / 60) * 60; // 60px per hour
-    const height = ((endTotalMin - startTotalMin) / 60) * 60; // 60px per hour
+    // Calculate position relative to the first time slot (120px per hour for better visibility)
+    const topOffset = ((startTotalMin - firstSlotMin) / 60) * 120;
+    const height = ((endTotalMin - startTotalMin) / 60) * 120;
     
     return {
       top: Math.max(0, topOffset), // Ensure non-negative
-      height: Math.max(30, height) // Minimum 30px for very short lessons
-    };
-  };
-
-  // Calculate position for time slot (used for overlapping lessons block)
-  const getTimeSlotPosition = (startTime: string, endTime: string) => {
-    const [startHour, startMin] = startTime.split(':').map(Number);
-    const [endHour, endMin] = endTime.split(':').map(Number);
-    
-    const startTotalMin = startHour * 60 + startMin;
-    const endTotalMin = endHour * 60 + endMin;
-    
-    // First time slot is 08:00 (8 * 60 = 480 minutes from midnight)
-    const firstSlotMin = 8 * 60;
-    
-    // Calculate position relative to the first time slot
-    const topOffset = ((startTotalMin - firstSlotMin) / 60) * 60; // 60px per hour
-    const height = ((endTotalMin - startTotalMin) / 60) * 60; // 60px per hour
-    
-    return {
-      top: Math.max(0, topOffset), // Ensure non-negative
-      height: Math.max(30, height) // Minimum 30px for very short lessons
+      height: Math.max(60, height) // Minimum 60px for very short lessons
     };
   };
 
@@ -147,7 +133,7 @@ export default function DayView({ date, lessons, onLessonClick }: DayViewProps) 
           {timeSlots.map((timeSlot) => (
             <div
               key={timeSlot}
-              className="flex border-b border-gray-100 dark:border-gray-700 h-[60px]"
+              className="flex border-b border-gray-100 dark:border-gray-700 h-[120px]"
             >
               {/* Time label */}
               <div className="w-16 flex-shrink-0 flex items-center justify-end pr-3 text-sm font-medium text-gray-600 dark:text-gray-300 border-r border-gray-200 dark:border-gray-600">
@@ -167,38 +153,32 @@ export default function DayView({ date, lessons, onLessonClick }: DayViewProps) 
               const hasOverlap = slot.lessons.length > 1;
               
               if (hasOverlap) {
-                // Use slot's min/max times for container position
-                const slotPosition = getTimeSlotPosition(slot.startTime, slot.endTime);
+                // Calculate width for each overlapping lesson with proper gap
+                const lessonWidth = 100 / slot.lessons.length;
+                const gapPercent = 0.5; // 0.5% gap between lessons
                 
                 return (
-                  <div
-                    key={`overlap-${idx}`}
-                    className="absolute left-2 right-2 pointer-events-auto flex gap-2"
-                    style={{
-                      top: `${slotPosition.top}px`,
-                      height: `${slotPosition.height}px`,
-                      zIndex: 10
-                    }}
-                  >
-                    {slot.lessons.map((lesson) => {
-                      const lessonPos = getLessonPosition(lesson);
-                      const offsetTop = lessonPos.top - slotPosition.top;
+                  <div key={`overlap-${idx}`} className="absolute inset-x-2 pointer-events-auto">
+                    {slot.lessons.map((lesson, lessonIdx) => {
+                      const position = getLessonPosition(lesson);
                       
                       return (
-                        <div key={lesson.id} className="flex-1 relative" style={{ height: '100%' }}>
-                          <div 
-                            className="absolute left-0 right-0"
-                            style={{
-                              top: `${offsetTop}px`,
-                              height: `${lessonPos.height}px`
-                            }}
-                          >
-                            <LessonBlock
-                              lesson={lesson}
-                              onClick={() => onLessonClick(lesson)}
-                              height={lessonPos.height}
-                            />
-                          </div>
+                        <div
+                          key={lesson.id}
+                          className="absolute"
+                          style={{
+                            top: `${position.top}px`,
+                            height: `${position.height}px`,
+                            left: `calc(${lessonIdx * lessonWidth}% + ${gapPercent}%)`,
+                            width: `calc(${lessonWidth}% - ${gapPercent * 2}%)`,
+                            zIndex: 10
+                          }}
+                        >
+                          <LessonBlock
+                            lesson={lesson}
+                            onClick={() => onLessonClick(lesson)}
+                            height={position.height}
+                          />
                         </div>
                       );
                     })}
@@ -243,11 +223,11 @@ function LessonBlock({ lesson, onClick, height }: LessonBlockProps) {
   const subjectColor = generateSubjectColor(lesson.subject.subjectName);
   const statusColor = getLessonStatusColor(lesson.lessonStatus);
   
-  // Определяем уровни отображения в зависимости от высоты
-  const showFull = !height || height >= 100; // Вся информация
-  const showMedium = height && height >= 70 && height < 100; // Без преподавателя
-  const showCompact = height && height >= 45 && height < 70; // Только предмет, группа, время
-  const showMinimal = height && height < 45; // Только предмет и время
+  // Определяем уровни отображения в зависимости от высоты (обновлено для 120px на час)
+  const showFull = !height || height >= 140; // Вся информация (70+ минут)
+  const showMedium = height && height >= 100 && height < 140; // Без преподавателя (50-70 минут)
+  const showCompact = height && height >= 80 && height < 100; // Только предмет, группа, время (40-50 минут)
+  const showMinimal = height && height < 80; // Только предмет и время (меньше 40 минут)
 
   return (
     <div
