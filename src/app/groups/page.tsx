@@ -65,12 +65,15 @@ export default function GroupsPage() {
   // Фильтры для групп
   const [filters, setFilters] = useState<{
     subjectId: string;
+    teacherId: string;
     search: string;
   }>({
     subjectId: '',
+    teacherId: '',
     search: ''
   });
   const [subjects, setSubjects] = useState<Array<{id: string, name: string}>>([]);
+const [teachers, setTeachers] = useState<Array<{id: string, name: string}>>([]);
 
   // Debounce search to avoid too many API calls
   const debouncedSearchTerm = useDebounce(filters.search, 300);
@@ -184,6 +187,7 @@ export default function GroupsPage() {
         pageSize: number;
         organizationId: string;
         subjectId?: string;
+        teacherId?: string;
         search?: string;
       } = {
         pageNumber: page,
@@ -194,6 +198,9 @@ export default function GroupsPage() {
       // Add optional filters
       if (currentFilters.subjectId) {
         requestBody.subjectId = currentFilters.subjectId;
+      }
+      if (currentFilters.teacherId) {
+        requestBody.teacherId = currentFilters.teacherId;
       }
       if (currentSearch) {
         requestBody.search = currentSearch;
@@ -249,6 +256,26 @@ export default function GroupsPage() {
     }
   }, [user?.organizationId]);
 
+  // Load teachers for filter
+  const loadTeachers = useCallback(async () => {
+    try {
+      const organizationId = user?.organizationId || localStorage.getItem('userOrganizationId');
+      if (!organizationId) return;
+
+      const response = await AuthenticatedApiService.post<{items: Array<{id: string, name: string}>}>('/User/get-users', {
+        pageNumber: 1,
+        pageSize: 1000,
+        organizationId,
+        roleIds: [3]
+      });
+      if (response && response.items) {
+        setTeachers(response.items);
+      }
+    } catch (error) {
+      console.error('Error loading teachers:', error);
+    }
+  }, [user?.organizationId]);
+
   // Track if initial load is done
   const initialLoadDone = useRef(false);
 
@@ -257,6 +284,7 @@ export default function GroupsPage() {
     if (isAuthenticated && user?.organizationId && !initialLoadDone.current) {
       initialLoadDone.current = true;
       loadSubjects();
+      loadTeachers();
       loadGroups(1, false);
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -274,7 +302,7 @@ export default function GroupsPage() {
       loadGroups(1, true);
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [debouncedSearchTerm, filters.subjectId]);
+  }, [debouncedSearchTerm, filters.subjectId, filters.teacherId]);
 
   const handleFilterChange = (newFilters: Partial<typeof filters>) => {
     setFilters(prev => ({ ...prev, ...newFilters }));
@@ -283,6 +311,7 @@ export default function GroupsPage() {
   const handleResetFilters = () => {
     setFilters({
       subjectId: '',
+      teacherId: '',
       search: ''
     });
     // When resetting filters, reload all groups
@@ -718,7 +747,7 @@ export default function GroupsPage() {
         <div className="bg-white/80 dark:bg-gray-800/80 backdrop-blur-sm shadow-lg rounded-xl border border-gray-200/50 dark:border-gray-700/50 p-6">
           <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-4">Фильтры</h3>
           
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
             {/* Search Filter */}
             <div>
               <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
@@ -747,6 +776,25 @@ export default function GroupsPage() {
                 {subjects.map((subject) => (
                   <option key={subject.id} value={subject.id}>
                     {subject.name}
+                  </option>
+                ))}
+              </select>
+            </div>
+
+            {/* Teacher Filter */}
+            <div>
+              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                Преподаватель
+              </label>
+              <select
+                value={filters.teacherId}
+                onChange={(e) => handleFilterChange({ teacherId: e.target.value })}
+                className="w-full px-3 py-2 bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-teal-500 focus:border-transparent text-sm text-gray-900 dark:text-white transition-all duration-200"
+              >
+                <option value="">Все преподаватели</option>
+                {teachers.map((teacher) => (
+                  <option key={teacher.id} value={teacher.id}>
+                    {teacher.name}
                   </option>
                 ))}
               </select>
@@ -974,14 +1022,14 @@ export default function GroupsPage() {
           {!tableLoading && groups.length === 0 && (
             <EmptyState
               icon={UserGroupIcon}
-              title={filters.search || filters.subjectId ? "Группы не найдены" : "Нет групп"}
+              title={filters.search || filters.subjectId || filters.teacherId ? "Группы не найдены" : "Нет групп"}
               description={
-                filters.search || filters.subjectId
+                filters.search || filters.subjectId || filters.teacherId
                   ? "Попробуйте изменить критерии поиска"
                   : "Начните с добавления первой группы"
               }
-              actionLabel={filters.search || filters.subjectId ? "Сбросить фильтры" : "Добавить группу"}
-              onAction={filters.search || filters.subjectId ? handleResetFilters : handleCreate}
+              actionLabel={filters.search || filters.subjectId || filters.teacherId ? "Сбросить фильтры" : "Добавить группу"}
+              onAction={filters.search || filters.subjectId || filters.teacherId ? handleResetFilters : handleCreate}
             />
           )}
         </div>

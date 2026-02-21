@@ -264,7 +264,9 @@ export default function LibraryPage() {
                     <th className="px-3 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">Файл</th>
                     <th className="px-3 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">Загрузил</th>
                     <th className="px-3 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">Дата</th>
-                    <th className="px-3 py-3 text-right text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider w-28">Действия</th>
+                    {!isStudent && (
+                      <th className="px-3 py-3 text-right text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider w-28">Действия</th>
+                    )}
                   </tr>
                 </thead>
                 <tbody className="bg-white dark:bg-gray-800 divide-y divide-gray-200 dark:divide-gray-700">
@@ -295,6 +297,24 @@ export default function LibraryPage() {
                             <div className="text-xs text-gray-400">{formatFileSize(material.fileSize)}</div>
                           </div>
                         </div>
+                        {isStudent && (
+                          <div className="flex flex-wrap items-center gap-2 mt-3">
+                            <button
+                              onClick={() => handlePreview(material)}
+                              className="inline-flex items-center gap-1 px-3 py-1.5 text-xs font-medium text-indigo-600 bg-indigo-50 hover:bg-indigo-100 dark:bg-indigo-900/20 dark:text-indigo-300 rounded-lg transition-colors"
+                            >
+                              <EyeIcon className="h-4 w-4" />
+                              <span>Превью</span>
+                            </button>
+                            <button
+                              onClick={() => handleDownload(material)}
+                              className="inline-flex items-center gap-1 px-3 py-1.5 text-xs font-medium text-blue-600 bg-blue-50 hover:bg-blue-100 dark:bg-blue-900/20 dark:text-blue-300 rounded-lg transition-colors"
+                            >
+                              <ArrowDownTrayIcon className="h-4 w-4" />
+                              <span>Скачать</span>
+                            </button>
+                          </div>
+                        )}
                       </td>
                       <td className="px-3 py-3 text-sm text-gray-600 dark:text-gray-400">
                         {material.uploadedByName}
@@ -302,42 +322,44 @@ export default function LibraryPage() {
                       <td className="px-3 py-3 text-sm text-gray-500 dark:text-gray-400 whitespace-nowrap">
                         {formatDate(material.createdAt)}
                       </td>
-                      <td className="px-3 py-3 text-right">
-                        <div className="flex justify-end gap-1">
-                          <button
-                            onClick={() => handlePreview(material)}
-                            className="p-2 text-indigo-600 hover:text-indigo-800 dark:text-indigo-400 dark:hover:text-indigo-300 hover:bg-indigo-50 dark:hover:bg-indigo-900/20 rounded-lg transition-all"
-                            title="Просмотр"
-                          >
-                            <EyeIcon className="h-4 w-4" />
-                          </button>
-                          <button
-                            onClick={() => handleDownload(material)}
-                            className="p-2 text-blue-600 hover:text-blue-800 dark:text-blue-400 dark:hover:text-blue-300 hover:bg-blue-50 dark:hover:bg-blue-900/20 rounded-lg transition-all"
-                            title="Скачать"
-                          >
-                            <ArrowDownTrayIcon className="h-4 w-4" />
-                          </button>
-                          {canEditDelete(material) && (
-                            <>
-                              <button
-                                onClick={() => handleEdit(material)}
-                                className="p-2 text-amber-600 hover:text-amber-800 dark:text-amber-400 dark:hover:text-amber-300 hover:bg-amber-50 dark:hover:bg-amber-900/20 rounded-lg transition-all"
-                                title="Редактировать"
-                              >
-                                <PencilIcon className="h-4 w-4" />
-                              </button>
-                              <button
-                                onClick={() => handleDelete(material)}
-                                className="p-2 text-red-600 hover:text-red-800 dark:text-red-400 dark:hover:text-red-300 hover:bg-red-50 dark:hover:bg-red-900/20 rounded-lg transition-all"
-                                title="Удалить"
-                              >
-                                <TrashIcon className="h-4 w-4" />
-                              </button>
-                            </>
-                          )}
-                        </div>
-                      </td>
+                      {!isStudent && (
+                        <td className="px-3 py-3 text-right">
+                          <div className="flex justify-end gap-1">
+                            <button
+                              onClick={() => handlePreview(material)}
+                              className="p-2 text-indigo-600 hover:text-indigo-800 dark:text-indigo-400 dark:hover:text-indigo-300 hover:bg-indigo-50 dark:hover:bg-indigo-900/20 rounded-lg transition-all"
+                              title="Просмотр"
+                            >
+                              <EyeIcon className="h-4 w-4" />
+                            </button>
+                            <button
+                              onClick={() => handleDownload(material)}
+                              className="p-2 text-blue-600 hover:text-blue-800 dark:text-blue-400 dark:hover:text-blue-300 hover:bg-blue-50 dark:hover:bg-blue-900/20 rounded-lg transition-all"
+                              title="Скачать"
+                            >
+                              <ArrowDownTrayIcon className="h-4 w-4" />
+                            </button>
+                            {canEditDelete(material) && (
+                              <>
+                                <button
+                                  onClick={() => handleEdit(material)}
+                                  className="p-2 text-amber-600 hover:text-amber-800 dark:text-amber-400 dark:hover:text-amber-300 hover:bg-amber-50 dark:hover:bg-amber-900/20 rounded-lg transition-all"
+                                  title="Редактировать"
+                                >
+                                  <PencilIcon className="h-4 w-4" />
+                                </button>
+                                <button
+                                  onClick={() => handleDelete(material)}
+                                  className="p-2 text-red-600 hover:text-red-800 dark:text-red-400 dark:hover:text-red-300 hover:bg-red-50 dark:hover:bg-red-900/20 rounded-lg transition-all"
+                                  title="Удалить"
+                                >
+                                  <TrashIcon className="h-4 w-4" />
+                                </button>
+                              </>
+                            )}
+                          </div>
+                        </td>
+                      )}
                     </tr>
                   ))}
                 </tbody>

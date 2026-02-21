@@ -6,14 +6,17 @@ import { Group } from '../types/Group';
 import { AddBalanceModal } from './AddBalanceModal';
 import { DiscountModal } from './DiscountModal';
 import { FreezeStudentModal } from './FreezeStudentModal';
+import { TransferStudentModal } from './TransferStudentModal';
 import { useToast } from '../contexts/ToastContext';
+import { useAuth } from '../contexts/AuthContext';
 import { 
   UserIcon, 
   XMarkIcon, 
   PlusCircleIcon, 
   ReceiptPercentIcon, 
   LockClosedIcon,
-  LockOpenIcon
+  LockOpenIcon,
+  ArrowRightIcon
 } from '@heroicons/react/24/outline';
 
 interface GroupStudentsModalProps {
@@ -52,20 +55,25 @@ export const GroupStudentsModal: React.FC<GroupStudentsModalProps> = ({
   group,
   onPaymentCreate
 }) => {
+  const { user } = useAuth();
   const [studentBalances, setStudentBalances] = useState<StudentBalance[]>([]);
   const [loading, setLoading] = useState(false);
   const [selectedStudent, setSelectedStudent] = useState<StudentBalance | null>(null);
+  const [transferStudent, setTransferStudent] = useState<StudentBalance | null>(null);
   
   // Модальные окна
   const [isAddBalanceOpen, setIsAddBalanceOpen] = useState(false);
   const [isDiscountOpen, setIsDiscountOpen] = useState(false);
   const [isFreezeOpen, setIsFreezeOpen] = useState(false);
   const [isUnfreezeOpen, setIsUnfreezeOpen] = useState(false);
+  const [isTransferOpen, setIsTransferOpen] = useState(false);
   
   // Состояния загрузки для операций
   const [addingBalance, setAddingBalance] = useState(false);
   const [applyingDiscount, setApplyingDiscount] = useState(false);
   const [freezingStudent, setFreezingStudent] = useState(false);
+  const [transferringStudent, setTransferringStudent] = useState(false);
+  const [availableGroups, setAvailableGroups] = useState<Group[]>([]);
 
   const { showToast, showSuccess, showError } = useToast();
 
@@ -89,6 +97,21 @@ export const GroupStudentsModal: React.FC<GroupStudentsModalProps> = ({
       setStudentBalances([]);
     } finally {
       setLoading(false);
+    }
+  };
+
+  const loadAvailableGroups = async () => {
+    if (!user?.organizationId) {
+      showError('Организация не найдена');
+      return;
+    }
+
+    try {
+      const groupsResponse = await AuthenticatedApiService.getGroups(user.organizationId, 1000);
+      setAvailableGroups(groupsResponse?.items || []);
+    } catch (error) {
+      console.error('Failed to load available groups:', error);
+      showError('Ошибка при загрузке групп для перевода');
     }
   };
 
@@ -191,6 +214,43 @@ export const GroupStudentsModal: React.FC<GroupStudentsModalProps> = ({
     }
   };
 
+  const openTransferModal = (studentBalance: StudentBalance) => {
+    setTransferStudent(studentBalance);
+    setIsTransferOpen(true);
+    loadAvailableGroups();
+  };
+
+  const handleTransferStudent = async (
+    toGroupId: string,
+    comment: string,
+    transferBalance: boolean,
+    keepDiscount: boolean
+  ) => {
+    if (!transferStudent || !group?.id) return;
+
+    setTransferringStudent(true);
+    try {
+      await AuthenticatedApiService.post('/Group/transfer-student', {
+        studentId: transferStudent.student.id,
+        fromGroupId: group.id,
+        toGroupId,
+        comment: comment || undefined,
+        transferBalance,
+        keepDiscount
+      });
+
+      showSuccess(`Студент ${transferStudent.student.name} переведен`);
+      setIsTransferOpen(false);
+      setTransferStudent(null);
+      await loadStudents();
+    } catch (error: unknown) {
+      console.error('Error transferring student:', error);
+      showError('Ошибка при переводе студента: ' + ((error as Error)?.message || 'Неизвестная ошибка'));
+    } finally {
+      setTransferringStudent(false);
+    }
+  };
+
   const handleClose = () => {
     setStudentBalances([]);
     setSelectedStudent(null);
@@ -198,6 +258,8 @@ export const GroupStudentsModal: React.FC<GroupStudentsModalProps> = ({
     setIsDiscountOpen(false);
     setIsFreezeOpen(false);
     setIsUnfreezeOpen(false);
+    setIsTransferOpen(false);
+    setTransferStudent(null);
     onClose();
   };
 
@@ -339,6 +401,15 @@ export const GroupStudentsModal: React.FC<GroupStudentsModalProps> = ({
                       <ReceiptPercentIcon className="w-3 h-3" />
                       Скидка
                     </button>
+
+                    <button
+                      onClick={() => openTransferModal(studentBalance)}
+                      className="flex items-center gap-1 px-2 py-1.5 text-xs font-medium text-indigo-700 bg-indigo-100 hover:bg-indigo-200 dark:bg-indigo-900/30 dark:text-indigo-400 dark:hover:bg-indigo-900/50 rounded transition-colors"
+                      title="Перевести в другую группу"
+                    >
+                      <ArrowRightIcon className="w-3 h-3" />
+                      Перевести
+                    </button>
                     
                     {studentBalance.isFrozen ? (
                       <button
@@ -447,6 +518,19 @@ export const GroupStudentsModal: React.FC<GroupStudentsModalProps> = ({
           </div>
         </div>
       </BaseModal>
+
+      <TransferStudentModal
+        isOpen={isTransferOpen}
+        onClose={() => {
+          setIsTransferOpen(false);
+          setTransferStudent(null);
+        }}
+        studentName={transferStudent?.student.name || ''}
+        currentGroupName={group?.name || transferStudent?.group.name || ''}
+        availableGroups={availableGroups.filter(g => g.id !== group?.id)}
+        onConfirm={handleTransferStudent}
+        loading={transferringStudent}
+      />
     </BaseModal>
   );
 };

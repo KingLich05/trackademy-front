@@ -21,13 +21,15 @@ import {
   ReceiptPercentIcon,
   ArrowPathIcon,
   ExclamationTriangleIcon,
-  DocumentArrowDownIcon
+  DocumentArrowDownIcon,
+  ArrowRightIcon
 } from '@heroicons/react/24/outline';
 import { PageHeaderWithStats } from '../../components/ui/PageHeaderWithStats';
 import { RefundModal } from '../../components/RefundModal';
 import { AddBalanceModal } from '../../components/AddBalanceModal';
 import { DiscountModal } from '../../components/DiscountModal';
 import { ExportPaymentsModal, ExportPaymentsParams } from '../../components/ExportPaymentsModal';
+import { TransferStudentModal } from '../../components/TransferStudentModal';
 import { useDebounce } from '../../hooks/useDebounce';
 import { useToast } from '../../contexts/ToastContext';
 
@@ -147,6 +149,16 @@ export default function PaymentsGroupedPage() {
   // Export modal state
   const [showExportModal, setShowExportModal] = useState(false);
   const [isExporting, setIsExporting] = useState(false);
+
+  // Transfer modal state
+  const [showTransferModal, setShowTransferModal] = useState(false);
+  const [transferData, setTransferData] = useState<{
+    studentId: string;
+    studentName: string;
+    currentGroupId: string;
+    currentGroupName: string;
+  } | null>(null);
+  const [transferringStudent, setTransferringStudent] = useState(false);
 
   const { showSuccess, showError } = useToast();
   
@@ -398,6 +410,55 @@ export default function PaymentsGroupedPage() {
     } catch (error: unknown) {
       showError('Ошибка при применении скидки: ' + ((error as Error)?.message || 'Неизвестная ошибка'));
       throw error;
+    }
+  };
+
+  const handleTransferClick = (
+    studentId: string,
+    studentName: string,
+    groupId: string,
+    groupName: string
+  ) => {
+    setTransferData({
+      studentId,
+      studentName,
+      currentGroupId: groupId,
+      currentGroupName: groupName
+    });
+    setShowTransferModal(true);
+    if (groups.length === 0 && user?.organizationId) {
+      loadFilterOptions();
+    }
+  };
+
+  const handleTransferConfirm = async (
+    toGroupId: string,
+    comment: string,
+    transferBalance: boolean,
+    keepDiscount: boolean
+  ) => {
+    if (!transferData) return;
+
+    setTransferringStudent(true);
+    try {
+      await AuthenticatedApiService.post('/Group/transfer-student', {
+        studentId: transferData.studentId,
+        fromGroupId: transferData.currentGroupId,
+        toGroupId,
+        comment: comment || undefined,
+        transferBalance,
+        keepDiscount
+      });
+
+      showSuccess(`Студент переведен в новую группу`);
+      setShowTransferModal(false);
+      setTransferData(null);
+      loadData();
+    } catch (error) {
+      console.error('Error transferring student:', error);
+      showError('Ошибка при переводе студента');
+    } finally {
+      setTransferringStudent(false);
     }
   };
 
@@ -864,6 +925,22 @@ export default function PaymentsGroupedPage() {
                                         <button
                                           onClick={(e) => {
                                             e.stopPropagation();
+                                            handleTransferClick(
+                                              student.studentId,
+                                              student.studentName,
+                                              group.groupId,
+                                              group.groupName
+                                            );
+                                          }}
+                                          className="px-2 py-1 bg-indigo-100 hover:bg-indigo-200 text-indigo-700 dark:bg-indigo-900/30 dark:hover:bg-indigo-900/50 dark:text-indigo-300 rounded text-xs font-medium transition-colors flex items-center gap-1"
+                                          title="Перевести студента"
+                                        >
+                                          <ArrowRightIcon className="h-3.5 w-3.5" />
+                                          Перевести
+                                        </button>
+                                        <button
+                                          onClick={(e) => {
+                                            e.stopPropagation();
                                             handleRefundClick(
                                               student.studentId,
                                               group.groupId,
@@ -1106,6 +1183,21 @@ export default function PaymentsGroupedPage() {
           currentDiscountType={discountData.discountType}
           currentDiscountValue={discountData.discountValue}
           currentDiscountReason={discountData.discountReason}
+        />
+      )}
+
+      {showTransferModal && transferData && (
+        <TransferStudentModal
+          isOpen={showTransferModal}
+          onClose={() => {
+            setShowTransferModal(false);
+            setTransferData(null);
+          }}
+          studentName={transferData.studentName}
+          currentGroupName={transferData.currentGroupName}
+          availableGroups={groups.filter(g => g.id !== transferData.currentGroupId)}
+          onConfirm={handleTransferConfirm}
+          loading={transferringStudent}
         />
       )}
 
