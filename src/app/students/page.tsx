@@ -67,7 +67,7 @@ export default function StudentsPage() {
   });
   
   // Toast уведомления для API операций
-  const { createOperation, updateOperation, deleteOperation } = useApiToast();
+  const { updateOperation, deleteOperation } = useApiToast();
 
   const [filters, setFilters] = useState<UserFiltersType>({
     search: '',
@@ -496,23 +496,16 @@ export default function StudentsPage() {
   };
 
   const handleSaveEdit = async (id: string, formData: UserFormData) => {
-    console.log('Starting user update:', { id, formData, authToken: !!localStorage.getItem('authToken') });
-    
-    // Clean data using utility function
     const cleanFormData = cleanUserFormData(formData);
-    
-    const result = await updateOperation(
-      () => AuthenticatedApiService.putUpdateUser(id, cleanFormData),
-      'пользователя'
-    );
-    
-    console.log('Update result:', result);
-    
-    // Always reload data and close modal regardless of result
-    if (result.success) {
-      await loadStudents(currentPage, true);
+    try {
+      await AuthenticatedApiService.putUpdateUser(id, cleanFormData);
+    } catch (err) {
+      // Re-throw so UniversalModal catches it and keeps modal open
+      throw err;
     }
+    await loadStudents(currentPage, true);
     setEditingUserId(null);
+    showSuccess('Пользователь успешно обновлён');
   };
 
   const handleDelete = (user: User) => {
@@ -560,38 +553,26 @@ export default function StudentsPage() {
 
   // Create user handlers
   const handleCreateUser = async (userData: UserFormData) => {
-    // Clean data using utility function
     const cleanUserData = cleanUserFormData(userData);
 
-    const result = await createOperation(
-      async () => {
-        const response = await fetch('https://trackademy.kz/api/User/create', {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-            'Authorization': `Bearer ${localStorage.getItem('authToken')}`,
-          },
-          body: JSON.stringify(cleanUserData),
-        });
-
-        if (!response.ok) {
-          const errorData = await response.json();
-          const error = new Error(errorData.error || errorData.message || 'Не удалось создать пользователя');
-          (error as Error & { status: number }).status = response.status;
-          throw error;
-        }
-
-        return response.json();
+    const response = await fetch('https://trackademy.kz/api/User/create', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${localStorage.getItem('authToken')}`,
       },
-      'пользователя'
-    );
+      body: JSON.stringify(cleanUserData),
+    });
 
-    // Reload data only on success
-    if (result.success) {
-      await loadStudents(currentPage, true);
-      userModal.closeModal();
+    if (!response.ok) {
+      // Throw so UniversalModal catches it and keeps the modal open
+      const errorData = await response.json().catch(() => ({}));
+      const message = errorData.error || errorData.message || errorData.title || `Не удалось создать пользователя (${response.status})`;
+      throw new Error(message);
     }
-    // If not successful, the error was already shown via toast
+
+    await loadStudents(currentPage, true);
+    showSuccess('Пользователь успешно создан');
   };
 
   const handleImportUsers = async (file: File): Promise<ImportResult> => {

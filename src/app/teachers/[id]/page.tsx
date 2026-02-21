@@ -17,7 +17,22 @@ import {
   UserGroupIcon,
   MapPinIcon,
   ChartBarIcon,
+  FunnelIcon,
 } from '@heroicons/react/24/outline';
+
+function toInputDate(date: Date): string {
+  return date.toISOString().slice(0, 10);
+}
+
+function getDefaultDateFrom(): string {
+  const d = new Date();
+  d.setDate(1);
+  return toInputDate(d);
+}
+
+function getDefaultDateTo(): string {
+  return toInputDate(new Date());
+}
 
 function getInitials(fullName: string): string {
   return fullName
@@ -58,6 +73,9 @@ export default function TeacherDetailPage() {
   const router = useRouter();
   const [teacherProfile, setTeacherProfile] = useState<TeacherProfile | null>(null);
   const [isLoading, setIsLoading] = useState(true);
+  const [isRefreshing, setIsRefreshing] = useState(false);
+  const [dateFrom, setDateFrom] = useState(getDefaultDateFrom);
+  const [dateTo, setDateTo] = useState(getDefaultDateTo);
 
   const teacherId = params.id as string;
 
@@ -67,17 +85,22 @@ export default function TeacherDetailPage() {
       return;
     }
     fetchTeacherProfile();
-  }, [teacherId]);
+  }, [teacherId, dateFrom, dateTo]);
 
   const fetchTeacherProfile = async () => {
     try {
-      setIsLoading(true);
-      const data = await AuthenticatedApiService.getTeacherProfile(teacherId);
+      if (!teacherProfile) {
+        setIsLoading(true);
+      } else {
+        setIsRefreshing(true);
+      }
+      const data = await AuthenticatedApiService.getTeacherProfile(teacherId, dateFrom, dateTo);
       setTeacherProfile(data);
     } catch {
       router.push('/users');
     } finally {
       setIsLoading(false);
+      setIsRefreshing(false);
     }
   };
 
@@ -113,6 +136,50 @@ export default function TeacherDetailPage() {
           <ArrowLeftIcon className="h-4 w-4" />
           Вернуться к пользователям
         </button>
+
+        {/* Date filter */}
+        <div className="bg-white dark:bg-gray-800 rounded-2xl border border-gray-200 dark:border-gray-700 shadow-sm px-5 py-4">
+          <div className="flex flex-wrap items-center gap-3">
+            <div className="flex items-center gap-2 text-sm font-medium text-gray-600 dark:text-gray-400">
+              <FunnelIcon className="h-4 w-4" />
+              Период расчёта
+              {isRefreshing && (
+                <svg className="animate-spin h-3.5 w-3.5 text-indigo-500" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                  <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
+                  <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v8z" />
+                </svg>
+              )}
+            </div>
+            <div className="flex flex-wrap items-center gap-3 ml-auto">
+              <div className="flex items-center gap-2">
+                <label className="text-xs text-gray-500 dark:text-gray-400 whitespace-nowrap">С</label>
+                <input
+                  type="date"
+                  value={dateFrom}
+                  max={dateTo}
+                  onChange={(e) => setDateFrom(e.target.value)}
+                  className="text-sm border border-gray-200 dark:border-gray-600 rounded-lg px-3 py-1.5 bg-gray-50 dark:bg-gray-700 text-gray-800 dark:text-gray-200 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent"
+                />
+              </div>
+              <div className="flex items-center gap-2">
+                <label className="text-xs text-gray-500 dark:text-gray-400 whitespace-nowrap">По</label>
+                <input
+                  type="date"
+                  value={dateTo}
+                  min={dateFrom}
+                  onChange={(e) => setDateTo(e.target.value)}
+                  className="text-sm border border-gray-200 dark:border-gray-600 rounded-lg px-3 py-1.5 bg-gray-50 dark:bg-gray-700 text-gray-800 dark:text-gray-200 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent"
+                />
+              </div>
+              <button
+                onClick={() => { setDateFrom(getDefaultDateFrom()); setDateTo(getDefaultDateTo()); }}
+                className="text-xs text-indigo-600 dark:text-indigo-400 hover:text-indigo-800 dark:hover:text-indigo-300 font-medium transition-colors whitespace-nowrap"
+              >
+                Текущий месяц
+              </button>
+            </div>
+          </div>
+        </div>
 
         {/* Hero card */}
         <div className="bg-white dark:bg-gray-800 rounded-2xl shadow-sm border border-gray-200 dark:border-gray-700 overflow-hidden">
@@ -160,7 +227,7 @@ export default function TeacherDetailPage() {
         </div>
 
         {/* Stats row */}
-        <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
+        <div className={`grid grid-cols-2 lg:grid-cols-4 gap-4 transition-opacity duration-200 ${isRefreshing ? 'opacity-50' : 'opacity-100'}`}>
           {/* Attendance rate */}
           <div className="bg-white dark:bg-gray-800 rounded-2xl border border-gray-200 dark:border-gray-700 shadow-sm p-5">
             <div className="flex items-center justify-between mb-3">
@@ -216,7 +283,7 @@ export default function TeacherDetailPage() {
         </div>
 
         {/* Main content grid */}
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+        <div className={`grid grid-cols-1 lg:grid-cols-3 gap-6 transition-opacity duration-200 ${isRefreshing ? 'opacity-50' : 'opacity-100'}`}>
 
           {/* Left: personal info + hours by group */}
           <div className="lg:col-span-1 space-y-6">

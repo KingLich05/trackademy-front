@@ -132,14 +132,15 @@ const UniversalModal = <T extends Record<string, unknown>>({
     }
 
     setIsSubmitting(true);
-    setServerError(null); // Очищаем предыдущую ошибку
+    setServerError(null);
+    let savedSuccessfully = false;
     try {
       if (mode === 'edit' && data && 'id' in data) {
         await onSave(formData, data.id as string);
       } else {
         await onSave(formData);
       }
-      handleClose();
+      savedSuccessfully = true;
     } catch (error) {
       // Извлекаем сообщение об ошибке для отображения в модалке
       let errorMessage = 'Произошла ошибка при выполнении операции';
@@ -151,18 +152,22 @@ const UniversalModal = <T extends Record<string, unknown>>({
           title?: string;
           message?: string;
         };
+        status?: number;
         message?: string;
       };
 
       if (apiError?.parsedError?.error) {
         errorMessage = apiError.parsedError.error;
+      } else if (apiError?.parsedError?.errors) {
+        const firstField = Object.values(apiError.parsedError.errors)[0];
+        errorMessage = Array.isArray(firstField) && firstField.length > 0 ? firstField[0] : errorMessage;
       } else if (apiError?.parsedError?.title) {
         errorMessage = apiError.parsedError.title;
       } else if (apiError?.parsedError?.message) {
         errorMessage = apiError.parsedError.message;
       } else if (apiError?.message) {
         const match = apiError.message.match(/HTTP error! status: \d+ - (.+)$/);
-        if (match && match[1]) {
+        if (match?.[1]) {
           errorMessage = match[1];
         } else if (!apiError.message.startsWith('HTTP error!')) {
           errorMessage = apiError.message;
@@ -172,6 +177,11 @@ const UniversalModal = <T extends Record<string, unknown>>({
       setServerError(errorMessage);
     } finally {
       setIsSubmitting(false);
+    }
+    // Close only on success — must be outside try/catch so errors above
+    // never accidentally reach handleClose()
+    if (savedSuccessfully) {
+      handleClose();
     }
   };
 
