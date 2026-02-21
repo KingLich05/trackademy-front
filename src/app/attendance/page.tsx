@@ -8,6 +8,7 @@ import { PageHeaderWithStats } from '@/components/ui/PageHeaderWithStats';
 import { DateRangePicker } from '@/components/ui/DateRangePicker';
 import { ExportAttendanceModal } from '@/components/ExportAttendanceModal';
 import { LessonDetailsModal } from '@/components/attendance/LessonDetailsModal';
+import { GroupDetailsModal } from '@/components/attendance/GroupDetailsModal';
 import { attendanceApi } from '@/services/AttendanceApiService';
 import { AttendanceRecord, AttendanceFilters, AttendanceStatus, getAttendanceStatusText, getAttendanceStatusColor, getAttendanceStatusIcon } from '@/types/Attendance';
 import { useApiToast } from '@/hooks/useApiToast';
@@ -132,6 +133,10 @@ export default function AttendancePage() {
   // Lesson details modal state
   const [lessonDetailsModalOpen, setLessonDetailsModalOpen] = useState(false);
   const [selectedLessonId, setSelectedLessonId] = useState<string>('');
+
+  // Group details modal state
+  const [groupDetailsModalOpen, setGroupDetailsModalOpen] = useState(false);
+  const [selectedGroupForDetails, setSelectedGroupForDetails] = useState<GroupStatsItem | null>(null);
 
   // Check authorization
   useEffect(() => {
@@ -755,7 +760,8 @@ export default function AttendancePage() {
                   groupStats.map((stat) => (
                     <div 
                       key={stat.groupId}
-                      className="bg-gray-50 dark:bg-gray-700 border border-gray-200 dark:border-gray-600 rounded-lg p-6 hover:shadow-lg hover:border-emerald-300 dark:hover:border-emerald-600 transition-all duration-200"
+                      onClick={() => { setSelectedGroupForDetails(stat); setGroupDetailsModalOpen(true); }}
+                      className="bg-gray-50 dark:bg-gray-700 border border-gray-200 dark:border-gray-600 rounded-lg p-6 hover:shadow-lg hover:border-emerald-300 dark:hover:border-emerald-600 transition-all duration-200 cursor-pointer"
                     >
                       <div className="grid grid-cols-1 lg:grid-cols-4 gap-6">
                         {/* Информация о группе и предмете */}
@@ -1213,6 +1219,16 @@ export default function AttendancePage() {
         onClose={() => setLessonDetailsModalOpen(false)}
         lessonId={selectedLessonId}
       />
+
+      {/* Group Details Modal */}
+      {selectedGroupForDetails && (
+        <GroupDetailsModal
+          isOpen={groupDetailsModalOpen}
+          onClose={() => { setGroupDetailsModalOpen(false); setSelectedGroupForDetails(null); }}
+          groupId={selectedGroupForDetails.groupId}
+          groupName={selectedGroupForDetails.groupName}
+        />
+      )}
     </div>
   );
 }
