@@ -80,11 +80,11 @@ interface StructuredError extends Error {
 
 export class AuthenticatedApiService {
     static async getTeacherProfile(id: string, dateFrom?: string, dateTo?: string): Promise<TeacherProfile> {
-      let url = `/User/teacher-profile/${id}`;
-      const params = [];
-      if (dateFrom) params.push(`datefrom=${encodeURIComponent(dateFrom)}`);
-      if (dateTo) params.push(`dateto=${encodeURIComponent(dateTo)}`);
-      if (params.length > 0) url += '?' + params.join('&');
+      const params = new URLSearchParams();
+      if (dateFrom) params.set('dateFrom', dateFrom);
+      if (dateTo) params.set('dateTo', dateTo);
+      const query = params.toString();
+      const url = query ? `/User/teacher-profile/${id}?${query}` : `/User/teacher-profile/${id}`;
       return this.get(url);
     }
   private static getAuthToken(): string | null {

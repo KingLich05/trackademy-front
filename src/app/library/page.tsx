@@ -4,12 +4,13 @@ import { useState, useEffect, useCallback } from 'react';
 import { useAuth } from '../../contexts/AuthContext';
 import { useToast } from '../../contexts/ToastContext';
 import { AuthenticatedApiService } from '../../services/AuthenticatedApiService';
-import { BookOpenIcon, ArrowDownTrayIcon, PencilIcon, TrashIcon } from '@heroicons/react/24/outline';
+import { BookOpenIcon, ArrowDownTrayIcon, PencilIcon, TrashIcon, EyeIcon } from '@heroicons/react/24/outline';
 import { LibraryMaterial } from '../../types/LibraryMaterial';
 import { PageHeaderWithStats } from '../../components/ui/PageHeaderWithStats';
 import { DeleteConfirmationModal } from '../../components/ui/DeleteConfirmationModal';
 import { BaseModal } from '../../components/ui/BaseModal';
 import { useDebounce } from '../../hooks/useDebounce';
+import { MaterialPreviewModal } from '../../components/ui/MaterialPreviewModal';
 
 const ALLOWED_EXTENSIONS = [
   '.pdf', '.doc', '.docx', '.txt', '.rtf',
@@ -38,6 +39,8 @@ export default function LibraryPage() {
   const [isEditModalOpen, setIsEditModalOpen] = useState(false);
   const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false);
   const [selectedMaterial, setSelectedMaterial] = useState<LibraryMaterial | null>(null);
+  const [isPreviewModalOpen, setIsPreviewModalOpen] = useState(false);
+  const [previewMaterial, setPreviewMaterial] = useState<LibraryMaterial | null>(null);
 
   const [uploadData, setUploadData] = useState({ title: '', description: '', file: null as File | null });
   const [editData, setEditData] = useState({ title: '', description: '' });
@@ -171,6 +174,11 @@ export default function LibraryPage() {
     }
   };
 
+  const handlePreview = (material: LibraryMaterial) => {
+    setPreviewMaterial(material);
+    setIsPreviewModalOpen(true);
+  };
+
   const handleDownload = async (material: LibraryMaterial) => {
     try {
       await AuthenticatedApiService.downloadLibraryMaterial(material.id, material.originalFileName);
@@ -296,6 +304,13 @@ export default function LibraryPage() {
                       </td>
                       <td className="px-3 py-3 text-right">
                         <div className="flex justify-end gap-1">
+                          <button
+                            onClick={() => handlePreview(material)}
+                            className="p-2 text-indigo-600 hover:text-indigo-800 dark:text-indigo-400 dark:hover:text-indigo-300 hover:bg-indigo-50 dark:hover:bg-indigo-900/20 rounded-lg transition-all"
+                            title="Просмотр"
+                          >
+                            <EyeIcon className="h-4 w-4" />
+                          </button>
                           <button
                             onClick={() => handleDownload(material)}
                             className="p-2 text-blue-600 hover:text-blue-800 dark:text-blue-400 dark:hover:text-blue-300 hover:bg-blue-50 dark:hover:bg-blue-900/20 rounded-lg transition-all"
@@ -487,6 +502,19 @@ export default function LibraryPage() {
         message={`Вы уверены, что хотите удалить материал "${selectedMaterial?.title}"? Это действие необратимо.`}
         isLoading={deleting}
       />
+
+      {previewMaterial && (
+        <MaterialPreviewModal
+          isOpen={isPreviewModalOpen}
+          onClose={() => {
+            setIsPreviewModalOpen(false);
+            setPreviewMaterial(null);
+          }}
+          material={previewMaterial}
+          onDownload={() => handleDownload(previewMaterial)}
+          fetchBlob={(materialId) => AuthenticatedApiService.getLibraryMaterialBlob(materialId)}
+        />
+      )}
     </div>
   );
 }

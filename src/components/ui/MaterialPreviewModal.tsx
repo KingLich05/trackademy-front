@@ -2,17 +2,25 @@
 
 import { useState, useEffect } from 'react';
 import { XMarkIcon, ArrowDownTrayIcon, DocumentTextIcon } from '@heroicons/react/24/outline';
-import { Material } from '../../types/Material';
-import { AuthenticatedApiService } from '../../services/AuthenticatedApiService';
+
+type PreviewableFile = {
+  id: string;
+  title: string;
+  description?: string | null;
+  originalFileName: string;
+  contentType: string;
+  fileSize: number;
+};
 
 interface MaterialPreviewModalProps {
   isOpen: boolean;
   onClose: () => void;
-  material: Material;
+  material: PreviewableFile;
   onDownload: () => void;
+  fetchBlob: (materialId: string) => Promise<Blob>;
 }
 
-export function MaterialPreviewModal({ isOpen, onClose, material, onDownload }: MaterialPreviewModalProps) {
+export function MaterialPreviewModal({ isOpen, onClose, material, onDownload, fetchBlob }: MaterialPreviewModalProps) {
   const [previewUrl, setPreviewUrl] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -36,7 +44,7 @@ export function MaterialPreviewModal({ isOpen, onClose, material, onDownload }: 
       setError(null);
       
       try {
-        const blob = await AuthenticatedApiService.getMaterialBlob(material.id);
+        const blob = await fetchBlob(material.id);
         const url = URL.createObjectURL(blob);
         setPreviewUrl(url);
 

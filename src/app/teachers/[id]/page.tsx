@@ -4,6 +4,7 @@ import { useState, useEffect } from 'react';
 import { useParams, useRouter } from 'next/navigation';
 import { AuthenticatedApiService, TeacherProfile } from '../../../services/AuthenticatedApiService';
 import { LoadingSpinner } from '../../../components/ui/LoadingSpinner';
+import { DateRangePicker } from '../../../components/ui/DateRangePicker';
 import {
   ArrowLeftIcon,
   PhoneIcon,
@@ -74,10 +75,25 @@ export default function TeacherDetailPage() {
   const [teacherProfile, setTeacherProfile] = useState<TeacherProfile | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [isRefreshing, setIsRefreshing] = useState(false);
-  const [dateFrom, setDateFrom] = useState(getDefaultDateFrom);
-  const [dateTo, setDateTo] = useState(getDefaultDateTo);
+  const [dateFrom, setDateFrom] = useState<string | undefined>(() => getDefaultDateFrom());
+  const [dateTo, setDateTo] = useState<string | undefined>(() => getDefaultDateTo());
 
   const teacherId = params.id as string;
+
+  const handleDateRangeChange = (start?: string, end?: string) => {
+    if (start === dateFrom && end === dateTo) {
+      return;
+    }
+    setDateFrom(start);
+    setDateTo(end);
+  };
+
+  const handleResetToCurrentMonth = () => {
+    const defaultFrom = getDefaultDateFrom();
+    const defaultTo = getDefaultDateTo();
+    setDateFrom(defaultFrom);
+    setDateTo(defaultTo);
+  };
 
   useEffect(() => {
     if (!teacherId) {
@@ -139,7 +155,7 @@ export default function TeacherDetailPage() {
 
         {/* Date filter */}
         <div className="bg-white dark:bg-gray-800 rounded-2xl border border-gray-200 dark:border-gray-700 shadow-sm px-5 py-4">
-          <div className="flex flex-wrap items-center gap-3">
+          <div className="flex flex-col gap-4 md:flex-row md:items-center">
             <div className="flex items-center gap-2 text-sm font-medium text-gray-600 dark:text-gray-400">
               <FunnelIcon className="h-4 w-4" />
               Период расчёта
@@ -150,29 +166,17 @@ export default function TeacherDetailPage() {
                 </svg>
               )}
             </div>
-            <div className="flex flex-wrap items-center gap-3 ml-auto">
-              <div className="flex items-center gap-2">
-                <label className="text-xs text-gray-500 dark:text-gray-400 whitespace-nowrap">С</label>
-                <input
-                  type="date"
-                  value={dateFrom}
-                  max={dateTo}
-                  onChange={(e) => setDateFrom(e.target.value)}
-                  className="text-sm border border-gray-200 dark:border-gray-600 rounded-lg px-3 py-1.5 bg-gray-50 dark:bg-gray-700 text-gray-800 dark:text-gray-200 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent"
-                />
-              </div>
-              <div className="flex items-center gap-2">
-                <label className="text-xs text-gray-500 dark:text-gray-400 whitespace-nowrap">По</label>
-                <input
-                  type="date"
-                  value={dateTo}
-                  min={dateFrom}
-                  onChange={(e) => setDateTo(e.target.value)}
-                  className="text-sm border border-gray-200 dark:border-gray-600 rounded-lg px-3 py-1.5 bg-gray-50 dark:bg-gray-700 text-gray-800 dark:text-gray-200 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent"
+            <div className="flex flex-col gap-3 md:flex-row md:items-center md:ml-auto w-full">
+              <div className="w-full md:min-w-[280px] md:max-w-md">
+                <DateRangePicker
+                  startDate={dateFrom}
+                  endDate={dateTo}
+                  onDateChange={handleDateRangeChange}
+                  placeholder="Выберите период"
                 />
               </div>
               <button
-                onClick={() => { setDateFrom(getDefaultDateFrom()); setDateTo(getDefaultDateTo()); }}
+                onClick={handleResetToCurrentMonth}
                 className="text-xs text-indigo-600 dark:text-indigo-400 hover:text-indigo-800 dark:hover:text-indigo-300 font-medium transition-colors whitespace-nowrap"
               >
                 Текущий месяц
