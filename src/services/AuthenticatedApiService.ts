@@ -768,6 +768,11 @@ export class AuthenticatedApiService {
     teacherId: string;
     fullName: string;
     completedLessonsCount: number;
+    groups: Array<{
+      groupId: string;
+      groupName: string;
+      totalHours: number;
+    }>;
   }>> {
     return this.post('/User/teacher-work-hours', {
       organizationId,
