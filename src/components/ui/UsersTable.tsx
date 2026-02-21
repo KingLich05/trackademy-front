@@ -331,14 +331,25 @@ export const UsersTable: React.FC<UsersTableProps> = ({
                 {isColumnVisible('actions') && currentUser && canManageUsers(currentUser.role) && (
                   <td className="px-3 py-3 whitespace-nowrap text-right text-sm font-medium">
                     <div className="flex justify-end space-x-2" onClick={(e) => e.stopPropagation()}>
-                      <Link
-                        href={`/students/${user.id}`}
-                        className="p-2 text-gray-600 hover:text-gray-800 dark:text-gray-400 dark:hover:text-gray-300 
-                                 hover:bg-gray-50 dark:hover:bg-gray-900/20 rounded-lg transition-all"
-                        title="Просмотр"
-                      >
-                        <EyeIcon className="h-4 w-4" />
-                      </Link>
+                      {user.role === 3 ? (
+                        <Link
+                          href={`/teachers/${user.id}`}
+                          className="p-2 text-gray-600 hover:text-gray-800 dark:text-gray-400 dark:hover:text-gray-300 
+                                   hover:bg-gray-50 dark:hover:bg-gray-900/20 rounded-lg transition-all"
+                          title="Просмотр"
+                        >
+                          <EyeIcon className="h-4 w-4" />
+                        </Link>
+                      ) : (
+                        <Link
+                          href={`/students/${user.id}`}
+                          className="p-2 text-gray-600 hover:text-gray-800 dark:text-gray-400 dark:hover:text-gray-300 
+                                   hover:bg-gray-50 dark:hover:bg-gray-900/20 rounded-lg transition-all"
+                          title="Просмотр"
+                        >
+                          <EyeIcon className="h-4 w-4" />
+                        </Link>
+                      )}
                       <button
                         onClick={() => onEdit(user)}
                         className="p-2 text-blue-600 hover:text-blue-800 dark:text-blue-400 dark:hover:text-blue-300 

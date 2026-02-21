@@ -2,8 +2,8 @@
 
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
-import { BuildingOfficeIcon, HomeModernIcon, HomeIcon, AcademicCapIcon, BookOpenIcon, UserGroupIcon, CalendarDaysIcon, CalendarIcon, ClipboardDocumentCheckIcon, CurrencyDollarIcon, ClipboardDocumentListIcon, ShoppingBagIcon, DocumentTextIcon, ChartBarIcon, FolderIcon, Bars3Icon, XMarkIcon } from '@heroicons/react/24/outline';
-import { BuildingOfficeIcon as BuildingOfficeIconSolid, HomeModernIcon as HomeModernIconSolid, HomeIcon as HomeIconSolid, AcademicCapIcon as AcademicCapIconSolid, BookOpenIcon as BookOpenIconSolid, UserGroupIcon as UserGroupIconSolid, CalendarDaysIcon as CalendarDaysIconSolid, CalendarIcon as CalendarIconSolid, ClipboardDocumentCheckIcon as ClipboardDocumentCheckIconSolid, CurrencyDollarIcon as CurrencyDollarIconSolid, ClipboardDocumentListIcon as ClipboardDocumentListIconSolid, ShoppingBagIcon as ShoppingBagIconSolid, DocumentTextIcon as DocumentTextIconSolid, ChartBarIcon as ChartBarIconSolid, FolderIcon as FolderIconSolid } from '@heroicons/react/24/solid';
+import { BuildingOfficeIcon, HomeModernIcon, HomeIcon, AcademicCapIcon, BookOpenIcon, UserGroupIcon, CalendarDaysIcon, CalendarIcon, ClipboardDocumentCheckIcon, CurrencyDollarIcon, ClipboardDocumentListIcon, ShoppingBagIcon, DocumentTextIcon, ChartBarIcon, FolderIcon, ArchiveBoxIcon, Bars3Icon, XMarkIcon } from '@heroicons/react/24/outline';
+import { BuildingOfficeIcon as BuildingOfficeIconSolid, HomeModernIcon as HomeModernIconSolid, HomeIcon as HomeIconSolid, AcademicCapIcon as AcademicCapIconSolid, BookOpenIcon as BookOpenIconSolid, UserGroupIcon as UserGroupIconSolid, CalendarDaysIcon as CalendarDaysIconSolid, CalendarIcon as CalendarIconSolid, ClipboardDocumentCheckIcon as ClipboardDocumentCheckIconSolid, CurrencyDollarIcon as CurrencyDollarIconSolid, ClipboardDocumentListIcon as ClipboardDocumentListIconSolid, ShoppingBagIcon as ShoppingBagIconSolid, DocumentTextIcon as DocumentTextIconSolid, ChartBarIcon as ChartBarIconSolid, FolderIcon as FolderIconSolid, ArchiveBoxIcon as ArchiveBoxIconSolid } from '@heroicons/react/24/solid';
 import { useAuth } from '../contexts/AuthContext';
 import { useState } from 'react';
 import RegisterModal from './RegisterModal';
@@ -63,6 +63,7 @@ const Sidebar: React.FC = () => {
     { name: 'Посещаемость', href: '/attendance', icon: ClipboardDocumentCheckIcon, activeIcon: ClipboardDocumentCheckIconSolid, requireAuth: true, requireOwner: false, requireAdmin: false, requireStudent: false, hideForStudentTeacher: false, hideForStudent: true },
     { name: 'Домашнее задание', href: isStudent ? '/my-homework' : '/homework', icon: ClipboardDocumentListIcon, activeIcon: ClipboardDocumentListIconSolid, requireAuth: true, requireOwner: false, requireAdmin: false, requireStudent: false, hideForStudentTeacher: false, hideForAdmin: true },
     { name: 'Учебные материалы', href: '/materials', icon: FolderIcon, activeIcon: FolderIconSolid, requireAuth: true, requireOwner: false, requireAdmin: false, requireStudent: false, hideForStudentTeacher: false },
+    { name: 'Библиотека', href: '/library', icon: ArchiveBoxIcon, activeIcon: ArchiveBoxIconSolid, requireAuth: true, requireOwner: false, requireAdmin: false, requireStudent: false, hideForStudentTeacher: false },
     { name: 'Платежи', href: '/payments-grouped', icon: CurrencyDollarIcon, activeIcon: CurrencyDollarIconSolid, requireAuth: true, requireOwner: false, requireAdmin: true, requireStudent: false, hideForStudentTeacher: true },
     { name: 'Отчеты', href: '/reports', icon: ChartBarIcon, activeIcon: ChartBarIconSolid, requireAuth: true, requireOwner: false, requireAdmin: true, requireStudent: false, hideForStudentTeacher: true },
   ];

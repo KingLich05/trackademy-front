@@ -31,6 +31,7 @@ export interface UserFormData {
   organizationId?: string;
   isTrial: boolean;
   groupIds?: string[];
+  comment?: string;
 }
 
 // Типы для импорта пользователей

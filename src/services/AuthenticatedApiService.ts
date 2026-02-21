@@ -2,6 +2,37 @@
  * Authenticated API service that includes JWT token in requests
  */
 import { User, UserFormData } from '../types/User';
+// TeacherProfile type (можно вынести в types/TeacherProfile.ts)
+export type TeacherProfile = {
+  id: string;
+  login: string;
+  fullName: string;
+  phone: string;
+  createdAt: string;
+  isArchived: boolean;
+  role: string;
+  organizationName: string;
+  birthday: string;
+  attendanceRate: number;
+  totalWorkHours: number;
+  completedLessons: number;
+  cancelledLessons: number;
+  workHoursForGroups: Array<{
+    groupId: string;
+    groupName: string;
+    workHours: number;
+  }>;
+  upcomingLessons: Array<{
+    lessonId: string;
+    date: string;
+    startTime: string;
+    endTime: string;
+    groupName: string;
+    roomName: string;
+    subjectName: string;
+    studentsNumber: number;
+  }>;
+};
 import { Organization, OrganizationDetail, OrganizationFormData } from '../types/Organization';
 import { Room, RoomFormData } from '../types/Room';
 import { Subject, SubjectFormData } from '../types/Subject';
@@ -14,6 +45,7 @@ import { Material, MaterialsResponse, MaterialEditData } from '../types/Material
 import { Document, DocumentUploadData } from '../types/Document';
 import { StudentFlag, CreateStudentFlagRequest, UpdateStudentFlagRequest } from '../types/StudentFlag';
 import { SetStudentStatusRequest, SetStudentFlagRequest, RemoveStudentFlagRequest } from '../types/StudentCrm';
+import { LibraryMaterial, LibraryMaterialsResponse, LibraryMaterialEditData } from '../types/LibraryMaterial';
 
 interface ApiResponse<T> {
   success: boolean;
@@ -47,6 +79,14 @@ interface StructuredError extends Error {
 }
 
 export class AuthenticatedApiService {
+    static async getTeacherProfile(id: string, dateFrom?: string, dateTo?: string): Promise<TeacherProfile> {
+      let url = `/User/teacher-profile/${id}`;
+      const params = [];
+      if (dateFrom) params.push(`datefrom=${encodeURIComponent(dateFrom)}`);
+      if (dateTo) params.push(`dateto=${encodeURIComponent(dateTo)}`);
+      if (params.length > 0) url += '?' + params.join('&');
+      return this.get(url);
+    }
   private static getAuthToken(): string | null {
     return localStorage.getItem('authToken');
   }
@@ -606,15 +646,14 @@ export class AuthenticatedApiService {
 
   static async createAssignment(data: AssignmentFormData): Promise<Assignment> {
     if (data.attachmentFile) {
-      // Если есть файл, используем FormData
+      // Если есть файл, используем FormData и новый эндпоинт
       const formData = new FormData();
       formData.append('Description', data.description);
       formData.append('GroupId', data.groupId);
       formData.append('AssignedDate', data.assignedDate);
       formData.append('DueDate', data.dueDate);
       formData.append('attachmentFile', data.attachmentFile);
-      
-      return this.postFormData('/Assignment/create', formData);
+      return this.postFormData('/Assignment/create-with-file', formData);
     } else {
       // Без файла - обычный JSON
       return this.post('/Assignment/create', {
@@ -840,6 +879,75 @@ export class AuthenticatedApiService {
       throw new Error('Failed to load material');
     }
 
+    return response.blob();
+  }
+
+  // Library Materials methods
+  static async getLibraryMaterials(
+    pageNumber: number = 1,
+    pageSize: number = 20,
+    searchTitle?: string,
+    sortByDateDescending: boolean = true
+  ): Promise<LibraryMaterialsResponse> {
+    const params = new URLSearchParams({
+      pageNumber: pageNumber.toString(),
+      pageSize: pageSize.toString(),
+      sortByDateDescending: sortByDateDescending.toString()
+    });
+    if (searchTitle) params.append('searchTitle', searchTitle);
+    return this.get(`/library-materials?${params.toString()}`);
+  }
+
+  static async uploadLibraryMaterial(formData: FormData): Promise<LibraryMaterial> {
+    const token = this.getAuthToken();
+    if (!token) throw new Error('No authentication token found');
+    const response = await fetch('https://trackademy.kz/api/library-materials', {
+      method: 'POST',
+      headers: { 'Authorization': `Bearer ${token}` },
+      body: formData,
+    });
+    if (!response.ok) {
+      const error = await response.text();
+      throw new Error(error || 'Failed to upload library material');
+    }
+    return response.json();
+  }
+
+  static async updateLibraryMaterial(materialId: string, data: LibraryMaterialEditData): Promise<LibraryMaterial> {
+    return this.put(`/library-materials/${materialId}`, data);
+  }
+
+  static async deleteLibraryMaterial(materialId: string): Promise<void> {
+    return this.delete(`/library-materials/${materialId}`);
+  }
+
+  static async downloadLibraryMaterial(materialId: string, fileName: string): Promise<void> {
+    const token = this.getAuthToken();
+    if (!token) throw new Error('No authentication token found');
+    const response = await fetch(`https://trackademy.kz/api/library-materials/${materialId}/download`, {
+      method: 'GET',
+      headers: { 'Authorization': `Bearer ${token}` },
+    });
+    if (!response.ok) throw new Error('Failed to download library material');
+    const blob = await response.blob();
+    const url = window.URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = fileName;
+    document.body.appendChild(a);
+    a.click();
+    window.URL.revokeObjectURL(url);
+    document.body.removeChild(a);
+  }
+
+  static async getLibraryMaterialBlob(materialId: string): Promise<Blob> {
+    const token = this.getAuthToken();
+    if (!token) throw new Error('No authentication token found');
+    const response = await fetch(`https://trackademy.kz/api/library-materials/${materialId}/download`, {
+      method: 'GET',
+      headers: { 'Authorization': `Bearer ${token}` },
+    });
+    if (!response.ok) throw new Error('Failed to load library material');
     return response.blob();
   }
 

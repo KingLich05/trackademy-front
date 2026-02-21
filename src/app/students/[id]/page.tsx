@@ -440,6 +440,9 @@ export default function StudentDetailPage() {
   const handleSaveProfile = async () => {
     setEditingProfile(true);
     try {
+      // Типизация для isTrial, если поле есть в респонсе
+      type StudentProfileWithTrial = StudentProfile & { isTrial?: boolean };
+      const isTrial = (studentProfile as unknown as StudentProfileWithTrial)?.isTrial ?? false;
       await AuthenticatedApiService.putUpdateUser(userId, {
         fullName: profileData.fullName,
         login: profileData.login,
@@ -447,7 +450,8 @@ export default function StudentDetailPage() {
         parentPhone: profileData.parentPhone || null,
         birthday: profileData.birthDate || null,
         role: typeof studentProfile?.role === 'number' ? studentProfile.role : 1,
-        isTrial: false
+        isTrial,
+        comment: profileData.comment || ''
       });
       showSuccess('Профиль студента успешно обновлен');
       setShowEditProfileModal(false);
