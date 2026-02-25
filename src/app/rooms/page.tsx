@@ -5,6 +5,7 @@ import { useAuth } from '../../contexts/AuthContext';
 import { AuthenticatedApiService } from '../../services/AuthenticatedApiService';
 import { HomeModernIcon, PencilIcon, TrashIcon, PlusIcon } from '@heroicons/react/24/outline';
 import { Room, RoomFormData } from '../../types/Room';
+import { AlreadyHandledError } from '../../utils/apiHelpers';
 import UniversalModal from '../../components/ui/UniversalModal';
 import { useUniversalModal } from '../../hooks/useUniversalModal';
 import { DeleteConfirmationModal } from '../../components/ui/DeleteConfirmationModal';
@@ -148,11 +149,12 @@ export default function RoomsPage() {
       'кабинет'
     );
     
-    // Always reload data and close modal regardless of result
     if (result.success) {
       await loadRooms(currentPage, true);
+      roomModal.closeModal();
+    } else {
+      throw new AlreadyHandledError();
     }
-    roomModal.closeModal();
   };
 
   const handleEdit = (id: string) => {
@@ -176,12 +178,13 @@ export default function RoomsPage() {
       'кабинет'
     );
     
-    // Always reload data and close modal regardless of result
     if (result.success) {
       await loadRooms(currentPage, true);
+      setEditingRoomId(null);
+      roomModal.closeModal();
+    } else {
+      throw new AlreadyHandledError();
     }
-    setEditingRoomId(null);
-    roomModal.closeModal();
   };
 
   const handleDelete = (id: string) => {

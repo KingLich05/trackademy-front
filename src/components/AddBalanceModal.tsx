@@ -30,6 +30,15 @@ export const AddBalanceModal: React.FC<AddBalanceModalProps> = ({
   const [amount, setAmount] = useState('');
   const [errors, setErrors] = useState<{ amount?: string }>({});
 
+  // Auto-fill with discounted price (or base price) when modal opens
+  React.useEffect(() => {
+    if (isOpen) {
+      const autoAmount = discountedPrice ?? subjectPrice;
+      setAmount(autoAmount ? String(autoAmount) : '');
+      setErrors({});
+    }
+  }, [isOpen, discountedPrice, subjectPrice]);
+
   const handleClose = () => {
     setAmount('');
     setErrors({});

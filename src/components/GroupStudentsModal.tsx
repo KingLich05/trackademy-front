@@ -462,6 +462,17 @@ export const GroupStudentsModal: React.FC<GroupStudentsModalProps> = ({
         onConfirm={handleAddBalance}
         studentName={selectedStudent?.student.name || ''}
         subjectPrice={selectedStudent?.subjectPrice}
+        discountType={selectedStudent?.discountType}
+        discountValue={selectedStudent?.discountValue}
+        discountedPrice={(() => {
+          const price = selectedStudent?.subjectPrice;
+          const dt = selectedStudent?.discountType;
+          const dv = selectedStudent?.discountValue;
+          if (!price || !dv) return price;
+          if (dt === 1) return Math.max(0, price - price * (dv / 100));
+          if (dt === 2) return Math.max(0, price - dv);
+          return price;
+        })()}
         loading={addingBalance}
       />
       

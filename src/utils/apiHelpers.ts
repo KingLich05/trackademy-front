@@ -1,4 +1,16 @@
 // Utility functions for API error handling and toast notifications
+
+/**
+ * Throw this when an API error was already shown to the user via toast.
+ * UniversalModal catches this and stays open without displaying an additional
+ * inline server-error message, preventing duplicate error display.
+ */
+export class AlreadyHandledError extends Error {
+  constructor() {
+    super('ALREADY_HANDLED');
+    this.name = 'AlreadyHandledError';
+  }
+}
 import { UserFormData } from '../types/User';
 
 export const handleApiError = async (response: Response): Promise<never> => {

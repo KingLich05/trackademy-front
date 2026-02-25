@@ -2,6 +2,7 @@
 
 import React, { useState, useEffect } from 'react';
 import { Modal } from './Modal';
+import { AlreadyHandledError } from '../../utils/apiHelpers';
 
 interface UniversalModalProps<T = Record<string, unknown>> {
   isOpen: boolean;
@@ -142,6 +143,11 @@ const UniversalModal = <T extends Record<string, unknown>>({
       }
       savedSuccessfully = true;
     } catch (error) {
+      // If the error was already shown via toast, just keep the modal open silently
+      if (error instanceof AlreadyHandledError) {
+        setIsSubmitting(false);
+        return;
+      }
       // Извлекаем сообщение об ошибке для отображения в модалке
       let errorMessage = 'Произошла ошибка при выполнении операции';
       
