@@ -61,6 +61,12 @@ export interface StudentRecentGrade {
   gradedAt: string;
 }
 
+export interface StudyLoadItem {
+  day: string;
+  lessonCount: number;
+  studyHours: number;
+}
+
 export interface StudentDashboardSummary {
   averageGrade: number;
   attendanceRate: number;
@@ -68,6 +74,7 @@ export interface StudentDashboardSummary {
   activeAssignmentsList: StudentActiveAssignment[];
   todaySchedule: StudentDashboardLesson[];
   recentGrades: StudentRecentGrade[];
+  studyLoad: StudyLoadItem[];
 }
 
 export interface DashboardFilters {

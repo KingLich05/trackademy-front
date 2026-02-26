@@ -730,6 +730,69 @@ export default function Dashboard() {
                 </div>
               </div>
             )}
+            {/* Study Load */}
+            {studentSummary.studyLoad && studentSummary.studyLoad.length > 0 && (
+              <div className="bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700 p-6">
+                <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-5 flex items-center">
+                  <CalendarDaysIcon className="h-6 w-6 mr-2 text-indigo-500" />
+                  Учебная нагрузка по дням
+                </h3>
+                {(() => {
+                  const maxLessons = Math.max(...studentSummary.studyLoad.map(d => d.lessonCount), 1);
+                  const palette = [
+                    { bg: 'bg-indigo-500', light: 'bg-indigo-50 dark:bg-indigo-900/30', border: 'border-indigo-200 dark:border-indigo-800', text: 'text-indigo-600 dark:text-indigo-400' },
+                    { bg: 'bg-violet-500', light: 'bg-violet-50 dark:bg-violet-900/30', border: 'border-violet-200 dark:border-violet-800', text: 'text-violet-600 dark:text-violet-400' },
+                    { bg: 'bg-blue-500',   light: 'bg-blue-50 dark:bg-blue-900/30',   border: 'border-blue-200 dark:border-blue-800',   text: 'text-blue-600 dark:text-blue-400'   },
+                    { bg: 'bg-cyan-500',   light: 'bg-cyan-50 dark:bg-cyan-900/30',   border: 'border-cyan-200 dark:border-cyan-800',   text: 'text-cyan-600 dark:text-cyan-400'   },
+                    { bg: 'bg-teal-500',   light: 'bg-teal-50 dark:bg-teal-900/30',   border: 'border-teal-200 dark:border-teal-800',   text: 'text-teal-600 dark:text-teal-400'   },
+                    { bg: 'bg-emerald-500',light: 'bg-emerald-50 dark:bg-emerald-900/30', border: 'border-emerald-200 dark:border-emerald-800', text: 'text-emerald-600 dark:text-emerald-400' },
+                    { bg: 'bg-sky-500',    light: 'bg-sky-50 dark:bg-sky-900/30',    border: 'border-sky-200 dark:border-sky-800',    text: 'text-sky-600 dark:text-sky-400'    },
+                  ];
+                  return (
+                    <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-7 gap-3">
+                      {studentSummary.studyLoad.map((item, index) => {
+                        const c = palette[index % palette.length];
+                        const pct = Math.round((item.lessonCount / maxLessons) * 100);
+                        return (
+                          <div
+                            key={index}
+                            className={`relative flex flex-col items-center gap-2 p-4 rounded-xl border ${c.light} ${c.border}`}
+                          >
+                            {/* Day name */}
+                            <span className={`text-xs font-semibold uppercase tracking-wide ${c.text}`}>
+                              {item.day}
+                            </span>
+
+                            {/* Lesson count bubble */}
+                            <div className={`w-12 h-12 rounded-full flex items-center justify-center ${c.bg} shadow-md`}>
+                              <span className="text-xl font-bold text-white leading-none">{item.lessonCount}</span>
+                            </div>
+
+                            {/* Label */}
+                            <span className="text-xs text-gray-500 dark:text-gray-400">
+                              {item.lessonCount === 1 ? 'урок' : item.lessonCount < 5 ? 'урока' : 'уроков'}
+                            </span>
+
+                            {/* Hours */}
+                            <div className={`text-sm font-semibold ${c.text}`}>
+                              {item.studyHours} ак.ч.
+                            </div>
+
+                            {/* Mini fill bar */}
+                            <div className="w-full h-1.5 rounded-full bg-gray-200 dark:bg-gray-600 overflow-hidden">
+                              <div
+                                className={`h-full rounded-full ${c.bg} transition-all duration-500`}
+                                style={{ width: `${pct}%` }}
+                              />
+                            </div>
+                          </div>
+                        );
+                      })}
+                    </div>
+                  );
+                })()}
+              </div>
+            )}
           </>
         ) : isTeacher && teacherSummary ? (
           /* Teacher Dashboard */

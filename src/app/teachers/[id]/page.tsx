@@ -69,6 +69,16 @@ function getAttendanceBgBar(rate: number): string {
   return 'bg-red-500';
 }
 
+function translateRole(role: string): string {
+  switch (role) {
+    case 'Teacher': return 'Преподаватель';
+    case 'Student': return 'Студент';
+    case 'Administrator': return 'Администратор';
+    case 'Owner': return 'Владелец';
+    default: return role;
+  }
+}
+
 export default function TeacherDetailPage() {
   const params = useParams();
   const router = useRouter();
@@ -146,7 +156,7 @@ export default function TeacherDetailPage() {
 
         {/* Back button */}
         <button
-          onClick={() => router.push('/users')}
+          onClick={() => router.push('/students')}
           className="flex items-center gap-2 text-gray-500 hover:text-gray-800 dark:text-gray-400 dark:hover:text-gray-200 transition-colors text-sm font-medium"
         >
           <ArrowLeftIcon className="h-4 w-4" />
@@ -196,7 +206,7 @@ export default function TeacherDetailPage() {
               </span>
             </div>
             {/* Name & meta */}
-            <div className="flex-1 min-w-0 pb-1">
+            <div className="flex-1 min-w-0 pb-1 sm:pt-14">
               <div className="flex flex-wrap items-center gap-2 mb-1">
                 <h1 className="text-xl font-bold text-gray-900 dark:text-white truncate">
                   {teacherProfile.fullName}
@@ -310,7 +320,7 @@ export default function TeacherDetailPage() {
                   <AcademicCapIcon className="h-4 w-4 text-gray-400 mt-0.5 flex-shrink-0" />
                   <div>
                     <p className="text-xs text-gray-400">Роль</p>
-                    <p className="text-sm font-medium text-gray-800 dark:text-gray-200">{teacherProfile.role}</p>
+                    <p className="text-sm font-medium text-gray-800 dark:text-gray-200">{translateRole(teacherProfile.role)}</p>
                   </div>
                 </li>
                 <li className="flex items-start gap-3">
