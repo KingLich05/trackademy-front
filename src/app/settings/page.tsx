@@ -7,7 +7,8 @@ import { useToast } from '../../contexts/ToastContext';
 import { AuthenticatedApiService } from '../../services/AuthenticatedApiService';
 import { StudentFlag, CreateStudentFlagRequest } from '../../types/StudentFlag';
 import { OrganizationDetail } from '../../types/Organization';
-import { CogIcon, BuildingOfficeIcon, ChevronRightIcon, FlagIcon, PlusIcon, PencilIcon, TrashIcon } from '@heroicons/react/24/outline';
+import { CogIcon, BuildingOfficeIcon, ChevronRightIcon, FlagIcon, PlusIcon, PencilIcon, TrashIcon, SparklesIcon } from '@heroicons/react/24/outline';
+import { RewardRuleDto, RewardEventType, CreateRewardRuleRequest, UpdateRewardRuleRequest } from '../../types/Market';
 import { BaseModal } from '../../components/ui/BaseModal';
 
 export default function SettingsPage() {
@@ -23,6 +24,14 @@ export default function SettingsPage() {
   const [flagName, setFlagName] = useState('');
   const [organizationData, setOrganizationData] = useState<OrganizationDetail | null>(null);
   const [isLoadingOrganization, setIsLoadingOrganization] = useState(false);
+
+  // Reward Rules state
+  const [rewardRules, setRewardRules] = useState<RewardRuleDto[]>([]);
+  const [isLoadingRules, setIsLoadingRules] = useState(false);
+  const [showCreateRuleModal, setShowCreateRuleModal] = useState(false);
+  const [showEditRuleModal, setShowEditRuleModal] = useState(false);
+  const [editingRule, setEditingRule] = useState<RewardRuleDto | null>(null);
+  const [ruleForm, setRuleForm] = useState({ name: '', eventType: RewardEventType.AttendanceMarked as RewardEventType, coinAmount: 5, minScore: '', isActive: true });
 
   useEffect(() => {
     if (!isAuthenticated) {
@@ -40,6 +49,8 @@ export default function SettingsPage() {
       loadStudentFlags();
     } else if (activeTab === 'organization') {
       loadOrganizationData();
+    } else if (activeTab === 'reward-rules') {
+      loadRewardRules();
     }
   }, [isAuthenticated, user, router, activeTab]);
 
@@ -129,6 +140,98 @@ export default function SettingsPage() {
     }
   };
 
+  const loadRewardRules = async () => {
+    const orgId = user?.organizationId || localStorage.getItem('userOrganizationId') || '';
+    if (!orgId) return;
+    try {
+      setIsLoadingRules(true);
+      const rules = await AuthenticatedApiService.getRewardRules(orgId);
+      setRewardRules(rules);
+    } catch (error) {
+      console.error('Error loading reward rules:', error);
+      showError('Ошибка при загрузке правил начисления');
+    } finally {
+      setIsLoadingRules(false);
+    }
+  };
+
+  const handleCreateRule = async () => {
+    const orgId = user?.organizationId || localStorage.getItem('userOrganizationId') || '';
+    if (!ruleForm.name.trim() || !ruleForm.coinAmount) { showError('Заполните обязательные поля'); return; }
+    try {
+      const minScore = ruleForm.minScore !== '' ? Number(ruleForm.minScore) : null;
+      await AuthenticatedApiService.createRewardRule({
+        organizationId: orgId,
+        name: ruleForm.name.trim(),
+        eventType: Number(ruleForm.eventType) as RewardEventType,
+        coinAmount: Number(ruleForm.coinAmount),
+        minScore,
+      });
+      showSuccess('Правило создано');
+      setShowCreateRuleModal(false);
+      setRuleForm({ name: '', eventType: RewardEventType.AttendanceMarked, coinAmount: 5, minScore: '', isActive: true });
+      loadRewardRules();
+    } catch (error) {
+      console.error('Error creating rule:', error);
+      showError('Ошибка при создании правила');
+    }
+  };
+
+  const handleEditRule = async () => {
+    if (!editingRule || !ruleForm.name.trim()) { showError('Заполните обязательные поля'); return; }
+    try {
+      const minScore = ruleForm.minScore !== '' ? Number(ruleForm.minScore) : null;
+      await AuthenticatedApiService.updateRewardRule(editingRule.id, {
+        name: ruleForm.name.trim(),
+        coinAmount: Number(ruleForm.coinAmount),
+        minScore,
+        isActive: ruleForm.isActive,
+      });
+      showSuccess('Правило обновлено');
+      setShowEditRuleModal(false);
+      setEditingRule(null);
+      setRuleForm({ name: '', eventType: RewardEventType.AttendanceMarked, coinAmount: 5, minScore: '', isActive: true });
+      loadRewardRules();
+    } catch (error) {
+      console.error('Error updating rule:', error);
+      showError('Ошибка при обновлении правила');
+    }
+  };
+
+  const handleDeleteRule = async (rule: RewardRuleDto) => {
+    if (!confirm(`Удалить правило "${rule.name}"?`)) return;
+    try {
+      await AuthenticatedApiService.deleteRewardRule(rule.id);
+      showSuccess('Правило удалено');
+      loadRewardRules();
+    } catch (error) {
+      console.error('Error deleting rule:', error);
+      showError('Ошибка при удалении правила');
+    }
+  };
+
+  const openEditRuleModal = (rule: RewardRuleDto) => {
+    setEditingRule(rule);
+    setRuleForm({
+      name: rule.name,
+      eventType: rule.eventType,
+      coinAmount: rule.coinAmount,
+      minScore: rule.minScore !== null ? String(rule.minScore) : '',
+      isActive: rule.isActive,
+    });
+    setShowEditRuleModal(true);
+  };
+
+  function eventLabel(t: RewardEventType) {
+    switch (t) {
+      case RewardEventType.AttendanceMarked: return 'Посещение урока';
+      case RewardEventType.ScoreReceived: return 'Получение оценки';
+      case RewardEventType.SubmissionCompleted: return 'Сдача задания';
+      case RewardEventType.BonusManual: return 'Ручное начисление';
+      default: return 'Неизвестно';
+    }
+  }
+
   const openEditModal = (flag: StudentFlag) => {
     setEditingFlag(flag);
     setFlagName(flag.name);
@@ -153,6 +256,12 @@ export default function SettingsPage() {
       label: 'Флаги студентов',
       icon: FlagIcon,
       description: 'Управление флагами и метками'
+    },
+    {
+      id: 'reward-rules',
+      label: 'Правила маркета',
+      icon: SparklesIcon,
+      description: 'Начисление монет за действия'
     }
   ];
 
@@ -493,6 +602,91 @@ export default function SettingsPage() {
                 </div>
               )}
 
+              {activeTab === 'reward-rules' && (
+                <div className="p-6">
+                  <div className="mb-6">
+                    <div className="flex items-center justify-between">
+                      <div>
+                        <h3 className="text-xl font-semibold text-gray-900 dark:text-white mb-2">
+                          Правила маркета
+                        </h3>
+                        <p className="text-gray-600 dark:text-gray-400">
+                          Автоматическое начисление монет студентам за действия в системе
+                        </p>
+                      </div>
+                      <button
+                        onClick={() => {
+                          setRuleForm({ name: '', eventType: RewardEventType.AttendanceMarked, coinAmount: 5, minScore: '', isActive: true });
+                          setShowCreateRuleModal(true);
+                        }}
+                        className="flex items-center gap-2 px-4 py-2 bg-amber-500 text-white rounded-lg hover:bg-amber-600 transition-colors"
+                      >
+                        <PlusIcon className="w-4 h-4" />
+                        Добавить правило
+                      </button>
+                    </div>
+                  </div>
+
+                  <div className="border border-gray-200 dark:border-gray-700 rounded-lg">
+                    <div className="p-4 border-b border-gray-200 dark:border-gray-700">
+                      <h4 className="font-medium text-gray-900 dark:text-white">
+                        Активные правила ({rewardRules.length})
+                      </h4>
+                    </div>
+                    {isLoadingRules ? (
+                      <div className="p-8 text-center">
+                        <div className="inline-block animate-spin rounded-full h-6 w-6 border-b-2 border-amber-500"></div>
+                        <p className="text-gray-600 dark:text-gray-400 mt-2">Загрузка правил...</p>
+                      </div>
+                    ) : rewardRules.length > 0 ? (
+                      <div className="divide-y divide-gray-200 dark:divide-gray-700">
+                        {rewardRules.map((rule) => (
+                          <div key={rule.id} className="p-4 flex items-center justify-between">
+                            <div className="flex-1 min-w-0">
+                              <div className="flex items-center gap-2 mb-0.5">
+                                <h5 className="font-medium text-gray-900 dark:text-white">{rule.name}</h5>
+                                {!rule.isActive && (
+                                  <span className="text-xs px-1.5 py-0.5 bg-gray-100 dark:bg-gray-700 text-gray-500 dark:text-gray-400 rounded">Отключено</span>
+                                )}
+                              </div>
+                              <div className="flex items-center gap-3 text-sm text-gray-600 dark:text-gray-400">
+                                <span>{eventLabel(rule.eventType)}</span>
+                                {rule.minScore !== null && <span>Мин. оценка: {rule.minScore}</span>}
+                              </div>
+                            </div>
+                            <div className="flex items-center gap-3 shrink-0">
+                              <span className="flex items-center gap-1 text-amber-600 dark:text-amber-400 font-bold text-sm">
+                                <SparklesIcon className="w-4 h-4" />+{rule.coinAmount}
+                              </span>
+                              <button
+                                onClick={() => openEditRuleModal(rule)}
+                                className="text-gray-400 hover:text-blue-600 dark:hover:text-blue-400 transition-colors"
+                              >
+                                <PencilIcon className="w-4 h-4" />
+                              </button>
+                              <button
+                                onClick={() => handleDeleteRule(rule)}
+                                className="text-gray-400 hover:text-red-600 dark:hover:text-red-400 transition-colors"
+                              >
+                                <TrashIcon className="w-4 h-4" />
+                              </button>
+                            </div>
+                          </div>
+                        ))}
+                      </div>
+                    ) : (
+                      <div className="p-8 text-center">
+                        <SparklesIcon className="w-12 h-12 text-gray-400 mx-auto mb-3" />
+                        <p className="text-gray-600 dark:text-gray-400">Правил пока нет</p>
+                        <p className="text-sm text-gray-500 dark:text-gray-500 mt-1">
+                          Создайте первое правило начисления монет
+                        </p>
+                      </div>
+                    )}
+                  </div>
+                </div>
+              )}
+
               {/* Кнопки сохранения */}
               <div className="px-6 py-4 bg-gray-50 dark:bg-gray-800/50 border-t border-gray-200 dark:border-gray-700 rounded-b-lg">
                 <div className="flex justify-end gap-3">
@@ -594,6 +788,178 @@ export default function SettingsPage() {
               onClick={handleEditFlag}
               disabled={!flagName.trim()}
               className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+            >
+              Сохранить изменения
+            </button>
+          </div>
+        </div>
+      </BaseModal>
+
+      {/* Modal для создания правила маркета */}
+      <BaseModal
+        isOpen={showCreateRuleModal}
+        onClose={() => {
+          setShowCreateRuleModal(false);
+          setRuleForm({ name: '', eventType: RewardEventType.AttendanceMarked, coinAmount: 5, minScore: '', isActive: true });
+        }}
+        title="Создать правило начисления монет"
+      >
+        <div className="space-y-4">
+          <div>
+            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+              Название <span className="text-red-500">*</span>
+            </label>
+            <input
+              type="text"
+              value={ruleForm.name}
+              onChange={e => setRuleForm(prev => ({ ...prev, name: e.target.value }))}
+              placeholder="Например: Посещение занятия"
+              className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-amber-500 focus:border-amber-500"
+              autoFocus
+            />
+          </div>
+          <div>
+            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+              Событие <span className="text-red-500">*</span>
+            </label>
+            <select
+              value={ruleForm.eventType}
+              onChange={e => setRuleForm(prev => ({ ...prev, eventType: Number(e.target.value) as RewardEventType }))}
+              className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-amber-500 focus:border-amber-500"
+            >
+              <option value={RewardEventType.AttendanceMarked}>Посещение урока</option>
+              <option value={RewardEventType.ScoreReceived}>Получение оценки</option>
+              <option value={RewardEventType.SubmissionCompleted}>Сдача задания</option>
+              <option value={RewardEventType.BonusManual}>Ручное начисление</option>
+            </select>
+          </div>
+          <div>
+            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+              Количество монет <span className="text-red-500">*</span>
+            </label>
+            <input
+              type="number"
+              min={1}
+              value={ruleForm.coinAmount}
+              onChange={e => setRuleForm(prev => ({ ...prev, coinAmount: Number(e.target.value) }))}
+              className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-amber-500 focus:border-amber-500"
+            />
+          </div>
+          {ruleForm.eventType === RewardEventType.ScoreReceived && (
+            <div>
+              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                Минимальная оценка (необязательно)
+              </label>
+              <input
+                type="number"
+                min={0}
+                max={100}
+                value={ruleForm.minScore}
+                onChange={e => setRuleForm(prev => ({ ...prev, minScore: e.target.value }))}
+                placeholder="Оставьте пустым для любой оценки"
+                className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-amber-500 focus:border-amber-500"
+              />
+            </div>
+          )}
+          <div className="flex justify-end gap-3 pt-4">
+            <button
+              onClick={() => {
+                setShowCreateRuleModal(false);
+                setRuleForm({ name: '', eventType: RewardEventType.AttendanceMarked, coinAmount: 5, minScore: '', isActive: true });
+              }}
+              className="px-4 py-2 text-gray-700 dark:text-gray-300 border border-gray-300 dark:border-gray-600 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors"
+            >
+              Отменить
+            </button>
+            <button
+              onClick={handleCreateRule}
+              disabled={!ruleForm.name.trim()}
+              className="px-4 py-2 bg-amber-500 text-white rounded-lg hover:bg-amber-600 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+            >
+              Создать правило
+            </button>
+          </div>
+        </div>
+      </BaseModal>
+
+      {/* Modal для редактирования правила маркета */}
+      <BaseModal
+        isOpen={showEditRuleModal}
+        onClose={() => {
+          setShowEditRuleModal(false);
+          setEditingRule(null);
+          setRuleForm({ name: '', eventType: RewardEventType.AttendanceMarked, coinAmount: 5, minScore: '', isActive: true });
+        }}
+        title="Редактировать правило"
+      >
+        <div className="space-y-4">
+          <div>
+            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+              Название <span className="text-red-500">*</span>
+            </label>
+            <input
+              type="text"
+              value={ruleForm.name}
+              onChange={e => setRuleForm(prev => ({ ...prev, name: e.target.value }))}
+              className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-amber-500 focus:border-amber-500"
+              autoFocus
+            />
+          </div>
+          <div>
+            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+              Количество монет <span className="text-red-500">*</span>
+            </label>
+            <input
+              type="number"
+              min={1}
+              value={ruleForm.coinAmount}
+              onChange={e => setRuleForm(prev => ({ ...prev, coinAmount: Number(e.target.value) }))}
+              className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-amber-500 focus:border-amber-500"
+            />
+          </div>
+          {editingRule?.eventType === RewardEventType.ScoreReceived && (
+            <div>
+              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                Минимальная оценка (необязательно)
+              </label>
+              <input
+                type="number"
+                min={0}
+                max={100}
+                value={ruleForm.minScore}
+                onChange={e => setRuleForm(prev => ({ ...prev, minScore: e.target.value }))}
+                placeholder="Оставьте пустым для любой оценки"
+                className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-amber-500 focus:border-amber-500"
+              />
+            </div>
+          )}
+          <div className="flex items-center gap-3">
+            <label className="relative inline-flex items-center cursor-pointer">
+              <input
+                type="checkbox"
+                checked={ruleForm.isActive}
+                onChange={e => setRuleForm(prev => ({ ...prev, isActive: e.target.checked }))}
+                className="sr-only peer"
+              />
+              <div className="w-11 h-6 bg-gray-200 dark:bg-gray-700 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-amber-500"></div>
+            </label>
+            <span className="text-sm text-gray-700 dark:text-gray-300">Активно</span>
+          </div>
+          <div className="flex justify-end gap-3 pt-4">
+            <button
+              onClick={() => {
+                setShowEditRuleModal(false);
+                setEditingRule(null);
+                setRuleForm({ name: '', eventType: RewardEventType.AttendanceMarked, coinAmount: 5, minScore: '', isActive: true });
+              }}
+              className="px-4 py-2 text-gray-700 dark:text-gray-300 border border-gray-300 dark:border-gray-600 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors"
+            >
+              Отменить
+            </button>
+            <button
+              onClick={handleEditRule}
+              disabled={!ruleForm.name.trim()}
+              className="px-4 py-2 bg-amber-500 text-white rounded-lg hover:bg-amber-600 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
             >
               Сохранить изменения
             </button>

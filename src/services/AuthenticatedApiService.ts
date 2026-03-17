@@ -1043,4 +1043,72 @@ export class AuthenticatedApiService {
   static async removeStudentFlag(data: RemoveStudentFlagRequest): Promise<void> {
     return this.deleteWithBody('/StudentCrm/flag', data);
   }
+
+  // ── Market / Coin API ──────────────────────────────────────────────────
+  static async getMyBalance(): Promise<import('../types/Market').CoinAccountDetailedDto> {
+    return this.get('/Coin/my-balance');
+  }
+
+  static async getAllCoinBalances(organizationId: string): Promise<import('../types/Market').CoinAccountDto[]> {
+    return this.get(`/Coin/all-balances?organizationId=${organizationId}`);
+  }
+
+  static async adminAdjustCoins(data: import('../types/Market').AdminAdjustCoinRequest): Promise<void> {
+    return this.post<void>('/Coin/adjust', data);
+  }
+
+  // ── Reward Rules ───────────────────────────────────────────────────────
+  static async getRewardRules(organizationId: string): Promise<import('../types/Market').RewardRuleDto[]> {
+    return this.get(`/RewardRule?organizationId=${organizationId}`);
+  }
+
+  static async createRewardRule(data: import('../types/Market').CreateRewardRuleRequest): Promise<import('../types/Market').RewardRuleDto> {
+    return this.post<import('../types/Market').RewardRuleDto>('/RewardRule', data);
+  }
+
+  static async updateRewardRule(id: string, data: import('../types/Market').UpdateRewardRuleRequest): Promise<void> {
+    return this.put<void>(`/RewardRule/${id}`, data);
+  }
+
+  static async deleteRewardRule(id: string): Promise<void> {
+    return this.delete(`/RewardRule/${id}`);
+  }
+
+  // ── Market Items ───────────────────────────────────────────────────────
+  static async getMarketItems(organizationId: string): Promise<import('../types/Market').MarketItemDto[]> {
+    return this.get(`/MarketItem?organizationId=${organizationId}`);
+  }
+
+  static async createMarketItem(data: import('../types/Market').CreateMarketItemRequest): Promise<import('../types/Market').MarketItemDto> {
+    return this.post<import('../types/Market').MarketItemDto>('/MarketItem', data);
+  }
+
+  static async updateMarketItem(id: string, data: import('../types/Market').UpdateMarketItemRequest): Promise<void> {
+    return this.put<void>(`/MarketItem/${id}`, data);
+  }
+
+  static async deleteMarketItem(id: string): Promise<void> {
+    return this.delete(`/MarketItem/${id}`);
+  }
+
+  // ── Purchases ──────────────────────────────────────────────────────────
+  static async purchaseItem(data: import('../types/Market').PurchaseItemRequest): Promise<import('../types/Market').PurchaseDto> {
+    return this.post<import('../types/Market').PurchaseDto>('/Purchase', data);
+  }
+
+  static async getMyPurchases(): Promise<import('../types/Market').PurchaseDto[]> {
+    return this.get('/Purchase/my');
+  }
+
+  static async getAllPurchases(organizationId: string): Promise<import('../types/Market').PurchaseDto[]> {
+    return this.get(`/Purchase?organizationId=${organizationId}`);
+  }
+
+  static async fulfillPurchase(id: string): Promise<void> {
+    return this.post<void>(`/Purchase/${id}/fulfill`, {});
+  }
+
+  static async cancelPurchase(id: string): Promise<void> {
+    return this.post<void>(`/Purchase/${id}/cancel`, {});
+  }
 }
