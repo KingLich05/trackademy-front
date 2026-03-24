@@ -4,6 +4,7 @@ import { useState, useEffect, useRef } from 'react';
 import { useAuth } from '../../contexts/AuthContext';
 import { EyeIcon, EyeSlashIcon, AcademicCapIcon, MagnifyingGlassIcon, ChevronDownIcon, Bars3Icon, XMarkIcon } from '@heroicons/react/24/outline';
 import Link from 'next/link';
+import { API_BASE_URL } from '../../lib/api-config';
 
 interface Organization {
   id: string;
@@ -72,7 +73,7 @@ export default function LoginPage() {
 
   const fetchOrganizations = async () => {
     try {
-      const response = await fetch('https://trackademy.kz/api/Organization');
+      const response = await fetch(`${API_BASE_URL}/Organization`);
       if (response.ok) {
         const data = await response.json();
         setOrganizations(data);

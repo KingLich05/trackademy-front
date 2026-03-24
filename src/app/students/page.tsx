@@ -13,6 +13,7 @@ import { UserFilters, UserFilters as UserFiltersType } from '../../components/ui
 import { UsersTable } from '../../components/ui/UsersTable';
 import { useDebounce } from '../../hooks/useDebounce';
 import { canManageUsers } from '../../types/Role';
+import { API_BASE_URL } from '../../lib/api-config';
 import Link from 'next/link';
 import { PageHeaderWithStats } from '../../components/ui/PageHeaderWithStats';
 import { useColumnVisibility, ColumnVisibilityControl } from '../../components/ui/ColumnVisibilityControl';
@@ -555,7 +556,7 @@ export default function StudentsPage() {
   const handleCreateUser = async (userData: UserFormData) => {
     const cleanUserData = cleanUserFormData(userData);
 
-    const response = await fetch('https://trackademy.kz/api/User/create', {
+    const response = await fetch(`${API_BASE_URL}/User/create`, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
@@ -602,7 +603,7 @@ export default function StudentsPage() {
         throw new Error('Токен авторизации не найден');
       }
 
-      const response = await fetch('https://trackademy.kz/api/Export/users', {
+      const response = await fetch(`${API_BASE_URL}/Export/users`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',

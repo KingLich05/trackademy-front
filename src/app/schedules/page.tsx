@@ -6,6 +6,7 @@ import { AuthenticatedApiService } from '../../services/AuthenticatedApiService'
 import { CalendarDaysIcon, PencilIcon, TrashIcon, PlusIcon, DocumentArrowDownIcon, ArrowUturnLeftIcon } from '@heroicons/react/24/outline';
 import { PageHeaderWithStats } from '../../components/ui/PageHeaderWithStats';
 import { useColumnVisibility, ColumnVisibilityControl } from '../../components/ui/ColumnVisibilityControl';
+import { API_BASE_URL } from '../../lib/api-config';
 import { 
   Schedule, 
   ScheduleFormData, 
@@ -312,7 +313,7 @@ export default function SchedulesPage() {
       if (exportFilters.startDate) body.startDate = exportFilters.startDate;
       if (exportFilters.endDate) body.endDate = exportFilters.endDate;
 
-      const response = await fetch('https://trackademy.kz/api/Export/schedule', {
+      const response = await fetch(`${API_BASE_URL}/Export/schedule`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',

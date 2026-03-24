@@ -1,6 +1,7 @@
 /**
  * Authenticated API service that includes JWT token in requests
  */
+import { API_BASE_URL } from '../lib/api-config';
 import { User, UserFormData } from '../types/User';
 // TeacherProfile type (можно вынести в types/TeacherProfile.ts)
 export type TeacherProfile = {
@@ -108,7 +109,6 @@ export class AuthenticatedApiService {
     endpoint: string,
     options: RequestInit = {}
   ): Promise<T> {
-    const API_BASE_URL = 'https://trackademy.kz/api';
     const url = `${API_BASE_URL}${endpoint}`;
     
     const config: RequestInit = {
@@ -234,7 +234,6 @@ export class AuthenticatedApiService {
   }
 
   static async postBlob(endpoint: string, data: unknown): Promise<Blob> {
-    const API_BASE_URL = 'https://trackademy.kz/api';
     const url = `${API_BASE_URL}${endpoint}`;
     
     const config: RequestInit = {
@@ -257,7 +256,6 @@ export class AuthenticatedApiService {
 
   static async postFormData<T>(endpoint: string, formData: FormData): Promise<T> {
     const token = this.getAuthToken();
-    const API_BASE_URL = 'https://trackademy.kz/api';
     const url = `${API_BASE_URL}${endpoint}`;
 
     const response = await fetch(url, {
@@ -284,7 +282,6 @@ export class AuthenticatedApiService {
 
   static async putFormData<T>(endpoint: string, formData: FormData): Promise<T> {
     const token = this.getAuthToken();
-    const API_BASE_URL = 'https://trackademy.kz/api';
     const url = `${API_BASE_URL}${endpoint}`;
 
     const response = await fetch(url, {
@@ -329,7 +326,6 @@ export class AuthenticatedApiService {
 
   // Download file with authentication
   static async downloadFile(endpoint: string): Promise<Response> {
-    const API_BASE_URL = 'https://trackademy.kz/api';
     const url = `${API_BASE_URL}${endpoint}`;
     const token = this.getAuthToken();
     
@@ -521,7 +517,6 @@ export class AuthenticatedApiService {
     formData.append('organizationId', organizationId);
 
     const token = this.getAuthToken();
-    const API_BASE_URL = 'https://trackademy.kz/api';
     const url = `${API_BASE_URL}/User/import-excel`;
 
     const response = await fetch(url, {
@@ -688,7 +683,6 @@ export class AuthenticatedApiService {
 
   static async downloadAssignmentFile(id: string): Promise<Blob> {
     const token = this.getAuthToken();
-    const API_BASE_URL = 'https://trackademy.kz/api';
     const url = `${API_BASE_URL}/Assignment/${id}/download`;
 
     const response = await fetch(url, {
@@ -815,7 +809,7 @@ export class AuthenticatedApiService {
       throw new Error('No authentication token found');
     }
 
-    const response = await fetch(`https://trackademy.kz/api/Material`, {
+    const response = await fetch(`${API_BASE_URL}/Material`, {
       method: 'POST',
       headers: {
         'Authorization': `Bearer ${token}`,
@@ -845,7 +839,7 @@ export class AuthenticatedApiService {
       throw new Error('No authentication token found');
     }
 
-    const response = await fetch(`https://trackademy.kz/api/Material/${materialId}/download`, {
+    const response = await fetch(`${API_BASE_URL}/Material/${materialId}/download`, {
       method: 'GET',
       headers: {
         'Authorization': `Bearer ${token}`,
@@ -873,7 +867,7 @@ export class AuthenticatedApiService {
       throw new Error('No authentication token found');
     }
 
-    const response = await fetch(`https://trackademy.kz/api/Material/${materialId}/download`, {
+    const response = await fetch(`${API_BASE_URL}/Material/${materialId}/download`, {
       method: 'GET',
       headers: {
         'Authorization': `Bearer ${token}`,
@@ -906,7 +900,7 @@ export class AuthenticatedApiService {
   static async uploadLibraryMaterial(formData: FormData): Promise<LibraryMaterial> {
     const token = this.getAuthToken();
     if (!token) throw new Error('No authentication token found');
-    const response = await fetch('https://trackademy.kz/api/library-materials', {
+    const response = await fetch(`${API_BASE_URL}/library-materials`, {
       method: 'POST',
       headers: { 'Authorization': `Bearer ${token}` },
       body: formData,
@@ -929,7 +923,7 @@ export class AuthenticatedApiService {
   static async downloadLibraryMaterial(materialId: string, fileName: string): Promise<void> {
     const token = this.getAuthToken();
     if (!token) throw new Error('No authentication token found');
-    const response = await fetch(`https://trackademy.kz/api/library-materials/${materialId}/download`, {
+    const response = await fetch(`${API_BASE_URL}/library-materials/${materialId}/download`, {
       method: 'GET',
       headers: { 'Authorization': `Bearer ${token}` },
     });
@@ -948,7 +942,7 @@ export class AuthenticatedApiService {
   static async getLibraryMaterialBlob(materialId: string): Promise<Blob> {
     const token = this.getAuthToken();
     if (!token) throw new Error('No authentication token found');
-    const response = await fetch(`https://trackademy.kz/api/library-materials/${materialId}/download`, {
+    const response = await fetch(`${API_BASE_URL}/library-materials/${materialId}/download`, {
       method: 'GET',
       headers: { 'Authorization': `Bearer ${token}` },
     });
@@ -963,7 +957,7 @@ export class AuthenticatedApiService {
 
   static async getDocumentById(documentId: string): Promise<Blob> {
     const token = this.getAuthToken();
-    const response = await fetch(`https://trackademy.kz/api/Document/${documentId}`, {
+    const response = await fetch(`${API_BASE_URL}/Document/${documentId}`, {
       method: 'GET',
       headers: {
         'Authorization': `Bearer ${token}`
@@ -984,7 +978,7 @@ export class AuthenticatedApiService {
     formData.append('file', documentData.file);
 
     const token = this.getAuthToken();
-    const response = await fetch(`https://trackademy.kz/api/Document`, {
+    const response = await fetch(`${API_BASE_URL}/Document`, {
       method: 'POST',
       headers: {
         'Authorization': `Bearer ${token}`

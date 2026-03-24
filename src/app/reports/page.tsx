@@ -9,6 +9,7 @@ import { Group, GroupsResponse } from '../../types/Group';
 import { DateRangePicker } from '../../components/ui/DateRangePicker';
 import { attendanceApi } from '../../services/AttendanceApiService';
 import { ExportAttendanceRequest, AttendanceStatus } from '../../types/Attendance';
+import { API_BASE_URL } from '../../lib/api-config';
 import { 
   ChartBarIcon, 
   DocumentArrowDownIcon, 
@@ -188,7 +189,7 @@ export default function ReportsPage() {
         throw new Error('Токен авторизации не найден');
       }
 
-      const response = await fetch('https://trackademy.kz/api/Export/users', {
+      const response = await fetch(`${API_BASE_URL}/Export/users`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -350,7 +351,7 @@ export default function ReportsPage() {
         body.groupId = exportGroupId;
       }
 
-      const response = await fetch('https://trackademy.kz/api/Export/groups', {
+      const response = await fetch(`${API_BASE_URL}/Export/groups`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -530,7 +531,7 @@ export default function ReportsPage() {
       if (scheduleFilters.startDate) body.startDate = scheduleFilters.startDate;
       if (scheduleFilters.endDate) body.endDate = scheduleFilters.endDate;
 
-      const response = await fetch('https://trackademy.kz/api/Export/schedule', {
+      const response = await fetch(`${API_BASE_URL}/Export/schedule`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',

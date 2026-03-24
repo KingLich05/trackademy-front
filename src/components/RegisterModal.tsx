@@ -3,6 +3,7 @@
 import { useState, useEffect } from 'react';
 import { XMarkIcon } from '@heroicons/react/24/outline';
 import { useAuth } from '../contexts/AuthContext';
+import { API_BASE_URL } from '../lib/api-config';
 
 interface Organization {
   id: string; // Changed to string since API uses GUIDs
@@ -37,7 +38,7 @@ const RegisterModal: React.FC<RegisterModalProps> = ({ isOpen, onClose }) => {
 
   const fetchOrganizations = async () => {
     try {
-      const response = await fetch('https://trackademy.kz/api/Organization');
+      const response = await fetch(`${API_BASE_URL}/Organization`);
       if (response.ok) {
         const data = await response.json();
         setOrganizations(data);

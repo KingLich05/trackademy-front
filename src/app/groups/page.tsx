@@ -13,6 +13,7 @@ import { GroupFormUniversal } from '../../components/forms/GroupFormUniversal';
 import { EmptyState } from '../../components/ui/EmptyState';
 import { PageHeaderWithStats } from '../../components/ui/PageHeaderWithStats';
 import { useColumnVisibility, ColumnVisibilityControl } from '../../components/ui/ColumnVisibilityControl';
+import { API_BASE_URL } from '../../lib/api-config';
 import { useApiToast } from '../../hooks/useApiToast';
 import { useToast } from '../../contexts/ToastContext';
 import { GroupStudentsModal } from '../../components/GroupStudentsModal';
@@ -106,7 +107,7 @@ const [teachers, setTeachers] = useState<Array<{id: string, name: string}>>([]);
         body.groupIds = exportGroupIds;
       }
 
-      const response = await fetch('https://trackademy.kz/api/Export/groups', {
+      const response = await fetch(`${API_BASE_URL}/Export/groups`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',

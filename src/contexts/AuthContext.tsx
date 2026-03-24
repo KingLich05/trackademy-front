@@ -3,6 +3,7 @@
 import { createContext, useContext, ReactNode, useState, useEffect, useMemo, useCallback } from 'react';
 import { AuthenticatedApiService } from '../services/AuthenticatedApiService';
 import { Document } from '../types/Document';
+import { API_BASE_URL } from '../lib/api-config';
 
 interface User {
   id: string; // Changed to string since API returns GUID
@@ -85,7 +86,7 @@ export function AuthProvider({ children }: Readonly<{ children: ReactNode }>) {
 
       console.log('Sending registration request:', requestPayload);
 
-      const response = await fetch('https://trackademy.kz/api/Auth/create', {
+      const response = await fetch(`${API_BASE_URL}/Auth/create`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -137,7 +138,7 @@ export function AuthProvider({ children }: Readonly<{ children: ReactNode }>) {
         loginPayload.organizationId = organizationId;
       }
 
-      const response = await fetch('https://trackademy.kz/api/Auth/login', {
+      const response = await fetch(`${API_BASE_URL}/Auth/login`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -208,7 +209,7 @@ export function AuthProvider({ children }: Readonly<{ children: ReactNode }>) {
 
     try {
       // Получаем актуальную информацию с сервера
-      const response = await fetch(`https://trackademy.kz/api/Auth/me`, {
+      const response = await fetch(`${API_BASE_URL}/Auth/me`, {
         headers: {
           'Authorization': `Bearer ${getAuthToken()}`,
           'Content-Type': 'application/json',
@@ -317,7 +318,7 @@ export function AuthProvider({ children }: Readonly<{ children: ReactNode }>) {
           documentVersion: "1.0"
         };
 
-        const response1 = await fetch('https://trackademy.kz/api/Consent/record', {
+        const response1 = await fetch(`${API_BASE_URL}/Consent/record`, {
           method: 'POST',
           headers: {
             'Authorization': `Bearer ${getAuthToken()}`,
@@ -342,7 +343,7 @@ export function AuthProvider({ children }: Readonly<{ children: ReactNode }>) {
           documentVersion: "1.0"
         };
 
-        const response2 = await fetch('https://trackademy.kz/api/Consent/record', {
+        const response2 = await fetch(`${API_BASE_URL}/Consent/record`, {
           method: 'POST',
           headers: {
             'Authorization': `Bearer ${getAuthToken()}`,
@@ -387,7 +388,7 @@ export function AuthProvider({ children }: Readonly<{ children: ReactNode }>) {
     if (!user?.id) return;
     
     try {
-      const response = await fetch(`https://trackademy.kz/api/Auth/me`, {
+      const response = await fetch(`${API_BASE_URL}/Auth/me`, {
         headers: {
           'Authorization': `Bearer ${getAuthToken()}`,
           'Content-Type': 'application/json',

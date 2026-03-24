@@ -10,7 +10,7 @@ import {
   ExportAttendanceRequest 
 } from '@/types/Attendance';
 
-const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'https://trackademy.kz';
+import { API_HOST as API_BASE_URL } from '../lib/api-config';
 
 class AttendanceApiService {
   private async makeRequest<T>(

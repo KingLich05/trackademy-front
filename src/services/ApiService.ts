@@ -2,8 +2,7 @@ import { User, UserFormData } from '../types/User';
 import { Organization, OrganizationFormData } from '../types/Organization';
 import { Subject, SubjectFormData } from '../types/Subject';
 import { Document } from '../types/Document';
-
-const API_BASE_URL = process.env.NEXT_PUBLIC_API_BASE_URL || 'https://trackademy.kz/api';
+import { API_BASE_URL } from '../lib/api-config';
 
 export class ApiService {
   private static async request<T>(
