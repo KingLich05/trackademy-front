@@ -1111,4 +1111,122 @@ export class AuthenticatedApiService {
   static async cancelPurchase(id: string): Promise<void> {
     return this.post<void>(`/Purchase/${id}/cancel`, {});
   }
+
+  // ── Sales Funnel: Stages ───────────────────────────────────────────────────
+  static async getFunnelStages(organizationId: string): Promise<import('../types/SalesFunnel').FunnelStageDto[]> {
+    return this.get(`/FunnelStage/organization/${organizationId}`);
+  }
+
+  static async createFunnelStage(organizationId: string, data: import('../types/SalesFunnel').CreateFunnelStageRequest): Promise<import('../types/SalesFunnel').FunnelStageDto> {
+    return this.post<import('../types/SalesFunnel').FunnelStageDto>(`/FunnelStage/organization/${organizationId}`, data);
+  }
+
+  static async updateFunnelStage(stageId: string, organizationId: string, data: import('../types/SalesFunnel').UpdateFunnelStageRequest): Promise<void> {
+    return this.put<void>(`/FunnelStage/${stageId}/organization/${organizationId}`, data);
+  }
+
+  static async deleteFunnelStage(stageId: string, organizationId: string): Promise<void> {
+    return this.delete(`/FunnelStage/${stageId}/organization/${organizationId}`);
+  }
+
+  static async reorderFunnelStages(organizationId: string, stageIds: string[]): Promise<void> {
+    return this.put<void>(`/FunnelStage/reorder/organization/${organizationId}`, stageIds);
+  }
+
+  static async initializeFunnelDefaults(organizationId: string): Promise<void> {
+    return this.post<void>(`/FunnelStage/initialize-defaults/organization/${organizationId}`, {});
+  }
+
+  // ── Sales Funnel: Sources ──────────────────────────────────────────────────
+  static async getLeadSources(organizationId: string): Promise<import('../types/SalesFunnel').LeadSourceDto[]> {
+    return this.get(`/FunnelStage/sources/organization/${organizationId}`);
+  }
+
+  static async createLeadSource(organizationId: string, data: import('../types/SalesFunnel').CreateLeadSourceRequest): Promise<import('../types/SalesFunnel').LeadSourceDto> {
+    return this.post<import('../types/SalesFunnel').LeadSourceDto>(`/FunnelStage/sources/organization/${organizationId}`, data);
+  }
+
+  static async updateLeadSource(sourceId: string, organizationId: string, data: import('../types/SalesFunnel').UpdateLeadSourceRequest): Promise<void> {
+    return this.put<void>(`/FunnelStage/sources/${sourceId}/organization/${organizationId}`, data);
+  }
+
+  static async deleteLeadSource(sourceId: string, organizationId: string): Promise<void> {
+    return this.delete(`/FunnelStage/sources/${sourceId}/organization/${organizationId}`);
+  }
+
+  // ── Sales Funnel: Leads ────────────────────────────────────────────────────
+  static async getLeads(organizationId: string, filters?: { stageId?: string; sourceId?: string; assignedToId?: string }): Promise<import('../types/SalesFunnel').LeadDto[]> {
+    const params = new URLSearchParams();
+    if (filters?.stageId) params.set('stageId', filters.stageId);
+    if (filters?.sourceId) params.set('sourceId', filters.sourceId);
+    if (filters?.assignedToId) params.set('assignedToId', filters.assignedToId);
+    const qs = params.toString();
+    return this.get(`/Lead/organization/${organizationId}${qs ? `?${qs}` : ''}`);
+  }
+
+  static async getLeadById(leadId: string, organizationId: string): Promise<import('../types/SalesFunnel').LeadDetailDto> {
+    return this.get(`/Lead/${leadId}/organization/${organizationId}`);
+  }
+
+  static async createLead(organizationId: string, data: import('../types/SalesFunnel').CreateLeadRequest): Promise<import('../types/SalesFunnel').LeadDto> {
+    return this.post<import('../types/SalesFunnel').LeadDto>(`/Lead/organization/${organizationId}`, data);
+  }
+
+  static async updateLead(leadId: string, organizationId: string, data: import('../types/SalesFunnel').UpdateLeadRequest): Promise<import('../types/SalesFunnel').LeadDto> {
+    return this.put<import('../types/SalesFunnel').LeadDto>(`/Lead/${leadId}/organization/${organizationId}`, data);
+  }
+
+  static async deleteLead(leadId: string, organizationId: string): Promise<void> {
+    return this.delete(`/Lead/${leadId}/organization/${organizationId}`);
+  }
+
+  static async moveLeadStage(leadId: string, organizationId: string, data: import('../types/SalesFunnel').MoveLeadStageRequest): Promise<import('../types/SalesFunnel').LeadDto> {
+    return this.put<import('../types/SalesFunnel').LeadDto>(`/Lead/${leadId}/move-stage/organization/${organizationId}`, data);
+  }
+
+  static async convertLead(leadId: string, organizationId: string, data: import('../types/SalesFunnel').ConvertLeadRequest): Promise<import('../types/SalesFunnel').LeadDto> {
+    return this.post<import('../types/SalesFunnel').LeadDto>(`/Lead/${leadId}/convert/organization/${organizationId}`, data);
+  }
+
+  static async loseLead(leadId: string, organizationId: string, data: import('../types/SalesFunnel').LoseLeadRequest): Promise<import('../types/SalesFunnel').LeadDto> {
+    return this.post<import('../types/SalesFunnel').LeadDto>(`/Lead/${leadId}/lose/organization/${organizationId}`, data);
+  }
+
+  static async getFunnelAnalytics(organizationId: string, from?: string, to?: string): Promise<import('../types/SalesFunnel').FunnelAnalyticsDto> {
+    const params = new URLSearchParams();
+    if (from) params.set('from', from);
+    if (to) params.set('to', to);
+    const qs = params.toString();
+    return this.get(`/Lead/analytics/organization/${organizationId}${qs ? `?${qs}` : ''}`);
+  }
+
+  static async getLeadStageHistory(leadId: string, organizationId: string): Promise<import('../types/SalesFunnel').LeadStageHistoryDto[]> {
+    return this.get(`/Lead/${leadId}/stage-history/organization/${organizationId}`);
+  }
+
+  // ── Sales Funnel: Activities ───────────────────────────────────────────────
+  static async getLeadActivities(leadId: string, organizationId: string): Promise<import('../types/SalesFunnel').LeadActivityDto[]> {
+    return this.get(`/LeadActivity/lead/${leadId}/organization/${organizationId}`);
+  }
+
+  static async getUpcomingActivities(organizationId: string, assignedToId?: string): Promise<import('../types/SalesFunnel').LeadActivityDto[]> {
+    const qs = assignedToId ? `?assignedToId=${assignedToId}` : '';
+    return this.get(`/LeadActivity/upcoming/organization/${organizationId}${qs}`);
+  }
+
+  static async createLeadActivity(organizationId: string, data: import('../types/SalesFunnel').CreateLeadActivityRequest): Promise<import('../types/SalesFunnel').LeadActivityDto> {
+    return this.post<import('../types/SalesFunnel').LeadActivityDto>(`/LeadActivity/organization/${organizationId}`, data);
+  }
+
+  static async updateLeadActivity(activityId: string, organizationId: string, data: import('../types/SalesFunnel').UpdateLeadActivityRequest): Promise<import('../types/SalesFunnel').LeadActivityDto> {
+    return this.put<import('../types/SalesFunnel').LeadActivityDto>(`/LeadActivity/${activityId}/organization/${organizationId}`, data);
+  }
+
+  static async completeLeadActivity(activityId: string, organizationId: string): Promise<import('../types/SalesFunnel').LeadActivityDto> {
+    return this.post<import('../types/SalesFunnel').LeadActivityDto>(`/LeadActivity/${activityId}/complete/organization/${organizationId}`, {});
+  }
+
+  static async deleteLeadActivity(activityId: string, organizationId: string): Promise<void> {
+    return this.delete(`/LeadActivity/${activityId}/organization/${organizationId}`);
+  }
 }
