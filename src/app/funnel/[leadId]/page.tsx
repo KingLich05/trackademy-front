@@ -92,6 +92,10 @@ export default function LeadDetailPage() {
   const [moveTarget, setMoveTarget] = useState<string | null>(null);
   const [moveComment, setMoveComment] = useState('');
 
+  // ── complete activity modal ──
+  const [completingActivity, setCompletingActivity] = useState<LeadActivityDto | null>(null);
+  const [completionNotes, setCompletionNotes] = useState('');
+
   // ── convert modal ──
   const [showConvert, setShowConvert] = useState(false);
   const [convertForm, setConvertForm] = useState<ConvertLeadRequest>({ login: '', password: '', groupId: null });
@@ -118,13 +122,13 @@ export default function LeadDetailPage() {
         AuthenticatedApiService.getFunnelStages(orgId),
         AuthenticatedApiService.getLeadSources(orgId),
         AuthenticatedApiService.getGroups(orgId, 1000),
-        AuthenticatedApiService.getUsers({ organizationId: orgId, pageSize: 500, roleIds: [2, 3] }),
+        AuthenticatedApiService.getUsers({ organizationId: orgId, pageSize: 500, roleIds: [2, 3, 4] }),
       ]);
       setLead(l);
       setStages(s.sort((a, b) => a.order - b.order));
       setSources(src);
       setGroups((g.items ?? []).map((gr: { id: string; name: string }) => ({ id: gr.id, name: gr.name })));
-      setStaff((u.items ?? []).filter((m: { id: string; fullName?: string }) => m.fullName).map((m: { id: string; fullName?: string }) => ({ id: m.id, fullName: m.fullName! })));
+      setStaff((u.items ?? []).filter((m: { id: string; name?: string; fullName?: string }) => m.name || m.fullName).map((m: { id: string; name?: string; fullName?: string }) => ({ id: m.id, fullName: m.fullName || m.name || '' })));
     } catch {
       showError('Ошибка при загрузке лида');
     } finally {
@@ -223,12 +227,22 @@ export default function LeadDetailPage() {
     finally { setSavingActivity(false); }
   }
 
-  async function handleCompleteActivity(activity: LeadActivityDto) {
+  function handleCompleteActivity(activity: LeadActivityDto) {
+    setCompletingActivity(activity);
+    setCompletionNotes('');
+  }
+
+  async function confirmCompleteActivity() {
+    if (!completingActivity) return;
     try {
-      const updated = await AuthenticatedApiService.completeLeadActivity(activity.id, orgId);
+      const updated = await AuthenticatedApiService.completeLeadActivity(
+        completingActivity.id, orgId,
+        completionNotes.trim() ? { completionNotes: completionNotes.trim() } : undefined,
+      );
       setLead(prev => prev ? { ...prev, activities: prev.activities.map(a => a.id === updated.id ? updated : a) } : null);
       showSuccess('Активность выполнена');
     } catch { showError('Ошибка при отметке выполнения'); }
+    finally { setCompletingActivity(null); }
   }
 
   async function handleDeleteActivity(activity: LeadActivityDto) {
@@ -757,6 +771,46 @@ export default function LeadDetailPage() {
             <button onClick={() => setShowConvert(false)} className="px-4 py-2 text-gray-700 dark:text-gray-300 border border-gray-300 dark:border-gray-600 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700 text-sm transition-colors">Отмена</button>
             <button onClick={handleConvert} disabled={converting || !convertForm.login.trim() || !convertForm.password.trim()} className="px-4 py-2 bg-green-600 hover:bg-green-700 disabled:opacity-50 text-white rounded-lg text-sm font-medium transition-colors">
               {converting ? 'Конвертация...' : 'Конвертировать'}
+            </button>
+          </div>
+        </div>
+      </BaseModal>
+
+      {/* ── Complete Activity Modal ── */}
+      <BaseModal isOpen={!!completingActivity} onClose={() => setCompletingActivity(null)} title="Выполнить активность">
+        <div className="space-y-4">
+          {completingActivity && (
+            <div className="p-3 bg-green-50 dark:bg-green-900/20 rounded-lg border border-green-200 dark:border-green-800">
+              <p className="text-xs text-green-600 dark:text-green-500 mb-1">{completingActivity.typeName}</p>
+              <p className="text-sm font-medium text-green-800 dark:text-green-400">{completingActivity.description}</p>
+            </div>
+          )}
+          <div>
+            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+              Что сделали / что обсудили <span className="text-gray-400 font-normal">(необязательно)</span>
+            </label>
+            <textarea
+              rows={4}
+              value={completionNotes}
+              onChange={e => setCompletionNotes(e.target.value)}
+              placeholder="Опишите результат, договорённости, следующие шаги..."
+              className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-violet-500 focus:border-violet-500 text-sm resize-none"
+              autoFocus
+            />
+          </div>
+          <div className="flex justify-end gap-3 pt-1">
+            <button
+              onClick={() => setCompletingActivity(null)}
+              className="px-4 py-2 text-gray-700 dark:text-gray-300 border border-gray-300 dark:border-gray-600 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700 text-sm transition-colors"
+            >
+              Отмена
+            </button>
+            <button
+              onClick={confirmCompleteActivity}
+              className="px-4 py-2 bg-green-600 hover:bg-green-700 text-white rounded-lg text-sm font-medium transition-colors flex items-center gap-2"
+            >
+              <CheckCircleSolid className="h-4 w-4" />
+              Выполнено
             </button>
           </div>
         </div>

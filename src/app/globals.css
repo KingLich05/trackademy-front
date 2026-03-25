@@ -1,14 +1,12 @@
 @import "tailwindcss";
 
-/* ===== Prevent Horizontal Overflow ===== */
+/* ===== Base ===== */
 html {
-  overflow-x: hidden;
   max-width: 100vw;
   scroll-behavior: smooth;
 }
 
 body {
-  overflow-x: hidden;
   max-width: 100vw;
   position: relative;
 }

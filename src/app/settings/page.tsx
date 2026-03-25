@@ -160,8 +160,7 @@ export default function SettingsPage() {
     if (!ruleForm.name.trim() || !ruleForm.coinAmount) { showError('Заполните обязательные поля'); return; }
     try {
       const minScore = ruleForm.minScore !== '' ? Number(ruleForm.minScore) : null;
-      await AuthenticatedApiService.createRewardRule({
-        organizationId: orgId,
+      await AuthenticatedApiService.createRewardRule(orgId, {
         name: ruleForm.name.trim(),
         eventType: Number(ruleForm.eventType) as RewardEventType,
         coinAmount: Number(ruleForm.coinAmount),
@@ -178,10 +177,11 @@ export default function SettingsPage() {
   };
 
   const handleEditRule = async () => {
+    const orgId = user?.organizationId || localStorage.getItem('userOrganizationId') || '';
     if (!editingRule || !ruleForm.name.trim()) { showError('Заполните обязательные поля'); return; }
     try {
       const minScore = ruleForm.minScore !== '' ? Number(ruleForm.minScore) : null;
-      await AuthenticatedApiService.updateRewardRule(editingRule.id, {
+      await AuthenticatedApiService.updateRewardRule(editingRule.id, orgId, {
         name: ruleForm.name.trim(),
         coinAmount: Number(ruleForm.coinAmount),
         minScore,
@@ -199,9 +199,10 @@ export default function SettingsPage() {
   };
 
   const handleDeleteRule = async (rule: RewardRuleDto) => {
+    const orgId = user?.organizationId || localStorage.getItem('userOrganizationId') || '';
     if (!confirm(`Удалить правило "${rule.name}"?`)) return;
     try {
-      await AuthenticatedApiService.deleteRewardRule(rule.id);
+      await AuthenticatedApiService.deleteRewardRule(rule.id, orgId);
       showSuccess('Правило удалено');
       loadRewardRules();
     } catch (error) {

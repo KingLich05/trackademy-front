@@ -92,7 +92,7 @@ export default function MarketPage() {
   const { showSuccess, showError } = useToast();
   const router = useRouter();
 
-  const isAdmin = user?.role === 'Administrator' || user?.role === 'Owner' || user?.role === 'Teacher';
+  const isAdmin = user?.role === 'Administrator' || user?.role === 'Owner';
   const orgId: string = user?.organizationId
     || (typeof window !== 'undefined' ? localStorage.getItem('userOrganizationId') ?? '' : '')
     || '';
@@ -143,6 +143,7 @@ export default function MarketPage() {
   // ── initial load ──
   useEffect(() => {
     if (!isAuthenticated) { router.push('/login'); return; }
+    if (user?.role === 'Teacher') { router.push('/'); return; }
     loadItems();
     if (!isAdmin) {
       loadMyBalance();
@@ -171,17 +172,19 @@ export default function MarketPage() {
   }
 
   async function loadMyBalance() {
+    if (!orgId || !user?.id) return;
     try {
       setLoadingBalance(true);
-      setMyAccount(await AuthenticatedApiService.getMyBalance());
+      setMyAccount(await AuthenticatedApiService.getMyBalance(user.id, orgId));
     } catch { showError('Ошибка при загрузке баланса'); }
     finally { setLoadingBalance(false); }
   }
 
   async function loadMyPurchases() {
+    if (!orgId || !user?.id) return;
     try {
       setLoadingMyPurchases(true);
-      setMyPurchases(await AuthenticatedApiService.getMyPurchases());
+      setMyPurchases(await AuthenticatedApiService.getMyPurchases(user.id, orgId));
     } catch { showError('Ошибка при загрузке покупок'); }
     finally { setLoadingMyPurchases(false); }
   }
@@ -218,7 +221,7 @@ export default function MarketPage() {
     if (!buyingItem) return;
     try {
       setIsBuying(true);
-      await AuthenticatedApiService.purchaseItem({ marketItemId: buyingItem.id });
+      await AuthenticatedApiService.purchaseItem(orgId, { marketItemId: buyingItem.id });
       showSuccess(`Товар «${buyingItem.name}» успешно куплен!`);
       setBuyingItem(null);
       await loadMyBalance();
@@ -248,7 +251,7 @@ export default function MarketPage() {
     if (!adjustAccount || !adjustDesc.trim()) { showError('Заполните все поля'); return; }
     try {
       setIsAdjusting(true);
-      await AuthenticatedApiService.adminAdjustCoins({
+      await AuthenticatedApiService.adminAdjustCoins(orgId, {
         studentId: adjustAccount.studentId,
         amount: adjustAmount,
         description: adjustDesc.trim(),
@@ -264,7 +267,7 @@ export default function MarketPage() {
 
   async function handleFulfill(p: PurchaseDto) {
     try {
-      await AuthenticatedApiService.fulfillPurchase(p.id);
+      await AuthenticatedApiService.fulfillPurchase(p.id, orgId);
       showSuccess('Покупка выдана');
       await loadAllPurchases();
     } catch { showError('Ошибка при выдаче покупки'); }
@@ -273,7 +276,7 @@ export default function MarketPage() {
   async function handleCancelPurchase(p: PurchaseDto) {
     if (!confirm(`Отменить покупку «${p.itemName}» студента ${p.studentName}?`)) return;
     try {
-      await AuthenticatedApiService.cancelPurchase(p.id);
+      await AuthenticatedApiService.cancelPurchase(p.id, orgId);
       showSuccess('Покупка отменена');
       await loadAllPurchases();
     } catch { showError('Ошибка при отмене покупки'); }
@@ -302,7 +305,7 @@ export default function MarketPage() {
       setSavingRule(true);
       const minScore = ruleForm.minScore !== '' ? Number(ruleForm.minScore) : null;
       if (editingRule) {
-        await AuthenticatedApiService.updateRewardRule(editingRule.id, {
+        await AuthenticatedApiService.updateRewardRule(editingRule.id, orgId, {
           name: ruleForm.name.trim(),
           coinAmount: Number(ruleForm.coinAmount),
           minScore,
@@ -310,8 +313,7 @@ export default function MarketPage() {
         });
         showSuccess('Правило обновлено');
       } else {
-        await AuthenticatedApiService.createRewardRule({
-          organizationId: orgId,
+        await AuthenticatedApiService.createRewardRule(orgId, {
           name: ruleForm.name.trim(),
           eventType: Number(ruleForm.eventType) as RewardEventType,
           coinAmount: Number(ruleForm.coinAmount),
@@ -328,7 +330,7 @@ export default function MarketPage() {
   async function handleDeleteRule(rule: RewardRuleDto) {
     if (!confirm(`Удалить правило «${rule.name}»?`)) return;
     try {
-      await AuthenticatedApiService.deleteRewardRule(rule.id);
+      await AuthenticatedApiService.deleteRewardRule(rule.id, orgId);
       showSuccess('Правило удалено');
       await loadRewardRules();
     } catch { showError('Ошибка при удалении правила'); }
@@ -361,7 +363,7 @@ export default function MarketPage() {
       const stockQuantity = itemForm.stockQuantity !== '' ? Number(itemForm.stockQuantity) : null;
       const maxPerStudent = itemForm.maxPerStudent !== '' ? Number(itemForm.maxPerStudent) : null;
       if (editingItem) {
-        await AuthenticatedApiService.updateMarketItem(editingItem.id, {
+        await AuthenticatedApiService.updateMarketItem(editingItem.id, orgId, {
           name: itemForm.name.trim(),
           description: itemForm.description || null,
           price: Number(itemForm.price),
@@ -373,8 +375,7 @@ export default function MarketPage() {
         });
         showSuccess('Товар обновлён');
       } else {
-        await AuthenticatedApiService.createMarketItem({
-          organizationId: orgId,
+        await AuthenticatedApiService.createMarketItem(orgId, {
           name: itemForm.name.trim(),
           description: itemForm.description || null,
           price: Number(itemForm.price),
@@ -394,7 +395,7 @@ export default function MarketPage() {
   async function handleDeleteItem(item: MarketItemDto) {
     if (!confirm(`Удалить товар «${item.name}»?`)) return;
     try {
-      await AuthenticatedApiService.deleteMarketItem(item.id);
+      await AuthenticatedApiService.deleteMarketItem(item.id, orgId);
       showSuccess('Товар удалён');
       await loadItems();
     } catch { showError('Ошибка при удалении товара'); }

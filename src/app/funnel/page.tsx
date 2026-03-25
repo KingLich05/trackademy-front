@@ -12,6 +12,8 @@ import {
   FunnelAnalyticsDto, LeadActivityDto, LeadActivityType,
 } from '../../types/SalesFunnel';
 import { BaseModal } from '../../components/ui/BaseModal';
+import { PhoneInput } from '../../components/ui/PhoneInput';
+import { DateRangePicker } from '../../components/ui/DateRangePicker';
 import {
   FunnelIcon, PlusIcon, PencilIcon, TrashIcon,
   UserIcon, PhoneIcon, ChartBarIcon, ClipboardDocumentListIcon,
@@ -112,10 +114,21 @@ export default function FunnelPage() {
   const [moveTarget, setMoveTarget] = useState<{ leadId: string; stageId: string } | null>(null);
   const [moveComment, setMoveComment] = useState('');
 
+  // ── complete task modal ──
+  const [completingTask, setCompletingTask] = useState<LeadActivityDto | null>(null);
+  const [completionNotes, setCompletionNotes] = useState('');
+
+  // ── confirm dialog ──
+  const [confirmDialog, setConfirmDialog] = useState<{
+    title: string;
+    message: string;
+    onConfirm: () => void;
+    danger?: boolean;
+  } | null>(null);
+
   // ── init ──
   useEffect(() => {
     if (!isAuthenticated) { router.push('/login'); return; }
-    loadKanban();
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [isAuthenticated]);
 
@@ -133,22 +146,26 @@ export default function FunnelPage() {
       setLoadingKanban(true);
       const [s, l, src, g, u] = await Promise.all([
         AuthenticatedApiService.getFunnelStages(orgId),
-        AuthenticatedApiService.getLeads(orgId),
+        AuthenticatedApiService.getLeads(orgId, filterSource ? { sourceId: filterSource } : undefined),
         AuthenticatedApiService.getLeadSources(orgId),
         AuthenticatedApiService.getGroups(orgId, 1000),
-        AuthenticatedApiService.getUsers({ organizationId: orgId, pageSize: 500, roleIds: [2, 3] }),
+        AuthenticatedApiService.getUsers({ organizationId: orgId, pageSize: 500, roleIds: [2, 3, 4] }),
       ]);
       setStages(s.sort((a, b) => a.order - b.order));
       setLeads(l);
       setSources(src);
       setGroups((g.items || []).map((gr: { id: string; name: string }) => ({ id: gr.id, name: gr.name })));
-      setStaff((u.items || []).filter((m: { id: string; fullName?: string }) => m.fullName).map((m: { id: string; fullName?: string }) => ({ id: m.id, fullName: m.fullName! })));
+      setStaff((u.items || []).filter((m: { id: string; name?: string; fullName?: string }) => m.name || m.fullName).map((m: { id: string; name?: string; fullName?: string }) => ({ id: m.id, fullName: m.fullName || m.name || '' })));
     } catch {
       showError('Ошибка при загрузке воронки');
     } finally {
       setLoadingKanban(false);
     }
-  }, [orgId, showError]);
+  }, [orgId, filterSource, showError]);
+
+  useEffect(() => {
+    if (isAuthenticated) loadKanban();
+  }, [isAuthenticated, loadKanban]);
 
   async function loadAnalytics() {
     if (!orgId) return;
@@ -240,32 +257,53 @@ export default function FunnelPage() {
   }
 
   // ── delete lead ──
-  async function handleDeleteLead(lead: LeadDto) {
-    if (!confirm(`Удалить лида «${lead.fullName}»?`)) return;
-    try {
-      await AuthenticatedApiService.deleteLead(lead.id, orgId);
-      showSuccess('Лид удалён');
-      setLeads(prev => prev.filter(l => l.id !== lead.id));
-    } catch { showError('Ошибка при удалении лида'); }
+  function handleDeleteLead(lead: LeadDto) {
+    setConfirmDialog({
+      title: 'Удалить лида',
+      message: `Удалить лида «${lead.fullName}»? Это действие нельзя отменить.`,
+      danger: true,
+      onConfirm: async () => {
+        try {
+          await AuthenticatedApiService.deleteLead(lead.id, orgId);
+          showSuccess('Лид удалён');
+          setLeads(prev => prev.filter(l => l.id !== lead.id));
+        } catch { showError('Ошибка при удалении лида'); }
+      },
+    });
   }
 
   // ── complete task ──
-  async function handleCompleteTask(task: LeadActivityDto) {
+  function handleCompleteTask(task: LeadActivityDto) {
+    setCompletingTask(task);
+    setCompletionNotes('');
+  }
+
+  async function confirmCompleteTask() {
+    if (!completingTask) return;
     try {
-      const updated = await AuthenticatedApiService.completeLeadActivity(task.id, orgId);
+      const updated = await AuthenticatedApiService.completeLeadActivity(
+        completingTask.id, orgId,
+        completionNotes.trim() ? { completionNotes: completionNotes.trim() } : undefined,
+      );
       setTasks(prev => prev.filter(t => t.id !== updated.id));
       showSuccess('Задача выполнена');
     } catch { showError('Ошибка при выполнении задачи'); }
+    finally { setCompletingTask(null); }
   }
 
   // ── initialize defaults ──
-  async function handleInitDefaults() {
-    if (!confirm('Инициализировать дефолтные этапы и источники?')) return;
-    try {
-      await AuthenticatedApiService.initializeFunnelDefaults(orgId);
-      showSuccess('Дефолтные этапы и источники созданы');
-      await loadSettings();
-    } catch { showError('Ошибка при инициализации'); }
+  function handleInitDefaults() {
+    setConfirmDialog({
+      title: 'Инициализировать воронку',
+      message: 'Создать стандартные этапы воронки и источники лидов?',
+      onConfirm: async () => {
+        try {
+          await AuthenticatedApiService.initializeFunnelDefaults(orgId);
+          showSuccess('Дефолтные этапы и источники созданы');
+          await loadSettings();
+        } catch { showError('Ошибка при инициализации'); }
+      },
+    });
   }
 
   // ── stage CRUD ──
@@ -299,15 +337,21 @@ export default function FunnelPage() {
     finally { setSavingStage(false); }
   }
 
-  async function handleDeleteStage(stage: FunnelStageDto) {
+  function handleDeleteStage(stage: FunnelStageDto) {
     if (stage.leadsCount > 0) { showError('Нельзя удалить этап с лидами. Переместите лидов сначала.'); return; }
-    if (!confirm(`Удалить этап «${stage.name}»?`)) return;
-    try {
-      await AuthenticatedApiService.deleteFunnelStage(stage.id, orgId);
-      showSuccess('Этап удалён');
-      await loadSettings();
-      await loadKanban();
-    } catch { showError('Ошибка при удалении этапа'); }
+    setConfirmDialog({
+      title: 'Удалить этап',
+      message: `Удалить этап «${stage.name}»?`,
+      danger: true,
+      onConfirm: async () => {
+        try {
+          await AuthenticatedApiService.deleteFunnelStage(stage.id, orgId);
+          showSuccess('Этап удалён');
+          await loadSettings();
+          await loadKanban();
+        } catch { showError('Ошибка при удалении этапа'); }
+      },
+    });
   }
 
   // ── source CRUD ──
@@ -339,14 +383,20 @@ export default function FunnelPage() {
     finally { setSavingSource(false); }
   }
 
-  async function handleDeleteSource(source: LeadSourceDto) {
+  function handleDeleteSource(source: LeadSourceDto) {
     if (source.leadsCount > 0) { showError('Нельзя удалить источник с лидами'); return; }
-    if (!confirm(`Удалить источник «${source.name}»?`)) return;
-    try {
-      await AuthenticatedApiService.deleteLeadSource(source.id, orgId);
-      showSuccess('Источник удалён');
-      await loadSettings();
-    } catch { showError('Ошибка при удалении источника'); }
+    setConfirmDialog({
+      title: 'Удалить источник',
+      message: `Удалить источник «${source.name}»?`,
+      danger: true,
+      onConfirm: async () => {
+        try {
+          await AuthenticatedApiService.deleteLeadSource(source.id, orgId);
+          showSuccess('Источник удалён');
+          await loadSettings();
+        } catch { showError('Ошибка при удалении источника'); }
+      },
+    });
   }
 
   // ── filtered leads per stage ──
@@ -371,7 +421,7 @@ export default function FunnelPage() {
   ] as const;
 
   return (
-    <div className="min-h-screen bg-gray-50 dark:bg-gray-900 page-container max-w-full overflow-x-hidden">
+    <div className="min-h-screen bg-gray-50 dark:bg-gray-900 page-container max-w-full">
       <div className="max-w-full mx-auto">
 
         {/* Header */}
@@ -386,13 +436,7 @@ export default function FunnelPage() {
             </div>
           </div>
           {activeTab === 'kanban' && (
-            <button
-              onClick={() => { setLeadForm(defaultLeadForm()); setShowCreateLead(true); }}
-              className="flex items-center gap-2 px-4 py-2 bg-violet-600 hover:bg-violet-700 text-white rounded-lg transition-colors font-medium text-sm shadow-sm"
-            >
-              <PlusIcon className="h-4 w-4" />
-              Добавить лида
-            </button>
+            <div className="w-2" />
           )}
         </div>
 
@@ -420,8 +464,8 @@ export default function FunnelPage() {
         {/* ── Kanban ── */}
         {activeTab === 'kanban' && (
           <>
-            {/* Search / filter bar */}
-            <div className="flex gap-3 flex-wrap mb-4">
+            {/* Search / filter bar — stays put, never scrolls */}
+            <div className="flex gap-3 flex-wrap mb-4 flex-shrink-0">
               <div className="relative flex-1 min-w-[200px]">
                 <MagnifyingGlassIcon className="h-4 w-4 absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" />
                 <input
@@ -434,7 +478,7 @@ export default function FunnelPage() {
               </div>
               <select
                 value={filterSource}
-                onChange={e => setFilterSource(e.target.value)}
+                onChange={e => { setFilterSource(e.target.value); }}
                 className="px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg text-sm bg-white dark:bg-gray-800 text-gray-700 dark:text-gray-300 focus:ring-violet-500 focus:border-violet-500"
               >
                 <option value="">Все источники</option>
@@ -443,115 +487,128 @@ export default function FunnelPage() {
               <button onClick={loadKanban} className="p-2 border border-gray-300 dark:border-gray-600 rounded-lg text-gray-500 hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors">
                 <ArrowPathIcon className="h-4 w-4" />
               </button>
+              <button
+                onClick={() => { setLeadForm(defaultLeadForm()); setShowCreateLead(true); }}
+                className="flex items-center gap-2 px-4 py-2 bg-violet-600 hover:bg-violet-700 text-white rounded-lg transition-colors font-medium text-sm shadow-sm"
+              >
+                <PlusIcon className="h-4 w-4" />
+                Добавить лида
+              </button>
             </div>
 
-            {loadingKanban ? (
-              <div className="flex justify-center py-24">
-                <div className="animate-spin h-10 w-10 border-b-2 border-violet-600 rounded-full" />
-              </div>
-            ) : stages.length === 0 ? (
-              <div className="text-center py-20">
-                <FunnelIcon className="h-16 w-16 text-gray-300 dark:text-gray-600 mx-auto mb-4" />
-                <p className="text-gray-500 dark:text-gray-400 text-lg mb-3">Воронка не настроена</p>
-                {isAdmin && (
-                  <button
-                    onClick={handleInitDefaults}
-                    className="px-6 py-2 bg-violet-600 hover:bg-violet-700 text-white rounded-lg transition-colors font-medium"
-                  >
-                    Инициализировать дефолтные этапы
-                  </button>
-                )}
-              </div>
-            ) : (
-              <div className="flex gap-4 overflow-x-auto pb-4" style={{ minHeight: '60vh' }}>
-                {stages.map(stage => {
-                  const sLeads = stageLeads(stage.id);
-                  const isWon = stage.isClosedWon;
-                  const isLost = stage.isClosedLost;
-                  return (
-                    <div
-                      key={stage.id}
-                      className="flex-shrink-0 w-72 flex flex-col rounded-xl bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 shadow-sm"
-                      onDragOver={e => onDragOver(e, stage.id)}
-                      onDrop={() => onDrop(stage.id)}
+            {/* Board area — fills remaining viewport height, only this scrolls horizontally */}
+            <div style={{ height: 'calc(100vh - 290px)', minHeight: '400px', overflow: 'hidden' }}>
+              {loadingKanban ? (
+                <div className="flex justify-center pt-16">
+                  <div className="animate-spin h-10 w-10 border-b-2 border-violet-600 rounded-full" />
+                </div>
+              ) : stages.length === 0 ? (
+                <div className="text-center py-20">
+                  <FunnelIcon className="h-16 w-16 text-gray-300 dark:text-gray-600 mx-auto mb-4" />
+                  <p className="text-gray-500 dark:text-gray-400 text-lg mb-3">Воронка не настроена</p>
+                  {isAdmin && (
+                    <button
+                      onClick={handleInitDefaults}
+                      className="px-6 py-2 bg-violet-600 hover:bg-violet-700 text-white rounded-lg transition-colors font-medium"
                     >
-                      {/* Column header */}
+                      Инициализировать дефолтные этапы
+                    </button>
+                  )}
+                </div>
+              ) : (
+                /* w-full gives the container an explicit width equal to parent,
+                   so overflow-x:auto scrolls columns WITHIN this box instead
+                   of expanding the box and scrolling the page */
+                <div className="w-full h-full flex gap-4 overflow-x-auto overflow-y-hidden pb-3 scrollbar-custom">
+                  {stages.map(stage => {
+                    const sLeads = stageLeads(stage.id);
+                    const isWon = stage.isClosedWon;
+                    const isLost = stage.isClosedLost;
+                    return (
                       <div
-                        className="px-4 py-3 rounded-t-xl flex items-center justify-between"
-                        style={{ borderTop: `3px solid ${stage.colorHex}` }}
+                        key={stage.id}
+                        className="flex-shrink-0 w-72 h-full flex flex-col rounded-xl bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 shadow-sm"
+                        onDragOver={e => onDragOver(e, stage.id)}
+                        onDrop={() => onDrop(stage.id)}
                       >
-                        <div className="flex items-center gap-2">
-                          {isWon && <CheckCircleIcon className="h-4 w-4 text-green-500" />}
-                          {isLost && <XCircleIcon className="h-4 w-4 text-red-500" />}
-                          <span className="font-semibold text-gray-900 dark:text-white text-sm">{stage.name}</span>
-                          <span
-                            className="text-xs font-bold px-2 py-0.5 rounded-full text-white"
-                            style={{ backgroundColor: stage.colorHex }}
-                          >{sLeads.length}</span>
+                        {/* Column header — fixed height */}
+                        <div
+                          className="flex-shrink-0 px-4 py-3 rounded-t-xl flex items-center justify-between"
+                          style={{ borderTop: `3px solid ${stage.colorHex}` }}
+                        >
+                          <div className="flex items-center gap-2">
+                            {isWon && <CheckCircleIcon className="h-4 w-4 text-green-500" />}
+                            {isLost && <XCircleIcon className="h-4 w-4 text-red-500" />}
+                            <span className="font-semibold text-gray-900 dark:text-white text-sm">{stage.name}</span>
+                            <span
+                              className="text-xs font-bold px-2 py-0.5 rounded-full text-white"
+                              style={{ backgroundColor: stage.colorHex }}
+                            >{sLeads.length}</span>
+                          </div>
+                        </div>
+
+                        {/* Cards — fills remaining column height, scrolls vertically */}
+                        <div className="flex-1 min-h-0 p-2 space-y-2 overflow-y-auto">
+                          {sLeads.map(lead => (
+                            <div
+                              key={lead.id}
+                              draggable
+                              onDragStart={() => onDragStart(lead.id)}
+                              onClick={() => router.push(`/funnel/${lead.id}`)}
+                              className={`group bg-gray-50 dark:bg-gray-700/60 rounded-lg p-3 border border-gray-200 dark:border-gray-600 cursor-pointer hover:shadow-md hover:border-violet-300 dark:hover:border-violet-600 transition-all select-none ${
+                                lead.convertedUserId ? 'opacity-70' : ''
+                              }`}
+                            >
+                              <div className="flex items-start justify-between gap-1 mb-1.5">
+                                <span className="font-semibold text-gray-900 dark:text-white text-sm leading-tight">{lead.fullName}</span>
+                                {isAdmin && !lead.convertedUserId && (
+                                  <button
+                                    onClick={e => { e.stopPropagation(); handleDeleteLead(lead); }}
+                                    className="opacity-0 group-hover:opacity-100 p-0.5 text-gray-400 hover:text-red-500 transition-all shrink-0"
+                                  >
+                                    <TrashIcon className="h-3.5 w-3.5" />
+                                  </button>
+                                )}
+                              </div>
+                              <div className="flex items-center gap-1 text-xs text-gray-500 dark:text-gray-400 mb-1.5">
+                                <PhoneIcon className="h-3 w-3 shrink-0" />
+                                <span>{lead.phone}</span>
+                              </div>
+                              {lead.sourceName && (
+                                <span className="inline-block text-xs bg-blue-50 dark:bg-blue-900/30 text-blue-600 dark:text-blue-400 px-1.5 py-0.5 rounded mb-1">
+                                  {lead.sourceName}
+                                </span>
+                              )}
+                              {lead.assignedToName && (
+                                <div className="flex items-center gap-1 text-xs text-gray-400 dark:text-gray-500 mt-1">
+                                  <UserIcon className="h-3 w-3" />
+                                  <span>{lead.assignedToName}</span>
+                                </div>
+                              )}
+                              {lead.convertedUserId && (
+                                <div className="mt-1.5 flex items-center gap-1 text-xs text-green-600 dark:text-green-400 font-medium">
+                                  <CheckCircleIcon className="h-3.5 w-3.5" />
+                                  Конвертирован
+                                </div>
+                              )}
+                              <div className="text-xs text-gray-400 dark:text-gray-500 mt-1.5">
+                                {fmtDate(lead.createdAt)}
+                              </div>
+                            </div>
+                          ))}
+
+                          {sLeads.length === 0 && (
+                            <div className="text-center py-6 text-xs text-gray-400 dark:text-gray-500">
+                              Нет лидов
+                            </div>
+                          )}
                         </div>
                       </div>
-
-                      {/* Cards */}
-                      <div className="flex-1 p-2 space-y-2 overflow-y-auto max-h-[calc(100vh-260px)]">
-                        {sLeads.map(lead => (
-                          <div
-                            key={lead.id}
-                            draggable
-                            onDragStart={() => onDragStart(lead.id)}
-                            onClick={() => router.push(`/funnel/${lead.id}`)}
-                            className={`group bg-gray-50 dark:bg-gray-700/60 rounded-lg p-3 border border-gray-200 dark:border-gray-600 cursor-pointer hover:shadow-md hover:border-violet-300 dark:hover:border-violet-600 transition-all select-none ${
-                              lead.convertedUserId ? 'opacity-70' : ''
-                            }`}
-                          >
-                            <div className="flex items-start justify-between gap-1 mb-1.5">
-                              <span className="font-semibold text-gray-900 dark:text-white text-sm leading-tight">{lead.fullName}</span>
-                              {isAdmin && !lead.convertedUserId && (
-                                <button
-                                  onClick={e => { e.stopPropagation(); handleDeleteLead(lead); }}
-                                  className="opacity-0 group-hover:opacity-100 p-0.5 text-gray-400 hover:text-red-500 transition-all shrink-0"
-                                >
-                                  <TrashIcon className="h-3.5 w-3.5" />
-                                </button>
-                              )}
-                            </div>
-                            <div className="flex items-center gap-1 text-xs text-gray-500 dark:text-gray-400 mb-1.5">
-                              <PhoneIcon className="h-3 w-3 shrink-0" />
-                              <span>{lead.phone}</span>
-                            </div>
-                            {lead.sourceName && (
-                              <span className="inline-block text-xs bg-blue-50 dark:bg-blue-900/30 text-blue-600 dark:text-blue-400 px-1.5 py-0.5 rounded mb-1">
-                                {lead.sourceName}
-                              </span>
-                            )}
-                            {lead.assignedToName && (
-                              <div className="flex items-center gap-1 text-xs text-gray-400 dark:text-gray-500 mt-1">
-                                <UserIcon className="h-3 w-3" />
-                                <span>{lead.assignedToName}</span>
-                              </div>
-                            )}
-                            {lead.convertedUserId && (
-                              <div className="mt-1.5 flex items-center gap-1 text-xs text-green-600 dark:text-green-400 font-medium">
-                                <CheckCircleIcon className="h-3.5 w-3.5" />
-                                Конвертирован
-                              </div>
-                            )}
-                            <div className="text-xs text-gray-400 dark:text-gray-500 mt-1.5">
-                              {fmtDate(lead.createdAt)}
-                            </div>
-                          </div>
-                        ))}
-
-                        {sLeads.length === 0 && (
-                          <div className="text-center py-6 text-xs text-gray-400 dark:text-gray-500">
-                            Нет лидов
-                          </div>
-                        )}
-                      </div>
-                    </div>
-                  );
-                })}
-              </div>
-            )}
+                    );
+                  })}
+                </div>
+              )}
+            </div>
           </>
         )}
 
@@ -560,16 +617,18 @@ export default function FunnelPage() {
           <div className="space-y-5">
             {/* Period filter */}
             <div className="flex gap-3 flex-wrap items-center bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 p-4">
-              <div className="flex items-center gap-2 text-sm text-gray-700 dark:text-gray-300">
-                <CalendarIcon className="h-4 w-4" />
-                <span>Период:</span>
+              <div className="flex-1 min-w-[240px]">
+                <DateRangePicker
+                  startDate={analyticsFrom || undefined}
+                  endDate={analyticsTo || undefined}
+                  onDateChange={(from, to) => {
+                    setAnalyticsFrom(from ?? '');
+                    setAnalyticsTo(to ?? '');
+                  }}
+                  placeholder="Выберите период аналитики"
+                />
               </div>
-              <input type="date" value={analyticsFrom} onChange={e => setAnalyticsFrom(e.target.value)}
-                className="px-3 py-1.5 border border-gray-300 dark:border-gray-600 rounded-lg text-sm bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-violet-500 focus:border-violet-500" />
-              <span className="text-gray-400">—</span>
-              <input type="date" value={analyticsTo} onChange={e => setAnalyticsTo(e.target.value)}
-                className="px-3 py-1.5 border border-gray-300 dark:border-gray-600 rounded-lg text-sm bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-violet-500 focus:border-violet-500" />
-              <button onClick={loadAnalytics} className="px-4 py-1.5 bg-violet-600 hover:bg-violet-700 text-white rounded-lg text-sm transition-colors">
+              <button onClick={loadAnalytics} className="px-4 py-2 bg-violet-600 hover:bg-violet-700 text-white rounded-lg text-sm font-medium transition-colors">
                 Применить
               </button>
             </div>
@@ -804,6 +863,45 @@ export default function FunnelPage() {
         )}
       </div>
 
+      {/* ── Complete Task Modal ── */}
+      <BaseModal isOpen={!!completingTask} onClose={() => setCompletingTask(null)} title="Выполнить задачу">
+        <div className="space-y-4">
+          {completingTask && (
+            <div className="p-3 bg-green-50 dark:bg-green-900/20 rounded-lg border border-green-200 dark:border-green-800">
+              <p className="text-sm font-medium text-green-800 dark:text-green-400">{completingTask.description}</p>
+            </div>
+          )}
+          <div>
+            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+              Что сделали / что обсудили <span className="text-gray-400 font-normal">(необязательно)</span>
+            </label>
+            <textarea
+              rows={4}
+              value={completionNotes}
+              onChange={e => setCompletionNotes(e.target.value)}
+              placeholder="Опишите результат, договорённости, следующие шаги..."
+              className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-violet-500 focus:border-violet-500 text-sm resize-none"
+              autoFocus
+            />
+          </div>
+          <div className="flex justify-end gap-3 pt-1">
+            <button
+              onClick={() => setCompletingTask(null)}
+              className="px-4 py-2 text-gray-700 dark:text-gray-300 border border-gray-300 dark:border-gray-600 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700 text-sm transition-colors"
+            >
+              Отмена
+            </button>
+            <button
+              onClick={confirmCompleteTask}
+              className="px-4 py-2 bg-green-600 hover:bg-green-700 text-white rounded-lg text-sm font-medium transition-colors flex items-center gap-2"
+            >
+              <CheckCircleIcon className="h-4 w-4" />
+              Выполнено
+            </button>
+          </div>
+        </div>
+      </BaseModal>
+
       {/* ── Move stage comment modal ── */}
       <BaseModal isOpen={!!moveTarget} onClose={() => { setMoveTarget(null); dragLeadId.current = null; }} title="Перемещение лида">
         <div className="space-y-4">
@@ -838,13 +936,18 @@ export default function FunnelPage() {
             </div>
             <div>
               <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Телефон <span className="text-red-500">*</span></label>
-              <input type="text" value={leadForm.phone} onChange={e => setLeadForm(p => ({ ...p, phone: e.target.value }))} placeholder="+7 999 123 4567"
-                className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-violet-500 focus:border-violet-500 text-sm" />
+              <PhoneInput
+                value={leadForm.phone}
+                onChange={v => setLeadForm(p => ({ ...p, phone: v }))}
+                required
+              />
             </div>
             <div>
               <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Телефон родителя</label>
-              <input type="text" value={leadForm.parentPhone ?? ''} onChange={e => setLeadForm(p => ({ ...p, parentPhone: e.target.value || null }))} placeholder="+7 999 000 0000"
-                className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-violet-500 focus:border-violet-500 text-sm" />
+              <PhoneInput
+                value={leadForm.parentPhone ?? ''}
+                onChange={v => setLeadForm(p => ({ ...p, parentPhone: v || null }))}
+              />
             </div>
             <div className="sm:col-span-2">
               <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Email</label>
@@ -960,6 +1063,38 @@ export default function FunnelPage() {
             <button onClick={() => setShowSourceModal(false)} className="px-4 py-2 text-gray-700 dark:text-gray-300 border border-gray-300 dark:border-gray-600 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700 text-sm transition-colors">Отмена</button>
             <button onClick={handleSaveSource} disabled={savingSource || !sourceForm.name.trim()} className="px-4 py-2 bg-violet-600 hover:bg-violet-700 disabled:opacity-50 disabled:cursor-not-allowed text-white rounded-lg text-sm font-medium transition-colors">
               {savingSource ? 'Сохранение...' : editingSource ? 'Сохранить' : 'Добавить'}
+            </button>
+          </div>
+        </div>
+      </BaseModal>
+
+      {/* ── Confirm Dialog ── */}
+      <BaseModal isOpen={!!confirmDialog} onClose={() => setConfirmDialog(null)} title={confirmDialog?.title ?? ''}>
+        <div className="space-y-5">
+          <div className="flex items-start gap-3">
+            {confirmDialog?.danger && (
+              <div className="flex-shrink-0 w-10 h-10 rounded-full bg-red-100 dark:bg-red-900/30 flex items-center justify-center">
+                <TrashIcon className="h-5 w-5 text-red-600 dark:text-red-400" />
+              </div>
+            )}
+            <p className="text-sm text-gray-600 dark:text-gray-400 pt-2">{confirmDialog?.message}</p>
+          </div>
+          <div className="flex justify-end gap-3">
+            <button
+              onClick={() => setConfirmDialog(null)}
+              className="px-4 py-2 text-gray-700 dark:text-gray-300 border border-gray-300 dark:border-gray-600 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700 text-sm transition-colors"
+            >
+              Отмена
+            </button>
+            <button
+              onClick={() => { confirmDialog?.onConfirm(); setConfirmDialog(null); }}
+              className={`px-4 py-2 text-white rounded-lg text-sm font-medium transition-colors ${
+                confirmDialog?.danger
+                  ? 'bg-red-600 hover:bg-red-700'
+                  : 'bg-violet-600 hover:bg-violet-700'
+              }`}
+            >
+              {confirmDialog?.danger ? 'Удалить' : 'Подтвердить'}
             </button>
           </div>
         </div>

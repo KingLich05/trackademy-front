@@ -318,27 +318,29 @@ const Sidebar: React.FC = () => {
           </nav>
         </div>
 
-        {/* Market Section - always visible at bottom */}
-        <div className="px-4 py-3 border-t border-gray-200 dark:border-gray-700 bg-gradient-to-r from-emerald-50 to-teal-50 dark:from-emerald-900/20 dark:to-teal-900/20">
-          <Link
-            href="/market"
-            className={`flex items-center gap-3 px-4 py-3 rounded-xl transition-all duration-200 group ${
-              isActive('/market')
-                ? 'bg-gradient-to-r from-emerald-500 to-teal-600 text-white shadow-md'
-                : 'text-gray-700 dark:text-gray-300 hover:bg-emerald-100 dark:hover:bg-emerald-800/30'
-            }`}
-          >
-            {isActive('/market') ? (
-              <ShoppingBagIconSolid className="h-5 w-5" />
-            ) : (
-              <ShoppingBagIcon className="h-5 w-5 text-emerald-600 dark:text-emerald-400 group-hover:text-emerald-700 dark:group-hover:text-emerald-300" />
-            )}
-            <span className="font-medium">Маркет</span>
-            {isActive('/market') && (
-              <div className="ml-auto w-2 h-2 rounded-full bg-white/80 animate-pulse"></div>
-            )}
-          </Link>
-        </div>
+        {/* Market Section - visible for Student and Admin only, hidden for Teacher */}
+        {!isTeacher && (
+          <div className="px-4 py-3 border-t border-gray-200 dark:border-gray-700 bg-gradient-to-r from-emerald-50 to-teal-50 dark:from-emerald-900/20 dark:to-teal-900/20">
+            <Link
+              href="/market"
+              className={`flex items-center gap-3 px-4 py-3 rounded-xl transition-all duration-200 group ${
+                isActive('/market')
+                  ? 'bg-gradient-to-r from-emerald-500 to-teal-600 text-white shadow-md'
+                  : 'text-gray-700 dark:text-gray-300 hover:bg-emerald-100 dark:hover:bg-emerald-800/30'
+              }`}
+            >
+              {isActive('/market') ? (
+                <ShoppingBagIconSolid className="h-5 w-5" />
+              ) : (
+                <ShoppingBagIcon className="h-5 w-5 text-emerald-600 dark:text-emerald-400 group-hover:text-emerald-700 dark:group-hover:text-emerald-300" />
+              )}
+              <span className="font-medium">Маркет</span>
+              {isActive('/market') && (
+                <div className="ml-auto w-2 h-2 rounded-full bg-white/80 animate-pulse"></div>
+              )}
+            </Link>
+          </div>
+        )}
 
         {/* Auth Section for non-authenticated users */}
         {!isAuthenticated && (

@@ -81,7 +81,6 @@ export interface PurchaseDto {
 }
 
 export interface CreateRewardRuleRequest {
-  organizationId: string;
   name: string;
   eventType: RewardEventType;
   coinAmount: number;
@@ -96,7 +95,6 @@ export interface UpdateRewardRuleRequest {
 }
 
 export interface CreateMarketItemRequest {
-  organizationId: string;
   name: string;
   description?: string | null;
   price: number;

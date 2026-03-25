@@ -1039,71 +1039,76 @@ export class AuthenticatedApiService {
   }
 
   // ── Market / Coin API ──────────────────────────────────────────────────
-  static async getMyBalance(): Promise<import('../types/Market').CoinAccountDetailedDto> {
-    return this.get('/Coin/my-balance');
+  static async getMyBalance(studentId: string, organizationId: string): Promise<import('../types/Market').CoinAccountDetailedDto> {
+    return this.get(`/Coin/${studentId}/organization/${organizationId}/detailed`);
   }
 
   static async getAllCoinBalances(organizationId: string): Promise<import('../types/Market').CoinAccountDto[]> {
-    return this.get(`/Coin/all-balances?organizationId=${organizationId}`);
+    return this.get(`/Coin/organization/${organizationId}`);
   }
 
-  static async adminAdjustCoins(data: import('../types/Market').AdminAdjustCoinRequest): Promise<void> {
-    return this.post<void>('/Coin/adjust', data);
+  static async getStudentTransactions(studentId: string, organizationId: string, limit = 50): Promise<import('../types/Market').CoinTransactionDto[]> {
+    return this.get(`/Coin/${studentId}/organization/${organizationId}/transactions?limit=${limit}`);
+  }
+
+  static async adminAdjustCoins(organizationId: string, data: import('../types/Market').AdminAdjustCoinRequest): Promise<void> {
+    return this.post<void>(`/Coin/organization/${organizationId}/adjust`, data);
   }
 
   // ── Reward Rules ───────────────────────────────────────────────────────
   static async getRewardRules(organizationId: string): Promise<import('../types/Market').RewardRuleDto[]> {
-    return this.get(`/RewardRule?organizationId=${organizationId}`);
+    return this.get(`/RewardRule/organization/${organizationId}`);
   }
 
-  static async createRewardRule(data: import('../types/Market').CreateRewardRuleRequest): Promise<import('../types/Market').RewardRuleDto> {
-    return this.post<import('../types/Market').RewardRuleDto>('/RewardRule', data);
+  static async createRewardRule(organizationId: string, data: import('../types/Market').CreateRewardRuleRequest): Promise<import('../types/Market').RewardRuleDto> {
+    return this.post<import('../types/Market').RewardRuleDto>(`/RewardRule/organization/${organizationId}`, data);
   }
 
-  static async updateRewardRule(id: string, data: import('../types/Market').UpdateRewardRuleRequest): Promise<void> {
-    return this.put<void>(`/RewardRule/${id}`, data);
+  static async updateRewardRule(ruleId: string, organizationId: string, data: import('../types/Market').UpdateRewardRuleRequest): Promise<void> {
+    return this.put<void>(`/RewardRule/${ruleId}/organization/${organizationId}`, data);
   }
 
-  static async deleteRewardRule(id: string): Promise<void> {
-    return this.delete(`/RewardRule/${id}`);
+  static async deleteRewardRule(ruleId: string, organizationId: string): Promise<void> {
+    return this.delete(`/RewardRule/${ruleId}/organization/${organizationId}`);
   }
 
   // ── Market Items ───────────────────────────────────────────────────────
   static async getMarketItems(organizationId: string): Promise<import('../types/Market').MarketItemDto[]> {
-    return this.get(`/MarketItem?organizationId=${organizationId}`);
+    return this.get(`/MarketItem/organization/${organizationId}`);
   }
 
-  static async createMarketItem(data: import('../types/Market').CreateMarketItemRequest): Promise<import('../types/Market').MarketItemDto> {
-    return this.post<import('../types/Market').MarketItemDto>('/MarketItem', data);
+  static async createMarketItem(organizationId: string, data: import('../types/Market').CreateMarketItemRequest): Promise<import('../types/Market').MarketItemDto> {
+    return this.post<import('../types/Market').MarketItemDto>(`/MarketItem/organization/${organizationId}`, data);
   }
 
-  static async updateMarketItem(id: string, data: import('../types/Market').UpdateMarketItemRequest): Promise<void> {
-    return this.put<void>(`/MarketItem/${id}`, data);
+  static async updateMarketItem(itemId: string, organizationId: string, data: import('../types/Market').UpdateMarketItemRequest): Promise<void> {
+    return this.put<void>(`/MarketItem/${itemId}/organization/${organizationId}`, data);
   }
 
-  static async deleteMarketItem(id: string): Promise<void> {
-    return this.delete(`/MarketItem/${id}`);
+  static async deleteMarketItem(itemId: string, organizationId: string): Promise<void> {
+    return this.delete(`/MarketItem/${itemId}/organization/${organizationId}`);
   }
 
   // ── Purchases ──────────────────────────────────────────────────────────
-  static async purchaseItem(data: import('../types/Market').PurchaseItemRequest): Promise<import('../types/Market').PurchaseDto> {
-    return this.post<import('../types/Market').PurchaseDto>('/Purchase', data);
+  static async purchaseItem(organizationId: string, data: import('../types/Market').PurchaseItemRequest): Promise<import('../types/Market').PurchaseDto> {
+    return this.post<import('../types/Market').PurchaseDto>(`/Purchase/organization/${organizationId}`, data);
   }
 
-  static async getMyPurchases(): Promise<import('../types/Market').PurchaseDto[]> {
-    return this.get('/Purchase/my');
+  static async getMyPurchases(studentId: string, organizationId: string): Promise<import('../types/Market').PurchaseDto[]> {
+    return this.get(`/Purchase/student/${studentId}/organization/${organizationId}`);
   }
 
-  static async getAllPurchases(organizationId: string): Promise<import('../types/Market').PurchaseDto[]> {
-    return this.get(`/Purchase?organizationId=${organizationId}`);
+  static async getAllPurchases(organizationId: string, status?: number): Promise<import('../types/Market').PurchaseDto[]> {
+    const query = status !== undefined ? `?status=${status}` : '';
+    return this.get(`/Purchase/organization/${organizationId}${query}`);
   }
 
-  static async fulfillPurchase(id: string): Promise<void> {
-    return this.post<void>(`/Purchase/${id}/fulfill`, {});
+  static async fulfillPurchase(purchaseId: string, organizationId: string): Promise<import('../types/Market').PurchaseDto> {
+    return this.put<import('../types/Market').PurchaseDto>(`/Purchase/${purchaseId}/organization/${organizationId}/fulfill`, {});
   }
 
-  static async cancelPurchase(id: string): Promise<void> {
-    return this.post<void>(`/Purchase/${id}/cancel`, {});
+  static async cancelPurchase(purchaseId: string, organizationId: string): Promise<import('../types/Market').PurchaseDto> {
+    return this.put<import('../types/Market').PurchaseDto>(`/Purchase/${purchaseId}/organization/${organizationId}/cancel`, {});
   }
 
   // ── Sales Funnel: Stages ───────────────────────────────────────────────────
@@ -1216,8 +1221,8 @@ export class AuthenticatedApiService {
     return this.put<import('../types/SalesFunnel').LeadActivityDto>(`/LeadActivity/${activityId}/organization/${organizationId}`, data);
   }
 
-  static async completeLeadActivity(activityId: string, organizationId: string): Promise<import('../types/SalesFunnel').LeadActivityDto> {
-    return this.post<import('../types/SalesFunnel').LeadActivityDto>(`/LeadActivity/${activityId}/complete/organization/${organizationId}`, {});
+  static async completeLeadActivity(activityId: string, organizationId: string, data?: { completionNotes?: string }): Promise<import('../types/SalesFunnel').LeadActivityDto> {
+    return this.post<import('../types/SalesFunnel').LeadActivityDto>(`/LeadActivity/${activityId}/complete/organization/${organizationId}`, data ?? {});
   }
 
   static async deleteLeadActivity(activityId: string, organizationId: string): Promise<void> {
