@@ -1,10 +1,10 @@
 'use client';
 
-import { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { useAuth } from '../../contexts/AuthContext';
 import { AuthenticatedApiService } from '../../services/AuthenticatedApiService';
-import { BookOpenIcon, PencilIcon, TrashIcon, PlusIcon } from '@heroicons/react/24/outline';
-import { Subject, SubjectFormData, PaymentType, getPaymentTypeLabel } from '../../types/Subject';
+import { BookOpenIcon, PencilIcon, TrashIcon, PlusIcon, ChevronDownIcon, ChevronRightIcon } from '@heroicons/react/24/outline';
+import { Subject, SubjectFormData, SubjectPackage, PaymentType, getPaymentTypeLabel } from '../../types/Subject';
 import { UniversalModal, useUniversalModal, SubjectForm, createSubjectValidator } from '../../components';
 import { DeleteConfirmationModal } from '../../components/ui/DeleteConfirmationModal';
 import { PageHeaderWithStats } from '../../components/ui/PageHeaderWithStats';
@@ -31,15 +31,24 @@ export default function SubjectsPage() {
   const [deletingSubject, setDeletingSubject] = useState<Subject | null>(null);
   const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false);
   const [pageSize, setPageSize] = useState(10);
+  const [expandedSubjectId, setExpandedSubjectId] = useState<string | null>(null);
 
   // Универсальная система модалов
-  const initialData: Record<string, unknown> = {
+  const defaultPackage: SubjectPackage = {
     name: '',
     description: '',
     price: 0,
-    paymentType: undefined, // Без значения по умолчанию
+    paymentType: PaymentType.Monthly,
     lessonsPerMonth: 0,
     totalLessons: 0,
+    hasFreezeOption: false,
+    hasMakeUpLessons: false,
+  };
+
+  const initialData: Record<string, unknown> = {
+    name: '',
+    description: '',
+    subjectPackages: [{ ...defaultPackage }],
     organizationId: user?.organizationId || ''
   };
   
@@ -53,10 +62,7 @@ export default function SubjectsPage() {
     { key: 'number', label: '№', required: true },
     { key: 'name', label: 'Название предмета', required: true },
     { key: 'description', label: 'Описание', required: false },
-    { key: 'price', label: 'Цена', required: false },
-    { key: 'paymentType', label: 'Тип оплаты', required: false },
-    { key: 'lessonsPerMonth', label: 'Уроков/месяц', required: false },
-    { key: 'totalLessons', label: 'Всего уроков', required: false },
+    { key: 'packages', label: 'Пакеты', required: false },
     { key: 'actions', label: 'Действия', required: true }
   ]);
 
@@ -179,10 +185,7 @@ export default function SubjectsPage() {
         id: subject.id,
         name: subject.name,
         description: subject.description || '',
-        price: subject.price,
-        paymentType: subject.paymentType,
-        lessonsPerMonth: subject.lessonsPerMonth,
-        totalLessons: subject.totalLessons,
+        subjectPackages: (subject.subjectPackages || []).map(pkg => ({ ...pkg })),
         organizationId: subject.organizationId
       } as SubjectFormData & { id: string });
     }
@@ -412,7 +415,7 @@ export default function SubjectsPage() {
           {/* Desktop Table */}
           <div className="hidden md:block">{!tableLoading && (
             <div className="overflow-x-auto scrollbar-custom">
-              <table className="w-full divide-y divide-gray-200 dark:divide-gray-700 table-fixed">
+              <table className="w-full divide-y divide-gray-200 dark:divide-gray-700">
                 <thead className="bg-gradient-to-r from-gray-50 to-blue-50 dark:from-gray-700 dark:to-gray-600">
                   <tr>
                     {isColumnVisible('number') && (
@@ -421,7 +424,7 @@ export default function SubjectsPage() {
                       </th>
                     )}
                     {isColumnVisible('name') && (
-                      <th className="px-3 py-3 text-left text-xs font-semibold text-gray-700 dark:text-gray-200 uppercase tracking-wider" style={{ width: '20%' }}>
+                      <th className="px-3 py-3 text-left text-xs font-semibold text-gray-700 dark:text-gray-200 uppercase tracking-wider" style={{ width: '25%' }}>
                         Название предмета
                       </th>
                     )}
@@ -430,19 +433,9 @@ export default function SubjectsPage() {
                         Описание
                       </th>
                     )}
-                    {isColumnVisible('price') && (
-                      <th className="px-3 py-3 text-left text-xs font-semibold text-gray-700 dark:text-gray-200 uppercase tracking-wider" style={{ width: '15%' }}>
-                        Цена
-                      </th>
-                    )}
-                    {isColumnVisible('paymentType') && (
-                      <th className="px-3 py-3 text-left text-xs font-semibold text-gray-700 dark:text-gray-200 uppercase tracking-wider" style={{ width: '15%' }}>
-                        Тип оплаты
-                      </th>
-                    )}
-                    {(isColumnVisible('lessonsPerMonth') || isColumnVisible('totalLessons')) && (
-                      <th className="px-3 py-3 text-left text-xs font-semibold text-gray-700 dark:text-gray-200 uppercase tracking-wider" style={{ width: '12%' }}>
-                        Уроки
+                    {isColumnVisible('packages') && (
+                      <th className="px-3 py-3 text-left text-xs font-semibold text-gray-700 dark:text-gray-200 uppercase tracking-wider">
+                        Пакеты
                       </th>
                     )}
                     {isColumnVisible('actions') && (
@@ -453,90 +446,162 @@ export default function SubjectsPage() {
                   </tr>
                 </thead>
                 <tbody className="bg-white dark:bg-gray-800 divide-y divide-gray-200 dark:divide-gray-700">
-                  {subjects.map((subject, index) => (
-                    <tr key={subject.id} className="hover:bg-gradient-to-r hover:from-blue-50 hover:to-purple-50 dark:hover:from-gray-700 dark:hover:to-gray-600 transition-all duration-200">
-                      {isColumnVisible('number') && (
-                        <td className="px-3 py-3 whitespace-nowrap text-center">
-                          <div className="flex items-center justify-center w-8 h-8 bg-gradient-to-r from-blue-500 to-purple-600 text-white text-sm font-medium rounded-lg shadow-sm mx-auto">
-                            {(currentPage - 1) * pageSize + index + 1}
-                          </div>
-                        </td>
-                      )}
-                      {isColumnVisible('name') && (
-                        <td className="px-3 py-3 truncate">
-                          <div className="flex items-center">
-                            <div className="p-2 bg-gradient-to-r from-blue-100 to-purple-100 dark:from-blue-900 dark:to-purple-900 rounded-lg mr-3">
-                              <BookOpenIcon className="h-5 w-5 text-blue-600 dark:text-blue-400" />
-                            </div>
-                            <div className="text-sm font-semibold text-gray-900 dark:text-white truncate">{subject.name}</div>
-                          </div>
-                        </td>
-                      )}
-                      {isColumnVisible('description') && (
-                        <td className="px-3 py-3">
-                          <div className="text-sm text-gray-600 dark:text-gray-300 truncate" title={subject.description}>
-                            {subject.description || (
-                              <span className="italic text-gray-400 dark:text-gray-500">Описание отсутствует</span>
-                            )}
-                          </div>
-                        </td>
-                      )}
-                      {isColumnVisible('price') && (
-                        <td className="px-3 py-3 truncate">
-                          <div className="text-sm font-medium text-gray-900 dark:text-white truncate">
-                            <span>{subject.price.toLocaleString()} тенге</span>
-                          </div>
-                        </td>
-                      )}
-                      {isColumnVisible('paymentType') && (
-                        <td className="px-3 py-3 truncate">
-                          <div className="text-sm text-gray-900 dark:text-white">
-                            <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${
-                              subject.paymentType === PaymentType.Monthly
-                                ? 'bg-blue-100 text-blue-800 dark:bg-blue-900/30 dark:text-blue-300'
-                                : subject.paymentType === PaymentType.OneTime
-                                ? 'bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-300'
-                                : 'bg-purple-100 text-purple-800 dark:bg-purple-900/30 dark:text-purple-300'
-                            }`}>
-                              {getPaymentTypeLabel(subject.paymentType)}
-                            </span>
-                          </div>
-                        </td>
-                      )}
-                      {(isColumnVisible('lessonsPerMonth') || isColumnVisible('totalLessons')) && (
-                        <td className="px-3 py-3 text-sm text-gray-900 dark:text-white">
-                          <div className="flex flex-col">
-                            <div className="text-xs text-gray-500 dark:text-gray-400 mb-1">
-                              {subject.paymentType === PaymentType.Monthly ? 'Уроков/мес' : 'Всего уроков'}
-                            </div>
-                            <div className="font-medium">
-                              {subject.paymentType === PaymentType.Monthly ? subject.lessonsPerMonth : subject.totalLessons}
-                            </div>
-                          </div>
-                        </td>
-                      )}
-                      {isColumnVisible('actions') && (
-                        <td className="px-3 py-3 whitespace-nowrap text-right text-sm font-medium">
-                          <div className="flex justify-end space-x-2">
-                            <button 
-                              onClick={() => handleEdit(subject.id)}
-                              className="p-2 text-blue-600 hover:text-blue-800 dark:text-blue-400 dark:hover:text-blue-300 bg-blue-50 hover:bg-blue-100 dark:bg-blue-900/30 dark:hover:bg-blue-900/50 rounded-lg transition-all duration-200 hover:scale-110"
-                              title="Редактировать"
-                            >
-                              <PencilIcon className="h-4 w-4" />
-                            </button>
-                            <button 
-                              onClick={() => handleDelete(subject.id)}
-                              className="p-2 text-red-600 hover:text-red-800 dark:text-red-400 dark:hover:text-red-300 bg-red-50 hover:bg-red-100 dark:bg-red-900/30 dark:hover:bg-red-900/50 rounded-lg transition-all duration-200 hover:scale-110"
-                              title="Удалить"
-                            >
-                              <TrashIcon className="h-4 w-4" />
-                            </button>
-                          </div>
-                        </td>
-                      )}
-                    </tr>
-                  ))}
+                  {subjects.map((subject, index) => {
+                    const isExpanded = expandedSubjectId === subject.id;
+                    const pkgs = subject.subjectPackages || [];
+                    return (
+                      <React.Fragment key={subject.id}>
+                        <tr
+                          className="hover:bg-gradient-to-r hover:from-blue-50 hover:to-purple-50 dark:hover:from-gray-700 dark:hover:to-gray-600 transition-all duration-200 cursor-pointer"
+                          onClick={() => setExpandedSubjectId(isExpanded ? null : subject.id)}
+                        >
+                          {isColumnVisible('number') && (
+                            <td className="px-3 py-3 whitespace-nowrap text-center">
+                              <div className="flex items-center justify-center w-8 h-8 bg-gradient-to-r from-blue-500 to-purple-600 text-white text-sm font-medium rounded-lg shadow-sm mx-auto">
+                                {(currentPage - 1) * pageSize + index + 1}
+                              </div>
+                            </td>
+                          )}
+                          {isColumnVisible('name') && (
+                            <td className="px-3 py-3">
+                              <div className="flex items-center gap-2">
+                                <span className="text-gray-400 dark:text-gray-500">
+                                  {isExpanded ? <ChevronDownIcon className="h-4 w-4" /> : <ChevronRightIcon className="h-4 w-4" />}
+                                </span>
+                                <div className="p-2 bg-gradient-to-r from-blue-100 to-purple-100 dark:from-blue-900 dark:to-purple-900 rounded-lg">
+                                  <BookOpenIcon className="h-4 w-4 text-blue-600 dark:text-blue-400" />
+                                </div>
+                                <span className="text-sm font-semibold text-gray-900 dark:text-white">{subject.name}</span>
+                              </div>
+                            </td>
+                          )}
+                          {isColumnVisible('description') && (
+                            <td className="px-3 py-3">
+                              <span className="text-sm text-gray-600 dark:text-gray-300 line-clamp-1">
+                                {subject.description || <span className="italic text-gray-400 dark:text-gray-500">—</span>}
+                              </span>
+                            </td>
+                          )}
+                          {isColumnVisible('packages') && (
+                            <td className="px-3 py-3">
+                              <div className="flex flex-wrap gap-1.5">
+                                {pkgs.slice(0, 3).map((pkg, pi) => (
+                                  <span
+                                    key={pi}
+                                    className="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-violet-100 text-violet-700 dark:bg-violet-900/30 dark:text-violet-300"
+                                  >
+                                    {pkg.name}
+                                  </span>
+                                ))}
+                                {pkgs.length > 3 && (
+                                  <span className="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-gray-100 text-gray-600 dark:bg-gray-700 dark:text-gray-400">
+                                    +{pkgs.length - 3}
+                                  </span>
+                                )}
+                                {pkgs.length === 0 && (
+                                  <span className="text-xs text-gray-400 italic">Нет пакетов</span>
+                                )}
+                              </div>
+                            </td>
+                          )}
+                          {isColumnVisible('actions') && (
+                            <td className="px-3 py-3 whitespace-nowrap" onClick={(e) => e.stopPropagation()}>
+                              <div className="flex justify-center space-x-2">
+                                <button
+                                  onClick={() => handleEdit(subject.id)}
+                                  className="p-2 text-blue-600 hover:text-blue-800 dark:text-blue-400 dark:hover:text-blue-300 bg-blue-50 hover:bg-blue-100 dark:bg-blue-900/30 dark:hover:bg-blue-900/50 rounded-lg transition-all duration-200 hover:scale-110"
+                                  title="Редактировать"
+                                >
+                                  <PencilIcon className="h-4 w-4" />
+                                </button>
+                                <button
+                                  onClick={() => handleDelete(subject.id)}
+                                  className="p-2 text-red-600 hover:text-red-800 dark:text-red-400 dark:hover:text-red-300 bg-red-50 hover:bg-red-100 dark:bg-red-900/30 dark:hover:bg-red-900/50 rounded-lg transition-all duration-200 hover:scale-110"
+                                  title="Удалить"
+                                >
+                                  <TrashIcon className="h-4 w-4" />
+                                </button>
+                              </div>
+                            </td>
+                          )}
+                        </tr>
+                        {isExpanded && pkgs.length > 0 && (
+                          <tr className="border-b border-gray-200 dark:border-gray-700">
+                            <td colSpan={10} className="p-0">
+                              <div className="bg-gradient-to-br from-slate-50 to-blue-50/50 dark:from-gray-800/80 dark:to-gray-700/50 border-t border-blue-200/40 dark:border-blue-900/30 px-6 py-5">
+                                {/* Header */}
+                                <div className="flex items-center gap-2 mb-4">
+                                  <div className="h-0.5 w-4 rounded-full bg-gradient-to-r from-blue-400 to-violet-500" />
+                                  <span className="text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-widest">
+                                    Пакеты — {subject.name}
+                                  </span>
+                                  <div className="flex-1 h-px bg-gray-200 dark:bg-gray-700" />
+                                  <span className="text-xs font-medium text-violet-500 dark:text-violet-400 bg-violet-50 dark:bg-violet-900/20 px-2 py-0.5 rounded-full">
+                                    {pkgs.length} {pkgs.length === 1 ? 'пакет' : pkgs.length < 5 ? 'пакета' : 'пакетов'}
+                                  </span>
+                                </div>
+                                {/* Package cards */}
+                                <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-4">
+                                  {pkgs.map((pkg, pi) => (
+                                    <div
+                                      key={pi}
+                                      className="group relative bg-white dark:bg-gray-800 rounded-2xl border border-gray-200/80 dark:border-gray-600/60 shadow-sm hover:shadow-md transition-all duration-200 overflow-hidden"
+                                    >
+                                      {/* Colored top stripe based on payment type */}
+                                      <div className={`h-1 w-full ${pkg.paymentType === PaymentType.Monthly ? 'bg-gradient-to-r from-blue-400 to-blue-600' : 'bg-gradient-to-r from-orange-400 to-amber-500'}`} />
+                                      <div className="p-4">
+                                        {/* Package name + type badge */}
+                                        <div className="flex items-start justify-between gap-2 mb-3">
+                                          <h4 className="font-semibold text-sm text-gray-900 dark:text-white leading-snug">{pkg.name}</h4>
+                                          <span className={`shrink-0 text-xs font-medium px-2 py-0.5 rounded-full ${pkg.paymentType === PaymentType.Monthly ? 'bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-300' : 'bg-orange-100 text-orange-700 dark:bg-orange-900/30 dark:text-orange-300'}`}>
+                                            {getPaymentTypeLabel(pkg.paymentType)}
+                                          </span>
+                                        </div>
+                                        {pkg.description && (
+                                          <p className="text-xs text-gray-500 dark:text-gray-400 mb-3 leading-relaxed">{pkg.description}</p>
+                                        )}
+                                        {/* Stats grid */}
+                                        <div className="grid grid-cols-2 gap-2 mb-3">
+                                          <div className="bg-green-50 dark:bg-green-900/20 rounded-xl p-2.5 border border-green-100 dark:border-green-800/30">
+                                            <div className="text-xs text-gray-500 dark:text-gray-400 mb-0.5">Цена</div>
+                                            <div className="text-sm font-bold text-green-700 dark:text-green-400">{pkg.price.toLocaleString()} ₸</div>
+                                          </div>
+                                          {pkg.pricePerLesson != null && pkg.pricePerLesson > 0 ? (
+                                            <div className="bg-purple-50 dark:bg-purple-900/20 rounded-xl p-2.5 border border-purple-100 dark:border-purple-800/30">
+                                              <div className="text-xs text-gray-500 dark:text-gray-400 mb-0.5">За урок</div>
+                                              <div className="text-sm font-bold text-purple-700 dark:text-purple-400">{pkg.pricePerLesson.toLocaleString()} ₸</div>
+                                            </div>
+                                          ) : (
+                                            <div className="bg-slate-50 dark:bg-slate-800/40 rounded-xl p-2.5 border border-slate-100 dark:border-slate-700/30">
+                                              <div className="text-xs text-gray-500 dark:text-gray-400 mb-0.5">
+                                                {pkg.paymentType === PaymentType.Monthly ? 'Ур/месяц' : 'Уроков всего'}
+                                              </div>
+                                              <div className="text-sm font-bold text-gray-700 dark:text-gray-300">
+                                                {pkg.paymentType === PaymentType.Monthly ? pkg.lessonsPerMonth : pkg.totalLessons}
+                                              </div>
+                                            </div>
+                                          )}
+                                        </div>
+                                        {/* Options */}
+                                        <div className="flex gap-2">
+                                          <span className={`flex items-center gap-1 text-xs px-2 py-1 rounded-lg border font-medium transition-colors ${pkg.hasFreezeOption ? 'bg-cyan-50 text-cyan-700 border-cyan-200 dark:bg-cyan-900/20 dark:text-cyan-300 dark:border-cyan-800/40' : 'bg-gray-50 text-gray-400 border-gray-200 dark:bg-gray-800 dark:text-gray-600 dark:border-gray-700 line-through'}`}>
+                                            ❄️ Заморозка
+                                          </span>
+                                          <span className={`flex items-center gap-1 text-xs px-2 py-1 rounded-lg border font-medium transition-colors ${pkg.hasMakeUpLessons ? 'bg-emerald-50 text-emerald-700 border-emerald-200 dark:bg-emerald-900/20 dark:text-emerald-300 dark:border-emerald-800/40' : 'bg-gray-50 text-gray-400 border-gray-200 dark:bg-gray-800 dark:text-gray-600 dark:border-gray-700 line-through'}`}>
+                                            🔄 Отработка
+                                          </span>
+                                        </div>
+                                      </div>
+                                    </div>
+                                  ))}
+                                </div>
+                              </div>
+                            </td>
+                          </tr>
+                        )}
+                      </React.Fragment>
+                    );
+                  })}
                 </tbody>
               </table>
             </div>
@@ -546,8 +611,10 @@ export default function SubjectsPage() {
           {/* Mobile Cards */}
           <div className="md:hidden">{!tableLoading && (
             <div className="space-y-4 p-4">
-              {subjects.map((subject, index) => (
-                <div key={subject.id} className="bg-gradient-to-r from-white to-blue-50 dark:from-gray-800 dark:to-gray-700 border border-gray-200/50 dark:border-gray-600/50 rounded-xl p-4 shadow-lg hover:shadow-xl transition-all duration-200 hover:scale-[1.02]">
+              {subjects.map((subject, index) => {
+                const pkgs = subject.subjectPackages || [];
+                return (
+                <div key={subject.id} className="bg-gradient-to-r from-white to-blue-50 dark:from-gray-800 dark:to-gray-700 border border-gray-200/50 dark:border-gray-600/50 rounded-xl p-4 shadow-lg hover:shadow-xl transition-all duration-200">
                   <div className="flex justify-between items-start mb-3">
                     <div className="flex items-center gap-3">
                       <div className="flex items-center justify-center w-8 h-8 bg-gradient-to-r from-blue-500 to-purple-600 text-white text-sm font-medium rounded-lg shadow-sm">
@@ -561,55 +628,50 @@ export default function SubjectsPage() {
                       </div>
                     </div>
                     <div className="flex space-x-2">
-                      <button 
+                      <button
                         onClick={() => handleEdit(subject.id)}
-                        className="p-2 text-blue-600 hover:text-blue-800 dark:text-blue-400 dark:hover:text-blue-300 bg-blue-50 hover:bg-blue-100 dark:bg-blue-900/30 dark:hover:bg-blue-900/50 rounded-lg transition-all duration-200 hover:scale-110"
+                        className="p-2 text-blue-600 hover:text-blue-800 dark:text-blue-400 dark:hover:text-blue-300 bg-blue-50 hover:bg-blue-100 dark:bg-blue-900/30 dark:hover:bg-blue-900/50 rounded-lg transition-all duration-200"
                       >
                         <PencilIcon className="h-4 w-4" />
                       </button>
-                      <button 
+                      <button
                         onClick={() => handleDelete(subject.id)}
-                        className="p-2 text-red-600 hover:text-red-800 dark:text-red-400 dark:hover:text-red-300 bg-red-50 hover:bg-red-100 dark:bg-red-900/30 dark:hover:bg-red-900/50 rounded-lg transition-all duration-200 hover:scale-110"
+                        className="p-2 text-red-600 hover:text-red-800 dark:text-red-400 dark:hover:text-red-300 bg-red-50 hover:bg-red-100 dark:bg-red-900/30 dark:hover:bg-red-900/50 rounded-lg transition-all duration-200"
                       >
                         <TrashIcon className="h-4 w-4" />
                       </button>
                     </div>
                   </div>
                   {subject.description && (
-                    <div className="mt-3 p-3 bg-white/60 dark:bg-gray-800/60 rounded-lg border border-gray-200/30 dark:border-gray-600/30">
-                      <div className="text-sm text-gray-600 dark:text-gray-300">
-                        {subject.description}
-                      </div>
+                    <p className="text-xs text-gray-500 dark:text-gray-400 mb-3">{subject.description}</p>
+                  )}
+                  {/* Packages */}
+                  {pkgs.length > 0 && (
+                    <div className="space-y-2 mt-2">
+                      <div className="text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wide">Пакеты ({pkgs.length})</div>
+                      {pkgs.map((pkg, pi) => (
+                        <div key={pi} className="bg-white/70 dark:bg-gray-800/70 rounded-lg border border-gray-200/40 dark:border-gray-600/40 p-2.5">
+                          <div className="font-medium text-sm text-gray-900 dark:text-white mb-1.5">{pkg.name}</div>
+                          <div className="flex flex-wrap gap-1.5 text-xs">
+                            <span className="bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-300 px-2 py-0.5 rounded-full font-medium">
+                              {pkg.price.toLocaleString()} ₸
+                            </span>
+                            <span className={`px-2 py-0.5 rounded-full font-medium ${pkg.paymentType === PaymentType.Monthly ? 'bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-300' : 'bg-orange-100 text-orange-700 dark:bg-orange-900/30 dark:text-orange-300'}`}>
+                              {getPaymentTypeLabel(pkg.paymentType)}
+                            </span>
+                            {pkg.paymentType === PaymentType.Monthly ? (
+                              <span className="bg-gray-100 text-gray-600 dark:bg-gray-700 dark:text-gray-300 px-2 py-0.5 rounded-full">{pkg.lessonsPerMonth} ур/мес</span>
+                            ) : (
+                              <span className="bg-gray-100 text-gray-600 dark:bg-gray-700 dark:text-gray-300 px-2 py-0.5 rounded-full">{pkg.totalLessons} уроков</span>
+                            )}
+                          </div>
+                        </div>
+                      ))}
                     </div>
                   )}
-                  <div className="mt-3 grid grid-cols-2 gap-3">
-                    <div className="p-3 bg-gradient-to-r from-green-50 to-emerald-50 dark:from-green-900/20 dark:to-emerald-900/20 rounded-lg border border-green-200/30 dark:border-green-600/30">
-                      <div className="text-xs text-gray-600 dark:text-gray-400 mb-1">Цена</div>
-                      <div className="text-sm font-medium text-green-700 dark:text-green-300">
-                        {subject.price.toLocaleString()} тенге
-                      </div>
-                    </div>
-                    <div className="p-3 bg-gradient-to-r from-blue-50 to-indigo-50 dark:from-blue-900/20 dark:to-indigo-900/20 rounded-lg border border-blue-200/30 dark:border-blue-600/30">
-                      <div className="text-xs text-gray-600 dark:text-gray-400 mb-1">Тип оплаты</div>
-                      <div className="text-sm font-medium text-blue-700 dark:text-blue-300">
-                        {getPaymentTypeLabel(subject.paymentType)}
-                      </div>
-                    </div>
-                  </div>
-                  
-                  {/* Lessons Configuration */}
-                  <div className="mt-3">
-                    <div className="p-3 bg-gradient-to-r from-purple-50 to-pink-50 dark:from-purple-900/20 dark:to-pink-900/20 rounded-lg border border-purple-200/30 dark:border-purple-600/30">
-                      <div className="text-xs text-gray-600 dark:text-gray-400 mb-1">
-                        {subject.paymentType === PaymentType.Monthly ? 'Уроков/мес' : 'Всего уроков'}
-                      </div>
-                      <div className="text-sm font-medium text-purple-700 dark:text-purple-300">
-                        {subject.paymentType === PaymentType.Monthly ? subject.lessonsPerMonth : subject.totalLessons}
-                      </div>
-                    </div>
-                  </div>
                 </div>
-              ))}
+                );
+              })}
             </div>
             )}
           </div>
@@ -655,22 +717,22 @@ export default function SubjectsPage() {
         data={subjectModal.editData || undefined}
         onSave={subjectModal.mode === 'create' ? handleSaveCreate : handleSaveEdit}
         validate={(data) => {
-          // Временно упрощенная валидация для тестирования
           const errors: Record<string, string> = {};
           const formData = data as SubjectFormData;
-          
+
           if (!formData.name?.trim()) {
             errors.name = 'Название обязательно';
           }
-          
-          if (formData.price === undefined || formData.price === null || Number(formData.price) < 0) {
-            errors.price = 'Цена обязательна';
+
+          const pkgs = (formData.subjectPackages as SubjectPackage[]) || [];
+          if (pkgs.length === 0) {
+            errors.subjectPackages = 'Добавьте хотя бы один пакет';
           }
-          
-          if (!formData.paymentType || ![1, 2].includes(Number(formData.paymentType))) {
-            errors.paymentType = 'Выберите тип оплаты';
-          }
-          
+          pkgs.forEach((pkg, i) => {
+            if (!pkg.name?.trim()) errors[`pkg_${i}_name`] = 'Название пакета обязательно';
+            if (pkg.price === undefined || Number(pkg.price) < 0) errors[`pkg_${i}_price`] = 'Цена обязательна';
+          });
+
           return errors;
         }}
         submitText={subjectModal.getConfig().submitText}

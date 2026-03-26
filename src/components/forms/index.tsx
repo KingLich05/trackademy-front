@@ -2,7 +2,8 @@
 
 import React from 'react';
 import { RoomFormData } from '../../types/Room';
-import { SubjectFormData } from '../../types/Subject';
+import { SubjectFormData, SubjectPackage, PaymentType, getPaymentTypeLabel } from '../../types/Subject';
+import { PlusIcon, TrashIcon } from '@heroicons/react/24/outline';
 
 export { OrganizationViewForm } from './OrganizationViewForm';
 
@@ -113,200 +114,250 @@ export const SubjectForm: React.FC<SubjectFormProps> = ({
   errors,
   setErrors
 }) => {
-  const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
-    const { name, value } = e.target;
-    
-    setFormData((prev: SubjectFormData) => ({
-      ...prev,
-      [name]: value
-    }));
+  const packages: SubjectPackage[] = (formData.subjectPackages as SubjectPackage[]) || [];
 
-    if (errors[name]) {
-      setErrors(prev => ({ ...prev, [name]: '' }));
-    }
+  const updatePackage = (index: number, field: keyof SubjectPackage, value: unknown) => {
+    const updated = packages.map((pkg, i) =>
+      i === index ? { ...pkg, [field]: value } : pkg
+    );
+    setFormData((prev: SubjectFormData) => ({ ...prev, subjectPackages: updated }));
+    const errKey = `pkg_${index}_${field}`;
+    if (errors[errKey]) setErrors(prev => ({ ...prev, [errKey]: '' }));
   };
 
+  const addPackage = () => {
+    const newPkg: SubjectPackage = {
+      name: '',
+      description: '',
+      price: 0,
+      paymentType: PaymentType.Monthly,
+      lessonsPerMonth: 0,
+      totalLessons: 0,
+      hasFreezeOption: false,
+      hasMakeUpLessons: false,
+    };
+    setFormData((prev: SubjectFormData) => ({
+      ...prev,
+      subjectPackages: [...packages, newPkg],
+    }));
+  };
+
+  const removePackage = (index: number) => {
+    setFormData((prev: SubjectFormData) => ({
+      ...prev,
+      subjectPackages: packages.filter((_, i) => i !== index),
+    }));
+  };
+
+  const inputClass = (errKey: string) =>
+    `w-full px-3 py-2 border rounded-xl focus:outline-none focus:ring-2 focus:ring-orange-500 focus:border-transparent transition-colors text-gray-900 dark:text-white text-sm ${
+      errors[errKey]
+        ? 'border-red-400 bg-red-50 dark:bg-red-900/20'
+        : 'border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700'
+    }`;
+
   return (
-    <div className="space-y-6">
+    <div className="space-y-5">
       {/* Subject Name */}
       <div>
-        <label htmlFor="subjectName" className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+        <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1.5">
           Название предмета *
         </label>
         <input
-          id="subjectName"
           type="text"
-          name="name"
           value={formData.name || ''}
-          onChange={handleInputChange}
-          className={`w-full px-4 py-3 border rounded-xl focus:outline-none focus:ring-2 focus:ring-orange-500 focus:border-transparent transition-colors ${
-            errors.name 
-              ? 'border-red-400 bg-red-50 dark:bg-red-900/20' 
-              : 'border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700'
-          } text-gray-900 dark:text-white`}
+          onChange={(e) => {
+            setFormData((prev: SubjectFormData) => ({ ...prev, name: e.target.value }));
+            if (errors.name) setErrors(prev => ({ ...prev, name: '' }));
+          }}
+          className={inputClass('name')}
           placeholder="Например: Математика"
         />
-        {errors.name && (
-          <p className="mt-1 text-sm text-red-600 dark:text-red-400">{errors.name}</p>
-        )}
+        {errors.name && <p className="mt-1 text-xs text-red-600 dark:text-red-400">{errors.name}</p>}
       </div>
 
       {/* Description */}
       <div>
-        <label htmlFor="subjectDescription" className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+        <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1.5">
           Описание
         </label>
         <textarea
-          id="subjectDescription"
-          name="description"
-          rows={3}
+          rows={2}
           value={formData.description || ''}
-          onChange={handleInputChange}
-          className="w-full px-4 py-3 border border-gray-300 dark:border-gray-600 rounded-xl focus:outline-none focus:ring-2 focus:ring-orange-500 focus:border-transparent transition-colors bg-white dark:bg-gray-700 text-gray-900 dark:text-white resize-none"
+          onChange={(e) => setFormData((prev: SubjectFormData) => ({ ...prev, description: e.target.value }))}
+          className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-xl focus:outline-none focus:ring-2 focus:ring-orange-500 focus:border-transparent transition-colors bg-white dark:bg-gray-700 text-gray-900 dark:text-white resize-none text-sm"
           placeholder="Описание предмета"
         />
       </div>
 
-      {/* Price */}
+      {/* Packages */}
       <div>
-        <label htmlFor="subjectPrice" className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-          Цена *
-        </label>
-        <input
-          id="subjectPrice"
-          type="number"
-          name="price"
-          value={formData.price === 0 ? '' : formData.price}
-          onChange={(e) => {
-            const value = e.target.value === '' ? 0 : Number(e.target.value);
-            setFormData((prev: SubjectFormData) => ({
-              ...prev,
-              price: value
-            }));
-            if (errors.price) {
-              setErrors(prev => ({ ...prev, price: '' }));
-            }
-          }}
-          className={`w-full px-4 py-3 border rounded-xl focus:outline-none focus:ring-2 focus:ring-orange-500 focus:border-transparent transition-colors ${
-            errors.price 
-              ? 'border-red-400 bg-red-50 dark:bg-red-900/20' 
-              : 'border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700'
-          } text-gray-900 dark:text-white`}
-          placeholder="Введите цену"
-          min="0"
-          required
-        />
-        {errors.price && (
-          <p className="mt-1 text-sm text-red-600 dark:text-red-400">{errors.price}</p>
-        )}
-      </div>
-
-      {/* Payment Type */}
-      <div>
-        <label htmlFor="subjectPaymentType" className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-          Тип оплаты *
-        </label>
-        <select
-          id="subjectPaymentType"
-          name="paymentType"
-          value={formData.paymentType ?? ''}
-          onChange={(e) => {
-            const value = Number(e.target.value);
-            setFormData((prev: SubjectFormData) => ({
-              ...prev,
-              paymentType: value
-            }));
-            if (errors.paymentType) {
-              setErrors(prev => ({ ...prev, paymentType: '' }));
-            }
-          }}
-          className={`w-full px-4 py-3 border rounded-xl focus:outline-none focus:ring-2 focus:ring-orange-500 focus:border-transparent transition-colors ${
-            errors.paymentType 
-              ? 'border-red-400 bg-red-50 dark:bg-red-900/20' 
-              : 'border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700'
-          } text-gray-900 dark:text-white`}
-          required
-        >
-          <option value="" disabled>Выберите тип оплаты</option>
-          <option value={1}>Ежемесячный</option>
-          <option value={2}>Единоразовый</option>
-        </select>
-        {errors.paymentType && (
-          <p className="mt-1 text-sm text-red-600 dark:text-red-400">{errors.paymentType}</p>
-        )}
-      </div>
-
-      {/* Lessons Per Month - показывается только для ежемесячного типа оплаты */}
-      {formData.paymentType === 1 && (
-        <div>
-          <label htmlFor="subjectLessonsPerMonth" className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-            Занятий в месяц *
+        <div className="flex items-center justify-between mb-3">
+          <label className="text-sm font-semibold text-gray-700 dark:text-gray-300">
+            Пакеты ({packages.length})
           </label>
-          <input
-            id="subjectLessonsPerMonth"
-            type="number"
-            name="lessonsPerMonth"
-            value={formData.lessonsPerMonth || ''}
-            onChange={(e) => {
-              const value = e.target.value === '' ? 0 : Number(e.target.value);
-              setFormData((prev: SubjectFormData) => ({
-                ...prev,
-                lessonsPerMonth: value
-              }));
-              if (errors.lessonsPerMonth) {
-                setErrors(prev => ({ ...prev, lessonsPerMonth: '' }));
-              }
-            }}
-            className={`w-full px-4 py-3 border rounded-xl focus:outline-none focus:ring-2 focus:ring-orange-500 focus:border-transparent transition-colors ${
-              errors.lessonsPerMonth 
-                ? 'border-red-400 bg-red-50 dark:bg-red-900/20' 
-                : 'border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700'
-            } text-gray-900 dark:text-white`}
-            placeholder="Количество занятий в месяц"
-            min="1"
-            required
-          />
-          {errors.lessonsPerMonth && (
-            <p className="mt-1 text-sm text-red-600 dark:text-red-400">{errors.lessonsPerMonth}</p>
+          <button
+            type="button"
+            onClick={addPackage}
+            className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium text-white bg-gradient-to-r from-blue-500 to-violet-600 rounded-lg hover:opacity-90 transition-opacity"
+          >
+            <PlusIcon className="h-3.5 w-3.5" />
+            Добавить пакет
+          </button>
+        </div>
+        {errors.subjectPackages && (
+          <p className="mb-2 text-xs text-red-600 dark:text-red-400">{errors.subjectPackages}</p>
+        )}
+        <div className="space-y-4">
+          {packages.map((pkg, i) => (
+            <div
+              key={i}
+              className="border border-gray-200 dark:border-gray-600 rounded-xl p-4 bg-gray-50/60 dark:bg-gray-700/40 space-y-3"
+            >
+              <div className="flex items-center justify-between mb-1">
+                <span className="text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider">
+                  Пакет {i + 1}
+                </span>
+                {packages.length > 1 && (
+                  <button
+                    type="button"
+                    onClick={() => removePackage(i)}
+                    className="p-1 text-red-500 hover:text-red-700 hover:bg-red-50 dark:hover:bg-red-900/30 rounded-lg transition-colors"
+                    title="Удалить пакет"
+                  >
+                    <TrashIcon className="h-4 w-4" />
+                  </button>
+                )}
+              </div>
+
+              {/* Package Name */}
+              <div>
+                <label className="block text-xs font-medium text-gray-600 dark:text-gray-400 mb-1">Название *</label>
+                <input
+                  type="text"
+                  value={pkg.name || ''}
+                  onChange={(e) => updatePackage(i, 'name', e.target.value)}
+                  className={inputClass(`pkg_${i}_name`)}
+                  placeholder="Например: Стандартный абонемент"
+                />
+                {errors[`pkg_${i}_name`] && (
+                  <p className="mt-1 text-xs text-red-600 dark:text-red-400">{errors[`pkg_${i}_name`]}</p>
+                )}
+              </div>
+
+              {/* Package Description */}
+              <div>
+                <label className="block text-xs font-medium text-gray-600 dark:text-gray-400 mb-1">Описание</label>
+                <input
+                  type="text"
+                  value={pkg.description || ''}
+                  onChange={(e) => updatePackage(i, 'description', e.target.value)}
+                  className={inputClass(`pkg_${i}_description`)}
+                  placeholder="Описание пакета"
+                />
+              </div>
+
+              {/* Price + Payment Type */}
+              <div className="grid grid-cols-2 gap-3">
+                <div>
+                  <label className="block text-xs font-medium text-gray-600 dark:text-gray-400 mb-1">Цена (тенге) *</label>
+                  <input
+                    type="number"
+                    value={pkg.price === 0 ? '' : pkg.price}
+                    onChange={(e) => updatePackage(i, 'price', e.target.value === '' ? 0 : Number(e.target.value))}
+                    className={inputClass(`pkg_${i}_price`)}
+                    placeholder="0"
+                    min="0"
+                  />
+                  {errors[`pkg_${i}_price`] && (
+                    <p className="mt-1 text-xs text-red-600 dark:text-red-400">{errors[`pkg_${i}_price`]}</p>
+                  )}
+                </div>
+                <div>
+                  <label className="block text-xs font-medium text-gray-600 dark:text-gray-400 mb-1">Тип оплаты *</label>
+                  <select
+                    value={pkg.paymentType ?? ''}
+                    onChange={(e) => updatePackage(i, 'paymentType', Number(e.target.value))}
+                    className={inputClass(`pkg_${i}_paymentType`)}
+                  >
+                    <option value="" disabled>Выбрать</option>
+                    <option value={PaymentType.Monthly}>{getPaymentTypeLabel(PaymentType.Monthly)}</option>
+                    <option value={PaymentType.OneTime}>{getPaymentTypeLabel(PaymentType.OneTime)}</option>
+                  </select>
+                </div>
+              </div>
+
+              {/* Lessons */}
+              <div className="grid grid-cols-2 gap-3">
+                <div>
+                  <label className="block text-xs font-medium text-gray-600 dark:text-gray-400 mb-1">
+                    {pkg.paymentType === PaymentType.Monthly ? 'Уроков/месяц' : 'Всего уроков'}
+                  </label>
+                  {pkg.paymentType === PaymentType.Monthly ? (
+                    <input
+                      type="number"
+                      value={pkg.lessonsPerMonth === 0 ? '' : pkg.lessonsPerMonth}
+                      onChange={(e) => updatePackage(i, 'lessonsPerMonth', e.target.value === '' ? 0 : Number(e.target.value))}
+                      className={inputClass(`pkg_${i}_lessonsPerMonth`)}
+                      placeholder="0"
+                      min="0"
+                    />
+                  ) : (
+                    <input
+                      type="number"
+                      value={pkg.totalLessons === 0 ? '' : pkg.totalLessons}
+                      onChange={(e) => updatePackage(i, 'totalLessons', e.target.value === '' ? 0 : Number(e.target.value))}
+                      className={inputClass(`pkg_${i}_totalLessons`)}
+                      placeholder="0"
+                      min="0"
+                    />
+                  )}
+                </div>
+                {pkg.paymentType === PaymentType.OneTime && (
+                  <div>
+                    <label className="block text-xs font-medium text-gray-600 dark:text-gray-400 mb-1">Уроков/месяц</label>
+                    <input
+                      type="number"
+                      value={pkg.lessonsPerMonth === 0 ? '' : pkg.lessonsPerMonth}
+                      onChange={(e) => updatePackage(i, 'lessonsPerMonth', e.target.value === '' ? 0 : Number(e.target.value))}
+                      className={inputClass(`pkg_${i}_lessonsPerMonth`)}
+                      placeholder="0"
+                      min="0"
+                    />
+                  </div>
+                )}
+              </div>
+
+              {/* Flags */}
+              <div className="flex gap-6 pt-1">
+                <label className="flex items-center gap-2 cursor-pointer select-none">
+                  <input
+                    type="checkbox"
+                    checked={pkg.hasFreezeOption}
+                    onChange={(e) => updatePackage(i, 'hasFreezeOption', e.target.checked)}
+                    className="w-4 h-4 rounded border-gray-300 text-violet-600 focus:ring-violet-500"
+                  />
+                  <span className="text-xs text-gray-700 dark:text-gray-300">Заморозка</span>
+                </label>
+                <label className="flex items-center gap-2 cursor-pointer select-none">
+                  <input
+                    type="checkbox"
+                    checked={pkg.hasMakeUpLessons}
+                    onChange={(e) => updatePackage(i, 'hasMakeUpLessons', e.target.checked)}
+                    className="w-4 h-4 rounded border-gray-300 text-violet-600 focus:ring-violet-500"
+                  />
+                  <span className="text-xs text-gray-700 dark:text-gray-300">Отработка</span>
+                </label>
+              </div>
+            </div>
+          ))}
+          {packages.length === 0 && (
+            <div className="text-center py-6 text-sm text-gray-400 dark:text-gray-500 border border-dashed border-gray-300 dark:border-gray-600 rounded-xl">
+              Нет пакетов. Нажмите «Добавить пакет».
+            </div>
           )}
         </div>
-      )}
-
-      {/* Total Lessons - показывается только для единоразового типа оплаты */}
-      {formData.paymentType === 2 && (
-        <div>
-          <label htmlFor="subjectTotalLessons" className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-            Всего занятий *
-          </label>
-          <input
-            id="subjectTotalLessons"
-            type="number"
-            name="totalLessons"
-            value={formData.totalLessons || ''}
-            onChange={(e) => {
-              const value = e.target.value === '' ? 0 : Number(e.target.value);
-              setFormData((prev: SubjectFormData) => ({
-                ...prev,
-                totalLessons: value
-              }));
-              if (errors.totalLessons) {
-                setErrors(prev => ({ ...prev, totalLessons: '' }));
-              }
-            }}
-            className={`w-full px-4 py-3 border rounded-xl focus:outline-none focus:ring-2 focus:ring-orange-500 focus:border-transparent transition-colors ${
-              errors.totalLessons 
-                ? 'border-red-400 bg-red-50 dark:bg-red-900/20' 
-                : 'border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700'
-            } text-gray-900 dark:text-white`}
-            placeholder="Общее количество занятий"
-            min="1"
-            required
-          />
-          {errors.totalLessons && (
-            <p className="mt-1 text-sm text-red-600 dark:text-red-400">{errors.totalLessons}</p>
-          )}
-        </div>
-      )}
+      </div>
     </div>
   );
 };

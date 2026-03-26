@@ -1,12 +1,21 @@
-export interface Subject {
-  id: string;
+export interface SubjectPackage {
+  id?: string;
   name: string;
   description?: string;
   price: number;
   paymentType: PaymentType;
   lessonsPerMonth: number;
   totalLessons: number;
-  pricePerLesson: number;
+  hasFreezeOption: boolean;
+  hasMakeUpLessons: boolean;
+  pricePerLesson?: number;
+}
+
+export interface Subject {
+  id: string;
+  name: string;
+  description?: string;
+  subjectPackages: SubjectPackage[];
   organizationId: string;
   createdAt?: string;
   updatedAt?: string;
@@ -15,22 +24,8 @@ export interface Subject {
 export interface SubjectFormData extends Record<string, unknown> {
   name: string;
   description?: string;
-  price: number;
-  paymentType: PaymentType;
-  lessonsPerMonth: number;
-  totalLessons: number;
-  pricePerLesson?: number;
+  subjectPackages: SubjectPackage[];
   organizationId: string;
-}
-
-export interface SubjectAddModel {
-  name: string;              // Обязательно, макс 200 символов
-  description?: string;      // Опционально, макс 1000 символов  
-  price: number;            // Обязательно, >= 0
-  paymentType: PaymentType; // Enum: Monthly/OneTime
-  lessonsPerMonth?: number; // Для ежемесячного типа, > 0
-  totalLessons?: number;    // Для единоразового типа, > 0
-  organizationId: string;   // Обязательно (UUID)
 }
 
 export enum PaymentType {
