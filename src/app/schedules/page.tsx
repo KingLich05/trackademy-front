@@ -25,6 +25,7 @@ import { DeleteConfirmationModal } from '../../components/ui/DeleteConfirmationM
 import { DaysOfWeekDisplay } from '../../components/ui/DaysOfWeekDisplay';
 import UniversalModal from '../../components/ui/UniversalModal';
 import { useUniversalModal } from '../../hooks/useUniversalModal';
+import CreateScheduleDrawer from '../../components/CreateScheduleDrawer';
 import { TimeInput } from '../../components/ui/TimeInput';
 import { DaysOfWeekSelector } from '../../components/ui/DaysOfWeekSelector';
 import { DateRangePicker } from '../../components/ui/DateRangePicker';
@@ -59,6 +60,7 @@ export default function SchedulesPage() {
   // Modal states
   const [deletingSchedule, setDeletingSchedule] = useState<Schedule | null>(null);
   const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false);
+  const [isScheduleDrawerOpen, setIsScheduleDrawerOpen] = useState(false);
 
   // Универсальная система модалов для расписаний
   const scheduleModal = useUniversalModal('schedule', {
@@ -269,7 +271,7 @@ export default function SchedulesPage() {
   };
 
   const handleCreate = () => {
-    handleCreateUniversal();
+    setIsScheduleDrawerOpen(true);
   };
 
   const handleExportDateRangeChange = (startDate?: string, endDate?: string) => {
@@ -1226,6 +1228,20 @@ export default function SchedulesPage() {
         {/* Pagination */}
         {renderPagination()}
         </div>
+
+        {/* Create Schedule Drawer */}
+        <CreateScheduleDrawer
+          isOpen={isScheduleDrawerOpen}
+          onClose={() => setIsScheduleDrawerOpen(false)}
+          onSave={async (formData) => {
+            await handleSaveCreate(formData);
+            setIsScheduleDrawerOpen(false);
+          }}
+          groups={groups}
+          teachers={teachers}
+          rooms={rooms}
+          organizationId={user?.organizationId || ''}
+        />
 
         {/* Delete Confirmation Modal */}
         <DeleteConfirmationModal
