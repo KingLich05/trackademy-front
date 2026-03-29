@@ -75,7 +75,7 @@ function eventLabel(t: RewardEventType) {
 }
 
 const defaultItemForm = {
-  name: '', description: '', price: 10,
+  name: '', description: '', price: '' as string | number,
   itemType: MarketItemType.Virtual as MarketItemType,
   imageUrl: '', stockQuantity: '', maxPerStudent: '', isActive: true,
 };
@@ -342,7 +342,7 @@ export default function MarketPage() {
       setItemForm({
         name: item.name,
         description: item.description ?? '',
-        price: item.price,
+        price: String(item.price),
         itemType: item.itemType,
         imageUrl: item.imageUrl ?? '',
         stockQuantity: item.stockQuantity !== null ? String(item.stockQuantity) : '',
@@ -388,7 +388,10 @@ export default function MarketPage() {
       }
       setShowItemModal(false);
       await loadItems();
-    } catch { showError('Ошибка при сохранении товара'); }
+    } catch (err: unknown) {
+      const message = (err as { message?: string })?.message;
+      showError(message && message !== 'Failed to fetch' ? message : 'Ошибка при сохранении товара');
+    }
     finally { setSavingItem(false); }
   }
 
@@ -1026,7 +1029,8 @@ export default function MarketPage() {
                 type="number"
                 min={1}
                 value={itemForm.price}
-                onChange={e => setItemForm(prev => ({ ...prev, price: Number(e.target.value) }))}
+                onChange={e => setItemForm(prev => ({ ...prev, price: e.target.value }))}
+                placeholder="Например: 10"
                 className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-amber-500 focus:border-amber-500"
               />
             </div>

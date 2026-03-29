@@ -561,10 +561,12 @@ export default function FunnelPage() {
                             >
                               <div className="flex items-start justify-between gap-1 mb-1.5">
                                 <span className="font-semibold text-gray-900 dark:text-white text-sm leading-tight">{lead.fullName}</span>
-                                {isAdmin && !lead.convertedUserId && (
+                                {isAdmin && (
                                   <button
-                                    onClick={e => { e.stopPropagation(); handleDeleteLead(lead); }}
-                                    className="opacity-0 group-hover:opacity-100 p-0.5 text-gray-400 hover:text-red-500 transition-all shrink-0"
+                                    onClick={e => { e.stopPropagation(); if (!lead.convertedUserId) handleDeleteLead(lead); }}
+                                    disabled={!!lead.convertedUserId}
+                                    title={lead.convertedUserId ? 'Нельзя удалить конвертированного лида' : 'Удалить'}
+                                    className={`p-0.5 transition-all shrink-0 ${lead.convertedUserId ? 'opacity-30 cursor-not-allowed text-gray-400' : 'opacity-0 group-hover:opacity-100 text-gray-400 hover:text-red-500'}`}
                                   >
                                     <TrashIcon className="h-3.5 w-3.5" />
                                   </button>

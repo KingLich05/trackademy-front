@@ -106,6 +106,9 @@ export default function LeadDetailPage() {
   const [loseReason, setLoseReason] = useState('');
   const [losing, setLosing] = useState(false);
 
+  const [showDelete, setShowDelete] = useState(false);
+  const [deleting, setDeleting] = useState(false);
+
   // ── init ──
   useEffect(() => {
     if (!isAuthenticated) { router.push('/login'); return; }
@@ -291,12 +294,14 @@ export default function LeadDetailPage() {
   }
 
   async function handleDeleteLead() {
-    if (!lead || !confirm(`Удалить лида «${lead.fullName}»? Это действие необратимо.`)) return;
+    if (!lead) return;
     try {
+      setDeleting(true);
       await AuthenticatedApiService.deleteLead(lead.id, orgId);
       showSuccess('Лид удалён');
       router.push('/funnel');
     } catch { showError('Ошибка при удалении лида'); }
+    finally { setDeleting(false); }
   }
 
   // ─────────────────────────────────────────────────────────────────────────────
@@ -390,7 +395,12 @@ export default function LeadDetailPage() {
                   </>
                 )}
                 {isAdmin && (
-                  <button onClick={handleDeleteLead} className="flex items-center gap-1.5 px-3 py-1.5 text-sm border border-red-300 dark:border-red-700 text-red-600 dark:text-red-400 rounded-lg hover:bg-red-50 dark:hover:bg-red-900/20 transition-colors">
+                  <button
+                    onClick={isConverted ? undefined : () => setShowDelete(true)}
+                    disabled={isConverted}
+                    title={isConverted ? 'Нельзя удалить конвертированного лида' : 'Удалить'}
+                    className={`flex items-center gap-1.5 px-3 py-1.5 text-sm border rounded-lg transition-colors ${isConverted ? 'border-red-200 dark:border-red-900 text-red-400 dark:text-red-700 opacity-50 cursor-not-allowed' : 'border-red-300 dark:border-red-700 text-red-600 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-900/20'}`}
+                  >
                     <TrashIcon className="h-4 w-4" />Удалить
                   </button>
                 )}
@@ -833,6 +843,29 @@ export default function LeadDetailPage() {
             <button onClick={() => setShowLose(false)} className="px-4 py-2 text-gray-700 dark:text-gray-300 border border-gray-300 dark:border-gray-600 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700 text-sm transition-colors">Отмена</button>
             <button onClick={handleLose} disabled={losing || !loseReason.trim()} className="px-4 py-2 bg-red-600 hover:bg-red-700 disabled:opacity-50 text-white rounded-lg text-sm font-medium transition-colors">
               {losing ? 'Сохранение...' : 'Потерян'}
+            </button>
+          </div>
+        </div>
+      </BaseModal>
+
+      {/* Delete confirmation modal */}
+      <BaseModal
+        isOpen={showDelete}
+        onClose={() => setShowDelete(false)}
+        title="Удалить лида"
+        subtitle={lead?.fullName}
+        gradientFrom="from-red-500"
+        gradientTo="to-red-700"
+        maxWidth="sm"
+      >
+        <div className="space-y-4">
+          <div className="p-3 bg-red-50 dark:bg-red-900/20 rounded-lg border border-red-200 dark:border-red-800">
+            <p className="text-sm text-red-700 dark:text-red-400">Это действие необратимо. Вся активность и история этапов лида будут удалены.</p>
+          </div>
+          <div className="flex justify-end gap-3 pt-2">
+            <button onClick={() => setShowDelete(false)} className="px-4 py-2 text-gray-700 dark:text-gray-300 border border-gray-300 dark:border-gray-600 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700 text-sm transition-colors">Отмена</button>
+            <button onClick={handleDeleteLead} disabled={deleting} className="px-4 py-2 bg-red-600 hover:bg-red-700 disabled:opacity-50 text-white rounded-lg text-sm font-medium transition-colors">
+              {deleting ? 'Удаление...' : 'Да, удалить'}
             </button>
           </div>
         </div>

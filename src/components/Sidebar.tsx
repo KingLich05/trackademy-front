@@ -55,7 +55,7 @@ const Sidebar: React.FC = () => {
     { name: 'Организации', href: '/organizations', icon: BuildingOfficeIcon, activeIcon: BuildingOfficeIconSolid, requireAuth: true, requireOwner: true, requireAdmin: false, requireStudent: false, hideForStudentTeacher: false },
     { name: 'Документы', href: '/documents', icon: DocumentTextIcon, activeIcon: DocumentTextIconSolid, requireAuth: true, requireOwner: true, requireAdmin: false, requireStudent: false, hideForStudentTeacher: false },
     { name: 'Пользователи', href: '/students', icon: AcademicCapIcon, activeIcon: AcademicCapIconSolid, requireAuth: true, requireOwner: false, requireAdmin: false, requireStudent: false, hideForStudentTeacher: true },
-    { name: 'Воронка продаж', href: '/funnel', icon: FunnelIcon, activeIcon: FunnelIconSolid, requireAuth: true, requireOwner: false, requireAdmin: false, requireStudent: false, hideForStudentTeacher: false, hideForStudent: true },
+    { name: 'Воронка продаж', href: '/funnel', icon: FunnelIcon, activeIcon: FunnelIconSolid, requireAuth: true, requireOwner: false, requireAdmin: false, requireStudent: false, hideForStudentTeacher: false, hideForStudent: true, hideForTeacher: true },
     { name: 'Кабинеты', href: '/rooms', icon: HomeModernIcon, activeIcon: HomeModernIconSolid, requireAuth: true, requireOwner: false, requireAdmin: false, requireStudent: false, hideForStudentTeacher: true },
     { name: 'Предметы', href: '/subjects', icon: BookOpenIcon, activeIcon: BookOpenIconSolid, requireAuth: true, requireOwner: false, requireAdmin: false, requireStudent: false, hideForStudentTeacher: true },
     { name: 'Группы', href: '/groups', icon: UserGroupIcon, activeIcon: UserGroupIconSolid, requireAuth: true, requireOwner: false, requireAdmin: true, requireStudent: false, hideForStudentTeacher: false },
@@ -81,6 +81,11 @@ const Sidebar: React.FC = () => {
       
       // Hide items specifically for students
       if (item.hideForStudent && isStudent) {
+        return false;
+      }
+
+      // Hide items specifically for teachers
+      if ('hideForTeacher' in item && item.hideForTeacher && isTeacher) {
         return false;
       }
       

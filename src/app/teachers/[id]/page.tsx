@@ -3,6 +3,9 @@
 import { useState, useEffect } from 'react';
 import { useParams, useRouter } from 'next/navigation';
 import { AuthenticatedApiService, TeacherProfile } from '../../../services/AuthenticatedApiService';
+import { useAuth } from '../../../contexts/AuthContext';
+import { useToast } from '../../../contexts/ToastContext';
+import { BaseModal } from '../../../components/ui/BaseModal';
 import { LoadingSpinner } from '../../../components/ui/LoadingSpinner';
 import { DateRangePicker } from '../../../components/ui/DateRangePicker';
 import {
@@ -82,9 +85,13 @@ function translateRole(role: string): string {
 export default function TeacherDetailPage() {
   const params = useParams();
   const router = useRouter();
+  const { user } = useAuth();
+  const { showSuccess, showError } = useToast();
   const [teacherProfile, setTeacherProfile] = useState<TeacherProfile | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [isRefreshing, setIsRefreshing] = useState(false);
+  const [resettingPassword, setResettingPassword] = useState(false);
+  const [showResetModal, setShowResetModal] = useState(false);
   const [dateFrom, setDateFrom] = useState<string | undefined>(() => getDefaultDateFrom());
   const [dateTo, setDateTo] = useState<string | undefined>(() => getDefaultDateTo());
 
@@ -112,6 +119,22 @@ export default function TeacherDetailPage() {
     }
     fetchTeacherProfile();
   }, [teacherId, dateFrom, dateTo]);
+
+  const handleResetPassword = async () => {
+    setShowResetModal(false);
+    setResettingPassword(true);
+    try {
+      await AuthenticatedApiService.post('/User/reset-password', {
+        userId: teacherId
+      });
+      showSuccess('Пароль успешно сброшен. Новый пароль отправлен в WhatsApp преподавателя.');
+    } catch (error) {
+      console.error('Error resetting password:', error);
+      showError('Ошибка при сбросе пароля');
+    } finally {
+      setResettingPassword(false);
+    }
+  };
 
   const fetchTeacherProfile = async () => {
     try {
@@ -151,6 +174,7 @@ export default function TeacherDetailPage() {
     : 1;
 
   return (
+    <>
     <div className="min-h-screen bg-gray-50 dark:bg-gray-900 p-4 sm:p-6 lg:p-8 page-container">
       <div className="max-w-5xl mx-auto space-y-6">
 
@@ -333,6 +357,32 @@ export default function TeacherDetailPage() {
                   </div>
                 </li>
               </ul>
+
+              {/* Безопасность */}
+              {(user?.role === 'Administrator' || user?.role === 'Owner') && (
+                <div className="border-t border-gray-200 dark:border-gray-600 pt-4 mt-4">
+                  <div className="flex items-center justify-between">
+                    <div>
+                      <h4 className="text-sm font-medium text-gray-900 dark:text-white">Безопасность</h4>
+                      <p className="text-xs text-gray-500 dark:text-gray-400">Управление паролем пользователя</p>
+                    </div>
+                    <button
+                      onClick={() => setShowResetModal(true)}
+                      disabled={resettingPassword}
+                      className="inline-flex items-center gap-2 px-3 py-2 text-sm font-medium text-orange-700 bg-orange-100 hover:bg-orange-200 dark:bg-orange-900/30 dark:text-orange-400 dark:hover:bg-orange-900/50 rounded-lg transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                    >
+                      {resettingPassword ? (
+                        <>
+                          <div className="w-4 h-4 border-2 border-orange-600/20 border-t-orange-600 rounded-full animate-spin"></div>
+                          Сброс...
+                        </>
+                      ) : (
+                        'Сбросить пароль'
+                      )}
+                    </button>
+                  </div>
+                </div>
+              )}
             </div>
 
             {/* Hours by group */}
@@ -447,5 +497,38 @@ export default function TeacherDetailPage() {
         </div>
       </div>
     </div>
+
+    {/* Reset password confirmation modal */}
+    <BaseModal
+      isOpen={showResetModal}
+      onClose={() => setShowResetModal(false)}
+      title="Сброс пароля"
+      subtitle={teacherProfile.fullName}
+      maxWidth="sm"
+      gradientFrom="from-orange-500"
+      gradientTo="to-red-500"
+    >
+      <div className="p-6 space-y-5">
+        <p className="text-sm text-gray-600 dark:text-gray-300">
+          Вы уверены, что хотите сбросить пароль преподавателя? Новый пароль будет отправлен в <span className="font-semibold text-green-600 dark:text-green-400">WhatsApp</span>.
+        </p>
+        <div className="flex justify-end gap-3">
+          <button
+            onClick={() => setShowResetModal(false)}
+            className="px-4 py-2 text-sm font-medium text-gray-700 dark:text-gray-300 bg-gray-100 dark:bg-gray-700 hover:bg-gray-200 dark:hover:bg-gray-600 rounded-lg transition-colors"
+          >
+            Отмена
+          </button>
+          <button
+            onClick={handleResetPassword}
+            disabled={resettingPassword}
+            className="px-4 py-2 text-sm font-medium text-white bg-orange-500 hover:bg-orange-600 rounded-lg transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+          >
+            Сбросить пароль
+          </button>
+        </div>
+      </div>
+    </BaseModal>
+    </>
   );
 }

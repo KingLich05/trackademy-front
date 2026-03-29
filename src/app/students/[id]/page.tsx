@@ -9,6 +9,7 @@ import { StudentProfile, GroupAttendance, UpcomingLesson, RecentLesson, BalanceH
 import { Group } from '../../../types/Group';
 import { StudentFlag } from '../../../types/StudentFlag';
 import { StudentStatus, getStudentStatusName } from '../../../types/StudentCrm';
+import { getRoleName } from '../../../types/Role';
 import { ArrowLeftIcon, CalendarIcon, ChartBarIcon, CreditCardIcon, AcademicCapIcon, ClockIcon, BanknotesIcon, PencilIcon, FlagIcon, XMarkIcon, PlusCircleIcon, UserMinusIcon, ReceiptPercentIcon, LockClosedIcon, LockOpenIcon, CurrencyDollarIcon, ArrowRightIcon } from '@heroicons/react/24/outline';
 import { LoadingSpinner } from '../../../components/ui/LoadingSpinner';
 import { BaseModal } from '../../../components/ui/BaseModal';
@@ -473,7 +474,7 @@ export default function StudentDetailPage() {
       await AuthenticatedApiService.post('/User/reset-password', {
         userId: userId
       });
-      showSuccess('Пароль успешно сброшен. Новый пароль отправлен на email студента.');
+      showSuccess('Пароль успешно сброшен. Новый пароль отправлен в WhatsApp студента.');
     } catch (error) {
       console.error('Error resetting password:', error);
       showError('Ошибка при сбросе пароля');
@@ -774,7 +775,7 @@ export default function StudentDetailPage() {
                 
                 <div>
                   <label className="block text-sm font-medium text-gray-500 dark:text-gray-400">Роль</label>
-                  <p className="mt-1 text-sm text-gray-900 dark:text-white">{studentProfile.role}</p>
+                  <p className="mt-1 text-sm text-gray-900 dark:text-white">{getRoleName(studentProfile.role)}</p>
                 </div>
                 
                 {studentProfile.comment && (
