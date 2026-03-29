@@ -216,10 +216,12 @@ export const GroupDetailsModal = ({ isOpen, onClose, groupId, groupName }: Group
                             )}
                           </div>
                           <div className="flex items-center gap-1.5 flex-wrap">
-                            <span className="inline-flex items-center gap-1 text-[11px] px-2 py-0.5 rounded-full bg-emerald-500/10 text-emerald-400 border border-emerald-500/20 font-medium">
-                              <CheckCircleIcon className="h-3 w-3" />
-                              {student.attendedLessons} посещено
-                            </span>
+                            {student.attendedLessons > 0 && (
+                              <span className="inline-flex items-center gap-1 text-[11px] px-2 py-0.5 rounded-full bg-emerald-500/10 text-emerald-400 border border-emerald-500/20 font-medium">
+                                <CheckCircleIcon className="h-3 w-3" />
+                                {student.attendedLessons} посещено
+                              </span>
+                            )}
                             {student.lateLessons > 0 && (
                               <span className="inline-flex items-center gap-1 text-[11px] px-2 py-0.5 rounded-full bg-amber-500/10 text-amber-400 border border-amber-500/20 font-medium">
                                 <ClockIcon className="h-3 w-3" />
