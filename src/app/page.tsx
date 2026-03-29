@@ -22,7 +22,7 @@ import {
 import { useAuth } from '../contexts/AuthContext';
 import { useApiToast } from '../hooks/useApiToast';
 import { DashboardApiService } from '../services/DashboardApiService';
-import { DashboardSummary, DashboardStats, TeacherDashboardSummary, StudentDashboardSummary } from '../types/Dashboard';
+import { DashboardSummary, DashboardStats, TeacherDashboardSummary, StudentDashboardSummary, UpcomingBirthday } from '../types/Dashboard';
 import { StatsCard } from '../components/dashboard/StatsCard';
 import { PageHeaderWithStats } from '../components/ui/PageHeaderWithStats';
 import Link from 'next/link';
@@ -943,6 +943,59 @@ export default function Dashboard() {
                 <StatsCard key={index} stat={stat} />
               ))}
             </div>
+
+            {/* Upcoming Birthdays */}
+            {summary.upcomingBirthdays && summary.upcomingBirthdays.length > 0 && (
+              <div className="bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700 overflow-hidden">
+                <div className="flex items-center gap-3 px-5 py-4 border-b border-gray-200 dark:border-gray-700 bg-gradient-to-r from-pink-50 to-rose-50 dark:from-pink-900/20 dark:to-rose-900/20">
+                  <div className="w-8 h-8 rounded-lg bg-pink-100 dark:bg-pink-900/40 flex items-center justify-center text-lg">
+                    🎂
+                  </div>
+                  <div>
+                    <h3 className="text-sm font-semibold text-gray-900 dark:text-white">Предстоящие дни рождения</h3>
+                    <p className="text-xs text-gray-500 dark:text-gray-400">Ближайшие 7 дней</p>
+                  </div>
+                  <span className="ml-auto inline-flex items-center justify-center w-6 h-6 rounded-full bg-pink-500 text-white text-xs font-bold">
+                    {summary.upcomingBirthdays.length}
+                  </span>
+                </div>
+                <ul className="divide-y divide-gray-100 dark:divide-gray-700/50">
+                  {(summary.upcomingBirthdays as UpcomingBirthday[]).map((b) => {
+                    const date = new Date(b.birthday);
+                    const dateLabel = date.toLocaleDateString('ru-RU', { day: 'numeric', month: 'long' });
+                    const today = new Date();
+                    const thisYearBirthday = new Date(today.getFullYear(), date.getMonth(), date.getDate());
+                    if (thisYearBirthday < today) thisYearBirthday.setFullYear(today.getFullYear() + 1);
+                    const daysLeft = Math.ceil((thisYearBirthday.getTime() - today.getTime()) / 86400000);
+                    const isToday = daysLeft === 0;
+                    return (
+                      <li key={b.studentId} className={`flex items-center gap-4 px-5 py-3 transition-colors hover:bg-gray-50 dark:hover:bg-gray-700/40 ${isToday ? 'bg-pink-50/60 dark:bg-pink-900/10' : ''}`}>
+                        {/* Avatar */}
+                        <div className="w-9 h-9 rounded-full bg-gradient-to-br from-pink-400 to-rose-500 flex items-center justify-center shrink-0">
+                          <span className="text-white text-sm font-bold">{b.fullName.charAt(0)}</span>
+                        </div>
+                        {/* Name & phone */}
+                        <div className="flex-1 min-w-0">
+                          <p className="text-sm font-medium text-gray-900 dark:text-white truncate">{b.fullName}</p>
+                          <p className="text-xs text-gray-500 dark:text-gray-400">{b.phone}</p>
+                        </div>
+                        {/* Date badge */}
+                        <div className="shrink-0 text-right">
+                          <p className="text-sm font-semibold text-gray-800 dark:text-gray-200">{dateLabel}</p>
+                          {isToday ? (
+                            <span className="inline-flex items-center gap-1 text-xs font-semibold text-pink-600 dark:text-pink-400">
+                              🎉 Сегодня!
+                            </span>
+                          ) : (
+                            <p className="text-xs text-gray-400 dark:text-gray-500">через {daysLeft} д.</p>
+                          )}
+                        </div>
+                      </li>
+                    );
+                  })}
+                </ul>
+              </div>
+            )}
 
             {/* Last Updated */}
             <div className="bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700 p-4">

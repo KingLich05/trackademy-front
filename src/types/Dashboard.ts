@@ -1,3 +1,10 @@
+export interface UpcomingBirthday {
+  studentId: string;
+  fullName: string;
+  phone: string;
+  birthday: string; // "YYYY-MM-DD"
+}
+
 export interface DashboardSummary {
   totalStudents: number;
   activeStudents: number;
@@ -12,6 +19,7 @@ export interface DashboardSummary {
   totalDebt: number;
   frozenStudentsCount: number;
   expiredFreezeCount: number;
+  upcomingBirthdays: UpcomingBirthday[];
   lastUpdated: string;
 }
 
