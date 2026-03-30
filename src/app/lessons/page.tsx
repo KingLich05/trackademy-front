@@ -25,7 +25,7 @@ import { DateRangePicker } from '@/components/ui/DateRangePicker';
 import { useApiToast } from '@/hooks/useApiToast';
 
 export default function LessonsPage() {
-  const { user } = useAuth();
+  const { user, isLoading } = useAuth();
   const router = useRouter();
 
   // Toast уведомления для API операций
@@ -81,11 +81,12 @@ export default function LessonsPage() {
 
   // Check authorization
   useEffect(() => {
+    if (isLoading) return;
     if (!user) {
       router.push('/login');
       return;
     }
-  }, [user, router]);
+  }, [isLoading, user, router]);
 
   // Load initial data
   useEffect(() => {

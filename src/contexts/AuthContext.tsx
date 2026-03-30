@@ -19,6 +19,7 @@ interface AuthContextType {
   user: User | null;
   token: string | null;
   isAuthenticated: boolean;
+  isLoading: boolean;
   hasAgreedToTerms: boolean;
   needsAgreement: boolean;
   login: (user: User) => void;
@@ -45,6 +46,7 @@ const AuthContext = createContext<AuthContextType | undefined>(undefined);
 export function AuthProvider({ children }: Readonly<{ children: ReactNode }>) {
   const [user, setUser] = useState<User | null>(null);
   const [token, setToken] = useState<string | null>(null);
+  const [isLoading, setIsLoading] = useState(true);
   const [hasAgreedToTerms, setHasAgreedToTerms] = useState<boolean>(false);
   const [needsAgreement, setNeedsAgreement] = useState<boolean>(false);
 
@@ -129,6 +131,8 @@ export function AuthProvider({ children }: Readonly<{ children: ReactNode }>) {
     if (storedToken) {
       setToken(storedToken);
     }
+
+    setIsLoading(false);
   }, []);
 
   const loginWithCredentials = useCallback(async (userLogin: string, password: string, organizationId?: string) => {
@@ -430,6 +434,7 @@ export function AuthProvider({ children }: Readonly<{ children: ReactNode }>) {
     user,
     token,
     isAuthenticated: !!user,
+    isLoading,
     hasAgreedToTerms,
     needsAgreement,
     login,

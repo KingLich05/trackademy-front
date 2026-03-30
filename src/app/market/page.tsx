@@ -88,7 +88,7 @@ const defaultRuleForm = {
 // ─── page ────────────────────────────────────────────────────────────────────
 
 export default function MarketPage() {
-  const { user, isAuthenticated } = useAuth();
+  const { user, isAuthenticated, isLoading } = useAuth();
   const { showSuccess, showError } = useToast();
   const router = useRouter();
 
@@ -142,6 +142,7 @@ export default function MarketPage() {
 
   // ── initial load ──
   useEffect(() => {
+    if (isLoading) return;
     if (!isAuthenticated) { router.push('/login'); return; }
     if (user?.role === 'Teacher') { router.push('/'); return; }
     loadItems();
@@ -150,7 +151,7 @@ export default function MarketPage() {
       loadMyPurchases();
     }
   // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [isAuthenticated]);
+  }, [isAuthenticated, isLoading]);
 
   // ── tab-driven loads ──
   useEffect(() => {

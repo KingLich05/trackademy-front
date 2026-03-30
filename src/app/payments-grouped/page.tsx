@@ -83,7 +83,7 @@ interface Subject {
 }
 
 export default function PaymentsGroupedPage() {
-  const { user } = useAuth();
+  const { user, isLoading } = useAuth();
   const router = useRouter();
   
   // Check if user is admin or owner
@@ -167,10 +167,11 @@ export default function PaymentsGroupedPage() {
   const [groups, setGroups] = useState<Group[]>([]);
 
   useEffect(() => {
+    if (isLoading) return;
     if (!isAdmin) {
       router.push('/');
     }
-  }, [isAdmin, router]);
+  }, [isLoading, isAdmin, router]);
 
   // Load filter options
   const loadFilterOptions = async () => {

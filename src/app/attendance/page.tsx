@@ -75,7 +75,7 @@ interface Subject {
 }
 
 export default function AttendancePage() {
-  const { user } = useAuth();
+  const { user, isLoading } = useAuth();
   const router = useRouter();
   
   // Toast уведомления для API операций
@@ -140,11 +140,12 @@ export default function AttendancePage() {
 
   // Check authorization
   useEffect(() => {
+    if (isLoading) return;
     if (!user) {
       router.push('/login');
       return;
     }
-  }, [user, router]);
+  }, [isLoading, user, router]);
 
   // Load groups
   useEffect(() => {

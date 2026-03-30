@@ -11,12 +11,13 @@ interface ProtectedPageProps {
 }
 
 export function ProtectedPage({ requiredRole, children }: ProtectedPageProps) {
-  const { user } = useAuth();
+  const { user, isLoading } = useAuth();
   const { showError } = useToast();
   const router = useRouter();
   const hasShownError = useRef(false);
 
   useEffect(() => {
+    if (isLoading) return;
     if (!user) {
       router.push('/login');
       return;
@@ -32,7 +33,15 @@ export function ProtectedPage({ requiredRole, children }: ProtectedPageProps) {
       }
       return;
     }
-  }, [user, requiredRole, router, showError]);
+  }, [user, isLoading, requiredRole, router, showError]);
+
+  if (isLoading) {
+    return (
+      <div className="flex justify-center items-center h-64">
+        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"></div>
+      </div>
+    );
+  }
 
   if (!user) {
     return (

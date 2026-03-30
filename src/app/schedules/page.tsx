@@ -32,7 +32,7 @@ import { DateRangePicker } from '../../components/ui/DateRangePicker';
 import Link from 'next/link';
 
 export default function SchedulesPage() {
-  const { isAuthenticated, user } = useAuth();
+  const { isAuthenticated, isLoading, user } = useAuth();
   const [schedules, setSchedules] = useState<Schedule[]>([]);
   const [error, setError] = useState<string | null>(null);
   const [currentPage, setCurrentPage] = useState(1);
@@ -608,6 +608,7 @@ export default function SchedulesPage() {
   };
 
   // Check authentication and permissions
+  if (isLoading) return null;
   if (!isAuthenticated) {
     return (
       <div className="min-h-96 flex items-center justify-center">

@@ -53,7 +53,7 @@ const defaultLeadForm = (): CreateLeadRequest => ({
 
 // ─── page ─────────────────────────────────────────────────────────────────────
 export default function FunnelPage() {
-  const { user, isAuthenticated } = useAuth();
+  const { user, isAuthenticated, isLoading } = useAuth();
   const { showSuccess, showError } = useToast();
   const router = useRouter();
 
@@ -134,9 +134,10 @@ export default function FunnelPage() {
 
   // ── init ──
   useEffect(() => {
+    if (isLoading) return;
     if (!isAuthenticated) { router.push('/login'); return; }
   // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [isAuthenticated]);
+  }, [isAuthenticated, isLoading]);
 
   useEffect(() => {
     if (activeTab === 'analytics') loadAnalytics();
@@ -170,8 +171,8 @@ export default function FunnelPage() {
   }, [orgId, filterSource, showError]);
 
   useEffect(() => {
-    if (isAuthenticated) loadKanban();
-  }, [isAuthenticated, loadKanban]);
+    if (!isLoading && isAuthenticated) loadKanban();
+  }, [isLoading, isAuthenticated, loadKanban]);
 
   async function loadAnalytics() {
     if (!orgId) return;
