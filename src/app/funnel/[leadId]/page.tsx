@@ -11,6 +11,7 @@ import {
   UpdateLeadRequest, ConvertLeadRequest, LoseLeadRequest,
 } from '../../../types/SalesFunnel';
 import { BaseModal } from '../../../components/ui/BaseModal';
+import { PasswordInput } from '../../../components/ui/PasswordInput';
 import {
   ArrowLeftIcon, PhoneIcon, EnvelopeIcon, UserIcon, TagIcon,
   ClockIcon, CheckCircleIcon, XCircleIcon, PlusIcon, PencilIcon,
@@ -765,9 +766,11 @@ export default function LeadDetailPage() {
           </div>
           <div>
             <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Пароль <span className="text-red-500">*</span></label>
-            <input type="password" value={convertForm.password} onChange={e => setConvertForm(p => ({ ...p, password: e.target.value }))}
+            <PasswordInput
+              value={convertForm.password}
+              onChange={value => setConvertForm(p => ({ ...p, password: value }))}
               placeholder="Минимум 8 символов"
-              className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-violet-500 focus:border-violet-500 text-sm" />
+            />
           </div>
           <div>
             <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Добавить в группу</label>

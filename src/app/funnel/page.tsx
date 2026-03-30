@@ -13,6 +13,7 @@ import {
 } from '../../types/SalesFunnel';
 import { BaseModal } from '../../components/ui/BaseModal';
 import { PhoneInput } from '../../components/ui/PhoneInput';
+import { PasswordInput } from '../../components/ui/PasswordInput';
 import { DateRangePicker } from '../../components/ui/DateRangePicker';
 import {
   FunnelIcon, PlusIcon, PencilIcon, TrashIcon,
@@ -136,6 +137,16 @@ export default function FunnelPage() {
   useEffect(() => {
     if (isLoading) return;
     if (!isAuthenticated) { router.push('/login'); return; }
+    // Restore pending convert modal after page refresh
+    const pending = localStorage.getItem('pendingConvert');
+    if (pending) {
+      try {
+        const { id, name } = JSON.parse(pending);
+        setConvertLeadId(id);
+        setConvertLeadName(name);
+        setConvertForm({ login: '', password: '', groupId: null });
+      } catch { localStorage.removeItem('pendingConvert'); }
+    }
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [isAuthenticated, isLoading]);
 
@@ -262,6 +273,7 @@ export default function FunnelPage() {
       // If moved to a "Записан" (isClosedWon) stage — open convert modal
       const targetStage = stages.find(s => s.id === moveTarget.stageId);
       if (targetStage?.isClosedWon && !updated.convertedUserId) {
+        localStorage.setItem('pendingConvert', JSON.stringify({ id: updated.id, name: updated.fullName }));
         setConvertLeadId(updated.id);
         setConvertLeadName(updated.fullName);
         setConvertForm({ login: '', password: '', groupId: null });
@@ -284,6 +296,7 @@ export default function FunnelPage() {
       });
       setLeads(prev => prev.map(l => l.id === updated.id ? updated : l));
       showSuccess('Лид конвертирован в студента!');
+      localStorage.removeItem('pendingConvert');
       setConvertLeadId(null);
       setConvertLeadName('');
       setConvertForm({ login: '', password: '', groupId: null });
@@ -1143,7 +1156,8 @@ export default function FunnelPage() {
       {/* ── Convert Lead Modal (triggered after drop onto isClosedWon stage) ── */}
       <BaseModal
         isOpen={!!convertLeadId}
-        onClose={() => { setConvertLeadId(null); setConvertLeadName(''); setConvertForm({ login: '', password: '', groupId: null }); }}
+        onClose={() => {}}
+        hideClose
         title="Конвертировать в студента"
         gradientFrom="from-green-500"
         gradientTo="to-emerald-600"
@@ -1162,9 +1176,11 @@ export default function FunnelPage() {
           </div>
           <div>
             <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Пароль <span className="text-red-500">*</span></label>
-            <input type="password" value={convertForm.password} onChange={e => setConvertForm(p => ({ ...p, password: e.target.value }))}
+            <PasswordInput
+              value={convertForm.password}
+              onChange={value => setConvertForm(p => ({ ...p, password: value }))}
               placeholder="Минимум 8 символов"
-              className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-violet-500 focus:border-violet-500 text-sm" />
+            />
           </div>
           <div>
             <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Добавить в группу</label>
@@ -1175,12 +1191,6 @@ export default function FunnelPage() {
             </select>
           </div>
           <div className="flex justify-end gap-3 pt-2">
-            <button
-              onClick={() => { setConvertLeadId(null); setConvertLeadName(''); setConvertForm({ login: '', password: '', groupId: null }); }}
-              className="px-4 py-2 text-gray-700 dark:text-gray-300 border border-gray-300 dark:border-gray-600 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700 text-sm transition-colors"
-            >
-              Пропустить
-            </button>
             <button onClick={handleConvert} disabled={converting || !convertForm.login.trim() || !convertForm.password.trim()}
               className="px-4 py-2 bg-green-600 hover:bg-green-700 disabled:opacity-50 text-white rounded-lg text-sm font-medium transition-colors">
               {converting ? 'Конвертация...' : 'Конвертировать'}

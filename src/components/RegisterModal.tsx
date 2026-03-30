@@ -201,7 +201,7 @@ const RegisterModal: React.FC<RegisterModalProps> = ({ isOpen, onClose }) => {
             />
           </div>
 
-          <div>
+          <div className="hidden">
             <label htmlFor="password" className="block text-sm font-medium text-gray-700 mb-1">
               Пароль<span className="text-red-500 ml-1">*</span>
             </label>

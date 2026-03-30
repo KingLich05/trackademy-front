@@ -1176,7 +1176,7 @@ export default function StudentsPage() {
               {userModal.mode === 'create' && formData.role === 1 && (
                 <>
                   {/* Password - на всю ширину */}
-                  <div>
+                  <div className="hidden">
                     <label htmlFor="password" className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
                       Пароль *
                     </label>
@@ -1234,7 +1234,7 @@ export default function StudentsPage() {
 
               {/* Password - для не студентов при создании */}
               {userModal.mode === 'create' && formData.role !== 1 && (
-                <div>
+                <div className="hidden">
                   <label htmlFor="password" className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
                     Пароль *
                   </label>

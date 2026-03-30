@@ -527,7 +527,7 @@ export default function PaymentsGroupedPage() {
 
   // Функция для определения статуса предупреждения студента
   const getStudentWarningStatus = (student: StudentPayment): 'critical' | 'warning' | null => {
-    if (student.currentBalance < 0) return 'critical';
+    if (student.currentBalance < 0 || student.remainingLessons === 0) return 'critical';
     if (student.remainingLessons >= 1 && student.remainingLessons <= 2) return 'warning';
     return null;
   };
@@ -823,7 +823,7 @@ export default function PaymentsGroupedPage() {
                                           </div>
                                         </div>
                                         {getStudentWarningStatus(student) === 'critical' && (
-                                          <ExclamationTriangleIcon className="h-4 w-4 text-red-500 dark:text-red-400 flex-shrink-0" title="Отрицательный баланс" />
+                                          <ExclamationTriangleIcon className="h-4 w-4 text-red-500 dark:text-red-400 flex-shrink-0" title={student.remainingLessons === 0 && student.currentBalance >= 0 ? 'Уроки закончились' : 'Отрицательный баланс'} />
                                         )}
                                         {getStudentWarningStatus(student) === 'warning' && (
                                           <ExclamationTriangleIcon className="h-4 w-4 text-yellow-500 dark:text-yellow-400 flex-shrink-0" title="Осталось 1-2 урока" />

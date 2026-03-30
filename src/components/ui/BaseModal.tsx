@@ -14,6 +14,7 @@ interface BaseModalProps {
   gradientFrom?: string;
   gradientTo?: string;
   customBackground?: string;
+  hideClose?: boolean;
 }
 
 export const BaseModal: React.FC<BaseModalProps> = ({
@@ -27,6 +28,7 @@ export const BaseModal: React.FC<BaseModalProps> = ({
   gradientFrom = 'from-blue-500',
   gradientTo = 'to-purple-600',
   customBackground,
+  hideClose = false,
 }) => {
   if (!isOpen) return null;
 
@@ -61,7 +63,7 @@ export const BaseModal: React.FC<BaseModalProps> = ({
             </div>
             <button
               onClick={onClose}
-              className="w-8 h-8 bg-white/20 hover:bg-white/40 hover:scale-110 rounded-lg flex items-center justify-center transition-all duration-200"
+              className={`w-8 h-8 bg-white/20 hover:bg-white/40 hover:scale-110 rounded-lg flex items-center justify-center transition-all duration-200 ${hideClose ? 'invisible' : ''}`}
               title="Закрыть"
             >
               <XMarkIcon className="w-5 h-5 text-white drop-shadow" />
