@@ -3,13 +3,24 @@ export interface GroupSubject {
   subjectName: string;
 }
 
+export interface GroupStudentPackage {
+  packageId: string;
+  packageName: string;
+}
+
 export interface GroupStudent {
   studentId: string;
   studentName: string;
+  subjectPackage?: GroupStudentPackage;
   isFrozen?: boolean;
   freezeStartDate?: string;
   freezeEndDate?: string;
   freezeReason?: string;
+}
+
+export interface StudentWithPackageModel {
+  studentId: string;
+  subjectPackageId: string;
 }
 
 export interface Group {
@@ -28,7 +39,7 @@ export interface GroupFormData {
   level: string;
   description?: string;
   subjectId: string;
-  studentIds: string[];
+  students: StudentWithPackageModel[];
   organizationId: string;
 }
 

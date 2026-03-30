@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { GroupFormData } from '../../types/Group';
+import { GroupFormData, StudentWithPackageModel } from '../../types/Group';
 import { Subject } from '../../types/Subject';
 import { User } from '../../types/User';
 import { AuthenticatedApiService } from '../../services/AuthenticatedApiService';
@@ -22,7 +22,7 @@ export const GroupForm: React.FC<GroupFormProps> = ({
     code: initialData?.code || '',
     level: initialData?.level || '',
     subjectId: initialData?.subjectId || '',
-    studentIds: initialData?.studentIds || [],
+    students: initialData?.students || [],
     organizationId: initialData?.organizationId || ''
   });
 
@@ -56,12 +56,15 @@ export const GroupForm: React.FC<GroupFormProps> = ({
   };
 
   const handleStudentToggle = (studentId: string) => {
-    setFormData(prev => ({
-      ...prev,
-      studentIds: prev.studentIds.includes(studentId)
-        ? prev.studentIds.filter(id => id !== studentId)
-        : [...prev.studentIds, studentId]
-    }));
+    setFormData(prev => {
+      const isSelected = prev.students.some((s: StudentWithPackageModel) => s.studentId === studentId);
+      return {
+        ...prev,
+        students: isSelected
+          ? prev.students.filter((s: StudentWithPackageModel) => s.studentId !== studentId)
+          : [...prev.students, { studentId, subjectPackageId: '' }]
+      };
+    });
   };
 
   if (loading) {
@@ -154,7 +157,7 @@ export const GroupForm: React.FC<GroupFormProps> = ({
                 <label key={student.id} className="flex items-center space-x-3 cursor-pointer">
                   <input
                     type="checkbox"
-                    checked={formData.studentIds.includes(student.id)}
+                    checked={formData.students.some((s: StudentWithPackageModel) => s.studentId === student.id)}
                     onChange={() => handleStudentToggle(student.id)}
                     className="rounded border-gray-300 text-teal-600 focus:ring-teal-500"
                   />

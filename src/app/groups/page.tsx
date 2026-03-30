@@ -144,7 +144,7 @@ const [teachers, setTeachers] = useState<Array<{id: string, name: string}>>([]);
     code: '',
     level: '',
     subjectId: '',
-    studentIds: [] as string[],
+    students: [] as { studentId: string; subjectPackageId: string }[],
     organizationId: ''
   });
   
@@ -334,7 +334,7 @@ const [teachers, setTeachers] = useState<Array<{id: string, name: string}>>([]);
         code: group.code,
         level: group.level,
         subjectId: typeof group.subject === 'object' ? group.subject.subjectId : group.subject,
-        studentIds: group.students.map(s => s.studentId),
+        students: group.students.map(s => ({ studentId: s.studentId, subjectPackageId: s.subjectPackage?.packageId || '' })),
         organizationId: ''
         // eslint-disable-next-line @typescript-eslint/no-explicit-any
       } as any);
@@ -387,36 +387,16 @@ const [teachers, setTeachers] = useState<Array<{id: string, name: string}>>([]);
   };
 
   // Функция для добавления студентов в группу
-  const handleBulkAddToGroup = async () => {
-    console.log('🚀 handleBulkAddToGroup STARTED');
-    if (!targetGroupForStudents || selectedStudentsForGroup.length === 0) return;
+  const handleBulkAddToGroup = async (students: { studentId: string; subjectPackageId: string }[]) => {
+    if (!targetGroupForStudents || students.length === 0) return;
 
     try {
-      console.log('Calling API from GROUPS PAGE...');
-      const response = await AuthenticatedApiService.post('/Group/bulk-add-students', {
-        groupId: targetGroupForStudents.id,
-        studentIds: selectedStudentsForGroup.map(s => s.id)
-      }) as { success?: boolean };
-      
-      console.log('API response from GROUPS PAGE:', response);
+      await AuthenticatedApiService.bulkAddStudentsToGroup(targetGroupForStudents.id, students);
 
-      // Показываем успех независимо от формата ответа (если нет ошибки)
       showToast('Запись успешно обновлена', 'success');
-      
-      // Перезагружаем список групп
       await loadGroups(currentPage, true);
-      
-      console.log('FORCE CLOSING MODAL from GROUPS PAGE');
-      // ПРИНУДИТЕЛЬНО закрываем модальные окна
       setSelectedStudentsForGroup([]);
       setTargetGroupForStudents(null);
-      
-      // Если групповая модалка была открыта, обновляем её тоже
-      if (isStudentsModalOpen && selectedGroup?.id === targetGroupForStudents.id) {
-        // Модалка автоматически обновится при следующем открытии
-      }
-      
-      console.log('Modal closed from GROUPS PAGE');
     } catch (error: unknown) {
       console.error('Error adding students to group:', error);
       showToast('Ошибка при добавлении студентов в группу: ' + ((error as Error)?.message || 'Неизвестная ошибка'), 'error');
@@ -1063,7 +1043,7 @@ const [teachers, setTeachers] = useState<Array<{id: string, name: string}>>([]);
           code: '',
           level: '',
           subjectId: '',
-          studentIds: [],
+          students: [] as { studentId: string; subjectPackageId: string }[],
           organizationId: user?.organizationId || '',
           ...(groupModal.editData || {})
         }}
@@ -1380,6 +1360,8 @@ const [teachers, setTeachers] = useState<Array<{id: string, name: string}>>([]);
           onConfirm={handleBulkAddToGroup}
           selectedStudents={selectedStudentsForGroup}
           groupName={targetGroupForStudents.name}
+          subjectId={typeof targetGroupForStudents.subject === 'object' ? targetGroupForStudents.subject.subjectId : targetGroupForStudents.subject}
+          organizationId={user?.organizationId || ''}
           onRemoveStudent={(studentId) => {
             setSelectedStudentsForGroup(prev => prev.filter(s => s.id !== studentId));
           }}

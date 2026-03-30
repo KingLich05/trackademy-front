@@ -42,7 +42,7 @@ export default function StudentsPage() {
   // Bulk add to group state
   const [selectedStudentIds, setSelectedStudentIds] = useState<string[]>([]);
   const [isBulkAddModalOpen, setIsBulkAddModalOpen] = useState(false);
-  const [selectedGroupForBulk, setSelectedGroupForBulk] = useState<{id: string, name: string} | null>(null);
+  const [selectedGroupForBulk, setSelectedGroupForBulk] = useState<{id: string, name: string, subjectId: string} | null>(null);
   const [isBulkAdding, setIsBulkAdding] = useState(false);
   const [isGroupSelectionModalOpen, setIsGroupSelectionModalOpen] = useState(false);
   
@@ -77,7 +77,7 @@ export default function StudentsPage() {
     isTrial: undefined,
     isDeleted: false // по умолчанию активные пользователи
   });
-  const [groups, setGroups] = useState<Array<{id: string, name: string}>>([]);
+  const [groups, setGroups] = useState<Array<{id: string, name: string, subjectId: string}>>([]); 
   const [tableLoading, setTableLoading] = useState(false);
   
   // Column visibility management
@@ -228,7 +228,11 @@ export default function StudentsPage() {
       if (!organizationId) return;
 
       const groupsResponse = await AuthenticatedApiService.getGroups(organizationId, 1000);
-      setGroups(groupsResponse?.items || []);
+      setGroups((groupsResponse?.items || []).map(g => ({
+        id: g.id,
+        name: g.name,
+        subjectId: typeof g.subject === 'object' ? g.subject.subjectId : g.subject
+      })));
     } catch (error) {
       console.error('Failed to load groups:', error);
     }
@@ -662,10 +666,8 @@ export default function StudentsPage() {
     setSelectedStudentIds(prev => prev.filter(id => !studentIdsOnPage.includes(id)));
   };
 
-  const handleGroupSelect = (group: {id: string, name: string}) => {
-    console.log('handleGroupSelect called with group:', group);
-    console.log('selectedStudents:', selectedStudents);
-    setSelectedGroupForBulk(group);
+  const handleGroupSelect = (group: {id: string, name: string, subjectId?: string}) => {
+    setSelectedGroupForBulk({ id: group.id, name: group.name, subjectId: group.subjectId || '' });
     setIsBulkAddModalOpen(true);
   };
 
@@ -673,83 +675,32 @@ export default function StudentsPage() {
     setSelectedStudentIds(prev => prev.filter(id => id !== studentId));
   };
 
-  const handleBulkAddConfirm = async () => {
-    console.log('🚀 FUNCTION handleBulkAddConfirm CALLED!');
-    console.log('=== handleBulkAddConfirm STARTED ===');
-    console.log('Initial state:', { 
-      selectedGroupForBulk: selectedGroupForBulk?.name, 
-      selectedStudentIds: selectedStudentIds.length,
-      isBulkAddModalOpen,
-      isBulkAdding
-    });
-    
-    if (!selectedGroupForBulk || selectedStudentIds.length === 0) {
-      console.log('Early return: no group or students');
-      return;
-    }
+  const handleBulkAddConfirm = async (students: { studentId: string; subjectPackageId: string }[]) => {
+    if (!selectedGroupForBulk || students.length === 0) return;
 
-    console.log('Setting isBulkAdding to true');
     setIsBulkAdding(true);
-    let success = false;
-    
     try {
-      console.log('Calling API...');
       const result = await AuthenticatedApiService.bulkAddStudentsToGroup(
         selectedGroupForBulk.id,
-        selectedStudentIds
+        students
       );
-      console.log('🎯 API call from STUDENTS PAGE - response:', result);
 
-      // API возвращает либо строку, либо объект с message
       const message = typeof result === 'string' ? result : (result as { message?: string })?.message;
-      
-      console.log('Showing success toast');
       showSuccess(message || 'Студенты успешно добавлены в группу');
-
-      console.log('Reloading students...');
-      // Обновляем таблицу
       await loadStudents(currentPage, true);
-      
-      console.log('Reloading groups...');
-      // Обновляем данные групп
       await loadGroups();
-      
-      success = true;
-      console.log('Success flag set to true');
-      
     } catch (error) {
       console.error('Failed to bulk add students to group:', error);
-      success = false;
-      console.log('Success flag set to false');
-      
-      // Извлекаем сообщение об ошибке
       let errorMessage = 'Не удалось добавить студентов в группу';
-      
       if (error && typeof error === 'object' && 'message' in error) {
         errorMessage = (error as Error).message;
       }
-      
       showError(errorMessage);
     } finally {
-      console.log('=== FINALLY BLOCK ===');
-      console.log('Success status:', success);
-      console.log('Setting isBulkAdding to false');
       setIsBulkAdding(false);
-      
-      // ПРИНУДИТЕЛЬНО закрываем модалку ВСЕГДА
-      console.log('FORCE CLOSING MODAL - Before state change');
-      console.log('Current modal state:', { 
-        isBulkAddModalOpen, 
-        selectedGroupForBulk: !!selectedGroupForBulk, 
-        selectedStudentIds: selectedStudentIds.length 
-      });
-      
       setIsBulkAddModalOpen(false);
       setSelectedGroupForBulk(null);
       setSelectedStudentIds([]);
-      
-      console.log('FORCE CLOSING MODAL - After state change calls');
-      console.log('=== handleBulkAddConfirm FINISHED ===');
     }
   };
 
@@ -1313,22 +1264,14 @@ export default function StudentsPage() {
         key="students-page-modal"
         isOpen={isBulkAddModalOpen && !!selectedGroupForBulk}
         onClose={() => {
-          console.log('BulkAddToGroupModal onClose called');
           setIsBulkAddModalOpen(false);
           setSelectedGroupForBulk(null);
         }}
-        onConfirm={() => {
-          console.log('=== BulkAddToGroupModal onConfirm CLICKED ===');
-          console.log('About to call handleBulkAddConfirm');
-          console.log('handleBulkAddConfirm function:', typeof handleBulkAddConfirm);
-          try {
-            handleBulkAddConfirm();
-          } catch (error) {
-            console.error('Error calling handleBulkAddConfirm:', error);
-          }
-        }}
+        onConfirm={handleBulkAddConfirm}
         selectedStudents={selectedStudents}
         groupName={selectedGroupForBulk?.name || ''}
+        subjectId={selectedGroupForBulk?.subjectId || ''}
+        organizationId={user?.organizationId || ''}
         isLoading={isBulkAdding}
         onRemoveStudent={handleRemoveStudentFromBulk}
       />

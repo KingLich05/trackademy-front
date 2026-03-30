@@ -6,6 +6,7 @@ import { XMarkIcon, UserGroupIcon } from '@heroicons/react/24/outline';
 interface Group {
   id: string;
   name: string;
+  subjectId?: string;
 }
 
 interface GroupSelectionModalProps {
