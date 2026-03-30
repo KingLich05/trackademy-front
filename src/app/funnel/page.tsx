@@ -9,7 +9,7 @@ import {
   FunnelStageDto, LeadDto, LeadSourceDto,
   CreateLeadRequest, CreateFunnelStageRequest, UpdateFunnelStageRequest,
   CreateLeadSourceRequest, UpdateLeadSourceRequest,
-  FunnelAnalyticsDto, LeadActivityDto, LeadActivityType,
+  FunnelAnalyticsDto, LeadActivityDto, LeadActivityType, ConvertLeadRequest,
 } from '../../types/SalesFunnel';
 import { BaseModal } from '../../components/ui/BaseModal';
 import { PhoneInput } from '../../components/ui/PhoneInput';
@@ -113,6 +113,12 @@ export default function FunnelPage() {
   // ── move comment modal ──
   const [moveTarget, setMoveTarget] = useState<{ leadId: string; stageId: string } | null>(null);
   const [moveComment, setMoveComment] = useState('');
+
+  // ── convert modal (triggered after moving to isClosedWon stage) ──
+  const [convertLeadId, setConvertLeadId] = useState<string | null>(null);
+  const [convertLeadName, setConvertLeadName] = useState('');
+  const [convertForm, setConvertForm] = useState<ConvertLeadRequest>({ login: '', password: '', groupId: null });
+  const [converting, setConverting] = useState(false);
 
   // ── complete task modal ──
   const [completingTask, setCompletingTask] = useState<LeadActivityDto | null>(null);
@@ -252,8 +258,39 @@ export default function FunnelPage() {
       });
       setLeads(prev => prev.map(l => l.id === updated.id ? updated : l));
       showSuccess('Лид перемещён');
+      // If moved to a "Записан" (isClosedWon) stage — open convert modal
+      const targetStage = stages.find(s => s.id === moveTarget.stageId);
+      if (targetStage?.isClosedWon && !updated.convertedUserId) {
+        setConvertLeadId(updated.id);
+        setConvertLeadName(updated.fullName);
+        setConvertForm({ login: '', password: '', groupId: null });
+      }
     } catch { showError('Ошибка при перемещении лида'); }
     finally { setMoveTarget(null); dragLeadId.current = null; }
+  }
+
+  async function handleConvert() {
+    if (!convertLeadId) return;
+    if (!convertForm.login.trim() || !convertForm.password.trim()) {
+      showError('Логин и пароль обязательны'); return;
+    }
+    try {
+      setConverting(true);
+      const updated = await AuthenticatedApiService.convertLead(convertLeadId, orgId, {
+        login: convertForm.login.trim(),
+        password: convertForm.password,
+        groupId: convertForm.groupId || null,
+      });
+      setLeads(prev => prev.map(l => l.id === updated.id ? updated : l));
+      showSuccess('Лид конвертирован в студента!');
+      setConvertLeadId(null);
+      setConvertLeadName('');
+      setConvertForm({ login: '', password: '', groupId: null });
+    } catch (err: unknown) {
+      const message = (err as { message?: string })?.message;
+      showError(message && message !== 'Failed to fetch' ? message : 'Ошибка при конвертации лида');
+    }
+    finally { setConverting(false); }
   }
 
   // ── delete lead ──
@@ -1097,6 +1134,55 @@ export default function FunnelPage() {
               }`}
             >
               {confirmDialog?.danger ? 'Удалить' : 'Подтвердить'}
+            </button>
+          </div>
+        </div>
+      </BaseModal>
+
+      {/* ── Convert Lead Modal (triggered after drop onto isClosedWon stage) ── */}
+      <BaseModal
+        isOpen={!!convertLeadId}
+        onClose={() => { setConvertLeadId(null); setConvertLeadName(''); setConvertForm({ login: '', password: '', groupId: null }); }}
+        title="Конвертировать в студента"
+        gradientFrom="from-green-500"
+        gradientTo="to-emerald-600"
+      >
+        <div className="space-y-4">
+          <div className="p-3 bg-green-50 dark:bg-green-900/20 rounded-lg border border-green-200 dark:border-green-800">
+            <p className="text-sm text-green-700 dark:text-green-400">
+              Лид <strong>{convertLeadName}</strong> перемещён в этап «Записан». Создайте аккаунт студента для него.
+            </p>
+          </div>
+          <div>
+            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Логин <span className="text-red-500">*</span></label>
+            <input type="text" value={convertForm.login} onChange={e => setConvertForm(p => ({ ...p, login: e.target.value }))}
+              placeholder="student_login"
+              className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-violet-500 focus:border-violet-500 text-sm" autoFocus />
+          </div>
+          <div>
+            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Пароль <span className="text-red-500">*</span></label>
+            <input type="password" value={convertForm.password} onChange={e => setConvertForm(p => ({ ...p, password: e.target.value }))}
+              placeholder="Минимум 8 символов"
+              className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-violet-500 focus:border-violet-500 text-sm" />
+          </div>
+          <div>
+            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Добавить в группу</label>
+            <select value={convertForm.groupId ?? ''} onChange={e => setConvertForm(p => ({ ...p, groupId: e.target.value || null }))}
+              className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-violet-500 focus:border-violet-500 text-sm">
+              <option value="">Без группы</option>
+              {groups.map(g => <option key={g.id} value={g.id}>{g.name}</option>)}
+            </select>
+          </div>
+          <div className="flex justify-end gap-3 pt-2">
+            <button
+              onClick={() => { setConvertLeadId(null); setConvertLeadName(''); setConvertForm({ login: '', password: '', groupId: null }); }}
+              className="px-4 py-2 text-gray-700 dark:text-gray-300 border border-gray-300 dark:border-gray-600 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700 text-sm transition-colors"
+            >
+              Пропустить
+            </button>
+            <button onClick={handleConvert} disabled={converting || !convertForm.login.trim() || !convertForm.password.trim()}
+              className="px-4 py-2 bg-green-600 hover:bg-green-700 disabled:opacity-50 text-white rounded-lg text-sm font-medium transition-colors">
+              {converting ? 'Конвертация...' : 'Конвертировать'}
             </button>
           </div>
         </div>

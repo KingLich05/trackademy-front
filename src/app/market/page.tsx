@@ -82,7 +82,7 @@ const defaultItemForm = {
 
 const defaultRuleForm = {
   name: '', eventType: RewardEventType.AttendanceMarked as RewardEventType,
-  coinAmount: 5, minScore: '', isActive: true,
+  coinAmount: '' as string | number, minScore: '', isActive: true,
 };
 
 // ─── page ────────────────────────────────────────────────────────────────────
@@ -288,7 +288,7 @@ export default function MarketPage() {
       setRuleForm({
         name: rule.name,
         eventType: rule.eventType,
-        coinAmount: rule.coinAmount,
+        coinAmount: String(rule.coinAmount),
         minScore: rule.minScore !== null ? String(rule.minScore) : '',
         isActive: rule.isActive,
       });
@@ -323,7 +323,10 @@ export default function MarketPage() {
       }
       setShowRuleModal(false);
       await loadRewardRules();
-    } catch { showError('Ошибка при сохранении правила'); }
+    } catch (err: unknown) {
+      const message = (err as { message?: string })?.message;
+      showError(message && message !== 'Failed to fetch' ? message : 'Ошибка при сохранении правила');
+    }
     finally { setSavingRule(false); }
   }
 
@@ -960,7 +963,8 @@ export default function MarketPage() {
               type="number"
               min={1}
               value={ruleForm.coinAmount}
-              onChange={e => setRuleForm(prev => ({ ...prev, coinAmount: Number(e.target.value) }))}
+              onChange={e => setRuleForm(prev => ({ ...prev, coinAmount: e.target.value }))}
+              placeholder="Например: 5"
               className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-amber-500 focus:border-amber-500"
             />
           </div>
