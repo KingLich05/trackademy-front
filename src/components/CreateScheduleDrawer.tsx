@@ -14,6 +14,7 @@ import { TimeInput } from './ui/TimeInput';
 import { Group } from '../types/Group';
 import { User } from '../types/User';
 import { Room } from '../types/Room';
+import { Subject } from '../types/Subject';
 
 // ─── Availability types ────────────────────────────────────────────────────────
 
@@ -57,6 +58,8 @@ interface CreateScheduleDrawerProps {
   groups: Group[];
   teachers: User[];
   rooms: Room[];
+  subjects: Subject[];
+  students: User[];
   organizationId: string;
 }
 
@@ -129,6 +132,8 @@ interface DragState {
   day: number;
   anchorMin: number;
   curMin: number;
+  curClientX: number;
+  curClientY: number;
 }
 
 // ─── Busy slot tooltip ────────────────────────────────────────────────────────
@@ -156,20 +161,29 @@ function BusyTooltip({ state }: { state: TooltipState }) {
 // ─── Drag time label (shows while dragging) ────────────────────────────────────
 
 function DragLabel({
-  startMin, endMin, el,
+  startMin, endMin, curClientX, curClientY,
 }: {
-  startMin: number; endMin: number; el: HTMLDivElement;
+  startMin: number; endMin: number; curClientX: number; curClientY: number;
 }) {
-  const rect  = el.getBoundingClientRect();
-  const topPx = (startMin - CALENDAR_START_H * 60) * PX_PER_MIN;
-  const hPx   = (endMin - startMin) * PX_PER_MIN;
-  const midPx = topPx + hPx / 2;
   return (
     <div
-      className="fixed z-[9998] pointer-events-none bg-violet-700 text-white text-[11px] font-semibold px-2 py-1 rounded-md shadow-lg whitespace-nowrap"
-      style={{ left: rect.left + rect.width / 2 - 38, top: rect.top + midPx - 11 }}
+      className="fixed z-[9998] pointer-events-none bg-violet-700 text-white text-[11px] font-semibold px-2.5 py-1 rounded-md shadow-lg whitespace-nowrap"
+      style={{ left: curClientX + 14, top: curClientY - 11 }}
     >
-      {minutesToHHMM(startMin)}–{minutesToHHMM(endMin)}
+      {minutesToHHMM(startMin)} → {minutesToHHMM(endMin)}
+    </div>
+  );
+}
+
+// ─── Hover time badge (shows exact time at cursor while hovering/dragging) ────
+
+function TimeHoverBadge({ clientX, clientY, min }: { clientX: number; clientY: number; min: number }) {
+  return (
+    <div
+      className="fixed z-[9999] pointer-events-none bg-gray-900/95 text-white text-xs font-mono font-semibold rounded px-2 py-0.5 shadow-lg border border-white/10 whitespace-nowrap"
+      style={{ left: clientX + 14, top: clientY - 9 }}
+    >
+      {minutesToHHMM(min)}
     </div>
   );
 }
@@ -187,6 +201,8 @@ interface DayColumnProps {
   onMouseDown: (e: React.MouseEvent<HTMLDivElement>) => void;
   onBusyHover: (state: TooltipState | null) => void;
   calendarHasLoaded: boolean;
+  onHover?: (clientX: number, clientY: number, min: number) => void;
+  onHoverEnd?: () => void;
 }
 
 function DayColumn({
@@ -200,6 +216,8 @@ function DayColumn({
   onMouseDown,
   onBusyHover,
   calendarHasLoaded,
+  onHover,
+  onHoverEnd,
 }: DayColumnProps) {
   const selStart = selectedStart && selectedEnd ? timeToMinutes(selectedStart) : null;
   const selEnd   = selectedStart && selectedEnd ? timeToMinutes(selectedEnd)   : null;
@@ -217,6 +235,15 @@ function DayColumn({
       className="relative flex-1 min-w-0 border-l border-gray-200 dark:border-gray-700/50 select-none"
       style={{ height: CALENDAR_HEIGHT, cursor: 'crosshair' }}
       onMouseDown={onMouseDown}
+      onMouseMove={(e) => {
+        if (drag) return;
+        const rect = (e.currentTarget as HTMLDivElement).getBoundingClientRect();
+        const relY = e.clientY - rect.top;
+        const rawMin = CALENDAR_START_H * 60 + relY / PX_PER_MIN;
+        const min = clamp(Math.round(rawMin), CALENDAR_START_H * 60, CALENDAR_END_H * 60);
+        onHover?.(e.clientX, e.clientY, min);
+      }}
+      onMouseLeave={() => onHoverEnd?.()}
     >
       {/* Hour grid lines */}
       {Array.from({ length: CALENDAR_END_H - CALENDAR_START_H + 1 }, (_, i) => (
@@ -326,8 +353,13 @@ export default function CreateScheduleDrawer({
   groups,
   teachers,
   rooms,
+  subjects,
+  students,
   organizationId,
 }: CreateScheduleDrawerProps) {
+  // Mode: 'group' or 'individual'
+  const [mode, setMode] = useState<'group' | 'individual'>('group');
+
   // Form state
   const [daysOfWeek, setDaysOfWeek]       = useState<number[]>([]);
   const [startTime, setStartTime]         = useState('');
@@ -340,6 +372,12 @@ export default function CreateScheduleDrawer({
   const [errors, setErrors]               = useState<Record<string, string>>({});
   const [isSaving, setIsSaving]           = useState(false);
 
+  // Individual mode state
+  const [studentId, setStudentId]               = useState('');
+  const [subjectId, setSubjectId]               = useState('');
+  const [subjectPackageId, setSubjectPackageId] = useState('');
+  const [groupNameOverride, setGroupNameOverride] = useState('');
+
   // Calendar state
   const [weekStart, setWeekStart]                         = useState(getCurrentMonday);
   const [availability, setAvailability]                   = useState<ScheduleAvailabilityResult | null>(null);
@@ -349,6 +387,7 @@ export default function CreateScheduleDrawer({
 
   // Drag state
   const [drag, setDrag]  = useState<DragState | null>(null);
+  const [hoverInfo, setHoverInfo] = useState<{ clientX: number; clientY: number; min: number } | null>(null);
   const colRefs          = useRef<(HTMLDivElement | null)[]>(Array(7).fill(null));
 
   // Computed option lists (progressive filtering from API)
@@ -383,14 +422,15 @@ export default function CreateScheduleDrawer({
     if (!isOpen) return;
     if (debounceRef.current) clearTimeout(debounceRef.current);
     debounceRef.current = setTimeout(() => {
-      loadAvailability(roomId, teacherId, groupId, weekStart);
+      loadAvailability(roomId, teacherId, mode === 'group' ? groupId : '', weekStart);
     }, 300);
     return () => { if (debounceRef.current) clearTimeout(debounceRef.current); };
-  }, [roomId, teacherId, groupId, weekStart, isOpen, loadAvailability]);
+  }, [roomId, teacherId, groupId, mode, weekStart, isOpen, loadAvailability]);
 
   // Reset on open
   useEffect(() => {
     if (isOpen) {
+      setMode('group');
       setDaysOfWeek([]);
       setStartTime('');
       setEndTime('');
@@ -403,6 +443,10 @@ export default function CreateScheduleDrawer({
       setWeekStart(getCurrentMonday());
       setAvailability(null);
       setDrag(null);
+      setStudentId('');
+      setSubjectId('');
+      setSubjectPackageId('');
+      setGroupNameOverride('');
     }
   }, [isOpen]);
 
@@ -417,7 +461,7 @@ export default function CreateScheduleDrawer({
       const el = colRefs.current[dayIdx];
       if (!el) return;
       const curMin = clientYToMinutes(el, e.clientY);
-      setDrag(prev => prev ? { ...prev, curMin } : null);
+      setDrag(prev => prev ? { ...prev, curMin, curClientX: e.clientX, curClientY: e.clientY } : null);
     };
 
     const handleUp = (e: MouseEvent) => {
@@ -452,7 +496,8 @@ export default function CreateScheduleDrawer({
       const el = colRefs.current[dayIdx];
       if (!el) return;
       const anchorMin = clientYToMinutes(el, e.clientY);
-      setDrag({ day: dayNum, anchorMin, curMin: anchorMin });
+      setHoverInfo(null);
+      setDrag({ day: dayNum, anchorMin, curMin: anchorMin, curClientX: e.clientX, curClientY: e.clientY });
     };
 
   // ── Other handlers ────────────────────────────────────────────────────────
@@ -480,7 +525,13 @@ export default function CreateScheduleDrawer({
     if (!effectiveFrom)                                       errs.effectiveFrom = 'Укажите дату начала';
     if (effectiveFrom && effectiveTo && effectiveTo < effectiveFrom)
                                                               errs.effectiveTo   = 'Дата окончания не может быть раньше даты начала';
-    if (!groupId)                                             errs.groupId       = 'Выберите группу';
+    if (mode === 'group') {
+      if (!groupId)                                           errs.groupId       = 'Выберите группу';
+    } else {
+      if (!studentId)                                         errs.studentId     = 'Выберите ученика';
+      if (!subjectId)                                         errs.subjectId     = 'Выберите предмет';
+      if (!subjectPackageId)                                  errs.subjectPackageId = 'Выберите пакет занятий';
+    }
     if (!teacherId)                                           errs.teacherId     = 'Выберите преподавателя';
     if (!roomId)                                              errs.roomId        = 'Выберите аудиторию';
     setErrors(errs);
@@ -491,7 +542,17 @@ export default function CreateScheduleDrawer({
     if (!validate()) return;
     setIsSaving(true);
     try {
-      await onSave({ daysOfWeek: daysOfWeek.join(','), startTime, endTime, effectiveFrom, effectiveTo, groupId, teacherId, roomId, organizationId });
+      const baseData: Record<string, unknown> = {
+        mode, daysOfWeek: daysOfWeek.join(','), startTime, endTime,
+        effectiveFrom, effectiveTo, teacherId, roomId, organizationId,
+      };
+      if (mode === 'group') {
+        await onSave({ ...baseData, groupId });
+      } else {
+        await onSave({ ...baseData, studentId, subjectId, subjectPackageId,
+          ...(groupNameOverride.trim() ? { groupName: groupNameOverride.trim() } : {}),
+        });
+      }
     } catch {
       // toast handled by parent
     } finally {
@@ -500,11 +561,9 @@ export default function CreateScheduleDrawer({
   };
 
   // Drag label overlay data
-  const activeDragIdx   = drag ? DAYS_NUMBERS.indexOf(drag.day) : -1;
-  const activeDragEl    = activeDragIdx >= 0 ? colRefs.current[activeDragIdx] : null;
-  const dragLabelS      = drag ? Math.min(drag.anchorMin, drag.curMin) : 0;
-  const dragLabelE      = drag ? Math.max(drag.anchorMin, drag.curMin) : 0;
-  const showDragLabel   = drag !== null && activeDragEl !== null && (dragLabelE - dragLabelS) >= MIN_DURATION_MIN;
+  const dragLabelS    = drag ? Math.min(drag.anchorMin, drag.curMin) : 0;
+  const dragLabelE    = drag ? Math.max(drag.anchorMin, drag.curMin) : 0;
+  const showDragLabel = drag !== null;
 
   if (!isOpen) return null;
 
@@ -581,8 +640,8 @@ export default function CreateScheduleDrawer({
 
               {/* Time axis */}
               <div className="shrink-0 w-14 flex flex-col">
-                {/* Spacer matching sticky day headers */}
-                <div className="sticky top-0 z-10 py-2 text-xs bg-white dark:bg-gray-900 shrink-0" aria-hidden="true" />
+                {/* Spacer matching sticky day headers — must have inline content to match header height */}
+                <div className="sticky top-0 z-10 py-2 text-xs bg-white dark:bg-gray-900 shrink-0" aria-hidden="true">{'\u00a0'}</div>
                 <div className="relative shrink-0" style={{ height: CALENDAR_HEIGHT }}>
                   {Array.from({ length: CALENDAR_END_H - CALENDAR_START_H }, (_, i) => (
                     <div
@@ -626,6 +685,8 @@ export default function CreateScheduleDrawer({
                         onMouseDown={makeColumnMouseDown(idx, dayNum)}
                         onBusyHover={setTooltip}
                         calendarHasLoaded={availability !== null}
+                        onHover={(cx, cy, m) => setHoverInfo({ clientX: cx, clientY: cy, min: m })}
+                        onHoverEnd={() => setHoverInfo(null)}
                       />
                     </div>
                   );
@@ -642,7 +703,9 @@ export default function CreateScheduleDrawer({
           <div className="flex items-center justify-between px-6 py-4 border-b border-gray-200 dark:border-gray-700 bg-gradient-to-r from-violet-600 to-indigo-600 shrink-0">
             <div>
               <h2 className="text-base font-semibold text-white">Новое расписание</h2>
-              <p className="text-xs text-violet-200 mt-0.5">Шаблон занятия</p>
+              <p className="text-xs text-violet-200 mt-0.5">
+                {mode === 'group' ? 'Групповое занятие' : 'Индивидуальное занятие'}
+              </p>
             </div>
             <button onClick={onClose} className="p-1.5 rounded-lg hover:bg-white/20 text-white transition-colors">
               <XMarkIcon className="w-5 h-5" />
@@ -651,6 +714,32 @@ export default function CreateScheduleDrawer({
 
           {/* Form body */}
           <div className="flex-1 overflow-y-auto px-6 py-5 space-y-5">
+
+            {/* Mode toggle */}
+            <div className="flex rounded-lg border border-gray-200 dark:border-gray-700 overflow-hidden">
+              <button
+                type="button"
+                onClick={() => setMode('group')}
+                className={`flex-1 px-3 py-2 text-sm font-medium transition-colors ${
+                  mode === 'group'
+                    ? 'bg-violet-600 text-white'
+                    : 'bg-white dark:bg-gray-800 text-gray-600 dark:text-gray-400 hover:bg-gray-50 dark:hover:bg-gray-700'
+                }`}
+              >
+                Группа
+              </button>
+              <button
+                type="button"
+                onClick={() => setMode('individual')}
+                className={`flex-1 px-3 py-2 text-sm font-medium transition-colors ${
+                  mode === 'individual'
+                    ? 'bg-violet-600 text-white'
+                    : 'bg-white dark:bg-gray-800 text-gray-600 dark:text-gray-400 hover:bg-gray-50 dark:hover:bg-gray-700'
+                }`}
+              >
+                Индивидуальный
+              </button>
+            </div>
 
             {/* Room */}
             <div>
@@ -688,23 +777,100 @@ export default function CreateScheduleDrawer({
               {errors.teacherId && <p className="mt-1 text-xs text-red-500">{errors.teacherId}</p>}
             </div>
 
-            {/* Group */}
-            <div>
-              <label className="block text-xs font-semibold text-gray-600 dark:text-gray-400 uppercase tracking-wide mb-1.5">
-                Группа <span className="text-red-500">*</span>
-              </label>
-              <select
-                value={groupId}
-                onChange={e => setGroupId(e.target.value)}
-                className={`w-full px-3 py-2.5 text-sm rounded-lg border bg-white dark:bg-gray-800 text-gray-900 dark:text-white
-                  focus:ring-2 focus:ring-violet-500 focus:border-transparent outline-none transition-colors
-                  ${errors.groupId ? 'border-red-400 dark:border-red-500' : 'border-gray-300 dark:border-gray-600'}`}
-              >
-                <option value="">Выберите группу</option>
-                {groupOptions.map(g => <option key={g.id} value={g.id}>{g.name}</option>)}
-              </select>
-              {errors.groupId && <p className="mt-1 text-xs text-red-500">{errors.groupId}</p>}
-            </div>
+            {/* Group (group mode) or Student+Subject+Package (individual mode) */}
+            {mode === 'group' ? (
+              <div>
+                <label className="block text-xs font-semibold text-gray-600 dark:text-gray-400 uppercase tracking-wide mb-1.5">
+                  Группа <span className="text-red-500">*</span>
+                </label>
+                <select
+                  value={groupId}
+                  onChange={e => setGroupId(e.target.value)}
+                  className={`w-full px-3 py-2.5 text-sm rounded-lg border bg-white dark:bg-gray-800 text-gray-900 dark:text-white
+                    focus:ring-2 focus:ring-violet-500 focus:border-transparent outline-none transition-colors
+                    ${errors.groupId ? 'border-red-400 dark:border-red-500' : 'border-gray-300 dark:border-gray-600'}`}
+                >
+                  <option value="">Выберите группу</option>
+                  {groupOptions.map(g => <option key={g.id} value={g.id}>{g.name}</option>)}
+                </select>
+                {errors.groupId && <p className="mt-1 text-xs text-red-500">{errors.groupId}</p>}
+              </div>
+            ) : (
+              <>
+                {/* Student */}
+                <div>
+                  <label className="block text-xs font-semibold text-gray-600 dark:text-gray-400 uppercase tracking-wide mb-1.5">
+                    Ученик <span className="text-red-500">*</span>
+                  </label>
+                  <select
+                    value={studentId}
+                    onChange={e => setStudentId(e.target.value)}
+                    className={`w-full px-3 py-2.5 text-sm rounded-lg border bg-white dark:bg-gray-800 text-gray-900 dark:text-white
+                      focus:ring-2 focus:ring-violet-500 focus:border-transparent outline-none transition-colors
+                      ${errors.studentId ? 'border-red-400 dark:border-red-500' : 'border-gray-300 dark:border-gray-600'}`}
+                  >
+                    <option value="">Выберите ученика</option>
+                    {students.map(s => <option key={s.id} value={s.id}>{s.name || s.login}</option>)}
+                  </select>
+                  {errors.studentId && <p className="mt-1 text-xs text-red-500">{errors.studentId}</p>}
+                </div>
+
+                {/* Subject */}
+                <div>
+                  <label className="block text-xs font-semibold text-gray-600 dark:text-gray-400 uppercase tracking-wide mb-1.5">
+                    Предмет <span className="text-red-500">*</span>
+                  </label>
+                  <select
+                    value={subjectId}
+                    onChange={e => { setSubjectId(e.target.value); setSubjectPackageId(''); }}
+                    className={`w-full px-3 py-2.5 text-sm rounded-lg border bg-white dark:bg-gray-800 text-gray-900 dark:text-white
+                      focus:ring-2 focus:ring-violet-500 focus:border-transparent outline-none transition-colors
+                      ${errors.subjectId ? 'border-red-400 dark:border-red-500' : 'border-gray-300 dark:border-gray-600'}`}
+                  >
+                    <option value="">Выберите предмет</option>
+                    {subjects.map(s => <option key={s.id} value={s.id}>{s.name}</option>)}
+                  </select>
+                  {errors.subjectId && <p className="mt-1 text-xs text-red-500">{errors.subjectId}</p>}
+                </div>
+
+                {/* Subject Package */}
+                {subjectId && (
+                  <div>
+                    <label className="block text-xs font-semibold text-gray-600 dark:text-gray-400 uppercase tracking-wide mb-1.5">
+                      Пакет занятий <span className="text-red-500">*</span>
+                    </label>
+                    <select
+                      value={subjectPackageId}
+                      onChange={e => setSubjectPackageId(e.target.value)}
+                      className={`w-full px-3 py-2.5 text-sm rounded-lg border bg-white dark:bg-gray-800 text-gray-900 dark:text-white
+                        focus:ring-2 focus:ring-violet-500 focus:border-transparent outline-none transition-colors
+                        ${errors.subjectPackageId ? 'border-red-400 dark:border-red-500' : 'border-gray-300 dark:border-gray-600'}`}
+                    >
+                      <option value="">Выберите пакет</option>
+                      {(subjects.find(s => s.id === subjectId)?.subjectPackages ?? []).map(p => (
+                        <option key={p.id ?? p.name} value={p.id ?? ''}>{p.name}</option>
+                      ))}
+                    </select>
+                    {errors.subjectPackageId && <p className="mt-1 text-xs text-red-500">{errors.subjectPackageId}</p>}
+                  </div>
+                )}
+
+                {/* Optional group name override */}
+                <div>
+                  <label className="block text-xs font-semibold text-gray-600 dark:text-gray-400 uppercase tracking-wide mb-1.5">
+                    Название группы
+                  </label>
+                  <input
+                    type="text"
+                    value={groupNameOverride}
+                    onChange={e => setGroupNameOverride(e.target.value)}
+                    placeholder="Авто-генерируется"
+                    className="w-full px-3 py-2.5 text-sm rounded-lg border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-800 text-gray-900 dark:text-white
+                      focus:ring-2 focus:ring-violet-500 focus:border-transparent outline-none transition-colors placeholder:text-gray-400 dark:placeholder:text-gray-500"
+                  />
+                </div>
+              </>
+            )}
 
             <div className="border-t border-gray-200 dark:border-gray-700" />
 
@@ -806,9 +972,29 @@ export default function CreateScheduleDrawer({
         </div>
       </div>
 
-      {/* Drag time label overlay */}
-      {showDragLabel && activeDragEl && (
-        <DragLabel startMin={dragLabelS} endMin={dragLabelE} el={activeDragEl} />
+      {/* Time cursor guide line across columns */}
+      {((hoverInfo && !drag) || drag) && (() => {
+        const cy = hoverInfo && !drag ? hoverInfo.clientY : drag?.curClientY ?? null;
+        if (cy === null) return null;
+        const x0 = colRefs.current[0]?.getBoundingClientRect().left ?? 0;
+        const x6 = colRefs.current[6]?.getBoundingClientRect().right ?? 0;
+        if (!x0 || !x6) return null;
+        return (
+          <div
+            className="fixed z-[9996] pointer-events-none"
+            style={{ left: x0, width: x6 - x0, top: cy, height: 1, background: 'rgba(139,92,246,0.45)' }}
+          />
+        );
+      })()}
+
+      {/* Drag time label — follows cursor */}
+      {showDragLabel && drag && (
+        <DragLabel startMin={dragLabelS} endMin={dragLabelE} curClientX={drag.curClientX} curClientY={drag.curClientY} />
+      )}
+
+      {/* Hover time badge — shows exact time before drag */}
+      {!drag && hoverInfo && (
+        <TimeHoverBadge clientX={hoverInfo.clientX} clientY={hoverInfo.clientY} min={hoverInfo.min} />
       )}
 
       {/* Busy slot tooltip */}

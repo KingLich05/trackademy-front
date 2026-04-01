@@ -45,6 +45,7 @@ export default function SchedulesPage() {
   const [subjects, setSubjects] = useState<Subject[]>([]);
   const [teachers, setTeachers] = useState<User[]>([]);
   const [rooms, setRooms] = useState<Room[]>([]);
+  const [students, setStudents] = useState<User[]>([]);
   const [showArchive, setShowArchive] = useState(false);
   const [filters, setFilters] = useState<ScheduleFilters>({
     pageNumber: 1,
@@ -151,7 +152,7 @@ export default function SchedulesPage() {
 
   const loadFilterData = useCallback(async () => {
     try {
-      const [groupsData, subjectsData, teachersData, roomsData] = await Promise.all([
+      const [groupsData, subjectsData, teachersData, roomsData, studentsData] = await Promise.all([
         // Load groups
         AuthenticatedApiService.post('/Group/get-groups', {
           pageNumber: 1,
@@ -176,13 +177,21 @@ export default function SchedulesPage() {
           pageNumber: 1,
           pageSize: 1000,
           organizationId: user?.organizationId
-        })
+        }),
+        // Load students (role 1)
+        AuthenticatedApiService.getUsers({
+          organizationId: user?.organizationId || '',
+          pageNumber: 1,
+          pageSize: 1000,
+          roleIds: [1] // Students only
+        }),
       ]);
 
       setGroups((groupsData as { items: Group[] }).items || []);
       setSubjects((subjectsData as { items: Subject[] }).items || []);
       setTeachers(teachersData.items || []);
       setRooms((roomsData as { items: Room[] }).items || []);
+      setStudents(studentsData.items || []);
     } catch (error) {
       console.error('Failed to load filter data:', error);
     }
@@ -484,6 +493,39 @@ export default function SchedulesPage() {
 
   // Handlers for Universal Modal save operations
   const handleSaveCreate = async (formData: Record<string, unknown>) => {
+    if (formData.mode === 'individual') {
+      // Individual schedule
+      const daysOfWeekStr = formData.daysOfWeek as string;
+      const daysOfWeekArray = daysOfWeekStr ?
+        daysOfWeekStr.split(',').map(day => parseInt(day.trim())).filter(day => !isNaN(day)) : [];
+
+      const individualData = {
+        studentId: formData.studentId as string,
+        subjectPackageId: formData.subjectPackageId as string,
+        subjectId: formData.subjectId as string,
+        ...(formData.groupName ? { groupName: formData.groupName as string } : {}),
+        daysOfWeek: daysOfWeekArray,
+        startTime: formatTimeWithSeconds(formData.startTime && (formData.startTime as string).trim() !== '' ? formData.startTime as string : null),
+        endTime: formatTimeWithSeconds(formData.endTime && (formData.endTime as string).trim() !== '' ? formData.endTime as string : null),
+        effectiveFrom: formData.effectiveFrom && (formData.effectiveFrom as string).trim() !== '' ? formData.effectiveFrom as string : null,
+        effectiveTo: formData.effectiveTo && (formData.effectiveTo as string).trim() !== '' ? formData.effectiveTo as string : null,
+        teacherId: formData.teacherId && (formData.teacherId as string).trim() !== '' ? formData.teacherId as string : null,
+        roomId: formData.roomId && (formData.roomId as string).trim() !== '' ? formData.roomId as string : null,
+        organizationId: user?.organizationId || ''
+      };
+
+      try {
+        await AuthenticatedApiService.post('/Schedule/create-individual', individualData);
+        await createOperation(() => Promise.resolve(), 'индивидуальное расписание');
+        await loadSchedules(currentPage, true);
+        scheduleModal.closeModal();
+      } catch (error) {
+        await createOperation(() => Promise.reject(error), 'индивидуальное расписание');
+        throw error;
+      }
+      return;
+    }
+
     const daysOfWeekStr = formData.daysOfWeek as string;
     const daysOfWeekArray = daysOfWeekStr ? 
       daysOfWeekStr.split(',').map(day => parseInt(day.trim())).filter(day => !isNaN(day)) : [];
@@ -1241,6 +1283,8 @@ export default function SchedulesPage() {
           groups={groups}
           teachers={teachers}
           rooms={rooms}
+          subjects={subjects}
+          students={students}
           organizationId={user?.organizationId || ''}
         />
 
