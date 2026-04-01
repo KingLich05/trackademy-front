@@ -450,7 +450,12 @@ export class AuthenticatedApiService {
 
   // Subject management methods
   static async getSubjects(organizationId: string): Promise<Subject[]> {
-    return this.get(`/Subject?organizationId=${organizationId}`);
+    const data = await this.post<{ items: Subject[] }>('/Subject/GetAllSubjects', {
+      pageNumber: 1,
+      pageSize: 1000,
+      organizationId,
+    });
+    return data.items ?? [];
   }
 
   static async createSubject(subjectData: SubjectFormData): Promise<ApiResponse<Subject>> {

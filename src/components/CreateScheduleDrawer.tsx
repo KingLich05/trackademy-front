@@ -580,16 +580,20 @@ export default function CreateScheduleDrawer({
             <div className="flex min-w-0">
 
               {/* Time axis */}
-              <div className="shrink-0 w-14 relative" style={{ height: CALENDAR_HEIGHT }}>
-                {Array.from({ length: CALENDAR_END_H - CALENDAR_START_H }, (_, i) => (
-                  <div
-                    key={i}
-                    className="absolute right-2 text-[10px] text-gray-400 dark:text-gray-500 leading-none"
-                    style={{ top: i * 60 * PX_PER_MIN - 6 }}
-                  >
-                    {minutesToHHMM((CALENDAR_START_H + i) * 60)}
-                  </div>
-                ))}
+              <div className="shrink-0 w-14 flex flex-col">
+                {/* Spacer matching sticky day headers */}
+                <div className="sticky top-0 z-10 py-2 text-xs bg-white dark:bg-gray-900 shrink-0" aria-hidden="true" />
+                <div className="relative shrink-0" style={{ height: CALENDAR_HEIGHT }}>
+                  {Array.from({ length: CALENDAR_END_H - CALENDAR_START_H }, (_, i) => (
+                    <div
+                      key={i}
+                      className="absolute right-2 text-[10px] text-gray-400 dark:text-gray-500 leading-none"
+                      style={{ top: i * 60 * PX_PER_MIN - 6 }}
+                    >
+                      {minutesToHHMM((CALENDAR_START_H + i) * 60)}
+                    </div>
+                  ))}
+                </div>
               </div>
 
               {/* Day columns */}

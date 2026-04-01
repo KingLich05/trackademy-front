@@ -475,7 +475,7 @@ export default function StudentDetailPage() {
       await AuthenticatedApiService.post('/User/reset-password', {
         userId: userId
       });
-      showSuccess('Пароль успешно сброшен. Новый пароль отправлен в WhatsApp студента.');
+      showSuccess('Пароль успешно сброшен. Новый пароль отправлен на WhatsApp студента.');
     } catch (error) {
       console.error('Error resetting password:', error);
       showError('Ошибка при сбросе пароля');

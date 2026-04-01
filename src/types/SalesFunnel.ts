@@ -1,3 +1,5 @@
+import { StudentStatus } from './StudentCrm';
+
 export enum LeadActivityType {
   Call = 1,
   Message = 2,
@@ -116,6 +118,10 @@ export interface ConvertLeadRequest {
   login: string;
   password: string;
   groupId?: string | null;
+  subjectPackageId?: string | null;
+  status?: StudentStatus;
+  flagIds?: string[];
+  comment?: string;
 }
 
 export interface LoseLeadRequest {

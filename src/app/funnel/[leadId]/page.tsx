@@ -10,6 +10,9 @@ import {
   LeadSourceDto, LeadActivityType, CreateLeadActivityRequest,
   UpdateLeadRequest, ConvertLeadRequest, LoseLeadRequest,
 } from '../../../types/SalesFunnel';
+import { StudentStatus, getStudentStatusName } from '../../../types/StudentCrm';
+import { StudentFlag } from '../../../types/StudentFlag';
+import { Subject } from '../../../types/Subject';
 import { BaseModal } from '../../../components/ui/BaseModal';
 import { PasswordInput } from '../../../components/ui/PasswordInput';
 import {
@@ -28,6 +31,13 @@ function fmtDate(s: string) {
 
 function fmtDateTime(s: string) {
   return new Date(s).toLocaleString('ru-RU', { day: '2-digit', month: 'short', year: 'numeric', hour: '2-digit', minute: '2-digit' });
+}
+
+// Converts a UTC ISO string to a value suitable for <input type="datetime-local">
+function toDatetimeLocal(utcIso: string): string {
+  const d = new Date(utcIso);
+  const pad = (n: number) => String(n).padStart(2, '0');
+  return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}T${pad(d.getHours())}:${pad(d.getMinutes())}`;
 }
 
 function activityIcon(type: LeadActivityType) {
@@ -71,7 +81,8 @@ export default function LeadDetailPage() {
   const [lead, setLead] = useState<LeadDetailDto | null>(null);
   const [stages, setStages] = useState<FunnelStageDto[]>([]);
   const [sources, setSources] = useState<LeadSourceDto[]>([]);
-  const [groups, setGroups] = useState<{ id: string; name: string }[]>([]);
+  const [groups, setGroups] = useState<{ id: string; name: string; subjectId?: string }[]>([]);
+  const [subjects, setSubjects] = useState<Subject[]>([]);
   const [staff, setStaff] = useState<{ id: string; fullName: string }[]>([]);
   const [loading, setLoading] = useState(true);
   const [stageChanging, setStageChanging] = useState(false);
@@ -99,8 +110,9 @@ export default function LeadDetailPage() {
 
   // ── convert modal ──
   const [showConvert, setShowConvert] = useState(false);
-  const [convertForm, setConvertForm] = useState<ConvertLeadRequest>({ login: '', password: '', groupId: null });
+  const [convertForm, setConvertForm] = useState<ConvertLeadRequest>({ login: '', password: '', groupId: null, subjectPackageId: null, flagIds: [], comment: '' });
   const [converting, setConverting] = useState(false);
+  const [availableFlags, setAvailableFlags] = useState<StudentFlag[]>([]);
 
   // ── lose modal ──
   const [showLose, setShowLose] = useState(false);
@@ -122,18 +134,22 @@ export default function LeadDetailPage() {
     if (!leadId || !orgId) return;
     try {
       setLoading(true);
-      const [l, s, src, g, u] = await Promise.all([
+      const [l, s, src, g, u, fl, sub] = await Promise.all([
         AuthenticatedApiService.getLeadById(leadId, orgId),
         AuthenticatedApiService.getFunnelStages(orgId),
         AuthenticatedApiService.getLeadSources(orgId),
         AuthenticatedApiService.getGroups(orgId, 1000),
         AuthenticatedApiService.getUsers({ organizationId: orgId, pageSize: 500, roleIds: [2, 3, 4] }),
+        AuthenticatedApiService.getStudentFlags(),
+        AuthenticatedApiService.getSubjects(orgId),
       ]);
       setLead(l);
       setStages(s.sort((a, b) => a.order - b.order));
       setSources(src);
-      setGroups((g.items ?? []).map((gr: { id: string; name: string }) => ({ id: gr.id, name: gr.name })));
+      setGroups((g.items ?? []).map((gr: { id: string; name: string; subject?: { subjectId?: string } | string }) => ({ id: gr.id, name: gr.name, subjectId: typeof gr.subject === 'object' ? (gr.subject as { subjectId?: string })?.subjectId : undefined })));
       setStaff((u.items ?? []).filter((m: { id: string; name?: string; fullName?: string }) => m.name || m.fullName).map((m: { id: string; name?: string; fullName?: string }) => ({ id: m.id, fullName: m.fullName || m.name || '' })));
+      setAvailableFlags(fl);
+      setSubjects(sub);
     } catch {
       showError('Ошибка при загрузке лида');
     } finally {
@@ -195,7 +211,7 @@ export default function LeadDetailPage() {
       setActivityForm({
         type: activity.type,
         description: activity.description,
-        scheduledAt: activity.scheduledAt ? activity.scheduledAt.slice(0, 16) : '',
+      scheduledAt: activity.scheduledAt ? toDatetimeLocal(activity.scheduledAt) : '',
       });
     } else {
       setEditingActivity(null);
@@ -211,7 +227,7 @@ export default function LeadDetailPage() {
       if (editingActivity) {
         const updated = await AuthenticatedApiService.updateLeadActivity(editingActivity.id, orgId, {
           description: activityForm.description.trim(),
-          scheduledAt: activityForm.scheduledAt || null,
+          scheduledAt: activityForm.scheduledAt ? new Date(activityForm.scheduledAt).toISOString() : null,
           isCompleted: editingActivity.isCompleted,
         });
         setLead(prev => prev ? { ...prev, activities: prev.activities.map(a => a.id === updated.id ? updated : a) } : null);
@@ -221,7 +237,7 @@ export default function LeadDetailPage() {
           leadId: lead.id,
           type: activityForm.type,
           description: activityForm.description.trim(),
-          scheduledAt: activityForm.scheduledAt || null,
+          scheduledAt: activityForm.scheduledAt ? new Date(activityForm.scheduledAt).toISOString() : null,
         };
         const created = await AuthenticatedApiService.createLeadActivity(orgId, req);
         setLead(prev => prev ? { ...prev, activities: [created, ...prev.activities] } : null);
@@ -267,16 +283,20 @@ export default function LeadDetailPage() {
     }
     try {
       setConverting(true);
-      const payload: { login: string; password: string; groupId?: string } = {
+      const payload: { login: string; password: string; groupId?: string; subjectPackageId?: string; status?: StudentStatus; flagIds?: string[]; comment?: string } = {
         login: convertForm.login.trim(),
         password: convertForm.password,
       };
       if (convertForm.groupId) payload.groupId = convertForm.groupId;
+      if (convertForm.subjectPackageId) payload.subjectPackageId = convertForm.subjectPackageId;
+      if (convertForm.status !== undefined) payload.status = convertForm.status;
+      if (convertForm.flagIds && convertForm.flagIds.length > 0) payload.flagIds = convertForm.flagIds;
+      if (convertForm.comment?.trim()) payload.comment = convertForm.comment.trim();
       const updated = await AuthenticatedApiService.convertLead(lead.id, orgId, payload);
       setLead(prev => prev ? { ...prev, ...updated } : null);
       showSuccess('Лид конвертирован в студента!');
       setShowConvert(false);
-      setConvertForm({ login: '', password: '', groupId: null });
+      setConvertForm({ login: '', password: '', groupId: null, subjectPackageId: null, flagIds: [], comment: '' });
     } catch { showError('Ошибка при конвертации лида'); }
     finally { setConverting(false); }
   }
@@ -776,11 +796,63 @@ export default function LeadDetailPage() {
           </div>
           <div>
             <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Добавить в группу</label>
-            <select value={convertForm.groupId ?? ''} onChange={e => setConvertForm(p => ({ ...p, groupId: e.target.value || null }))}
+            <select value={convertForm.groupId ?? ''} onChange={e => setConvertForm(p => ({ ...p, groupId: e.target.value || null, subjectPackageId: null }))}
               className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-violet-500 focus:border-violet-500 text-sm">
               <option value="">Без группы</option>
               {groups.map(g => <option key={g.id} value={g.id}>{g.name}</option>)}
             </select>
+          </div>
+          {convertForm.groupId && (() => {
+            const grp = groups.find(g => g.id === convertForm.groupId);
+            const pkgs = subjects.find(s => s.id === grp?.subjectId)?.subjectPackages ?? [];
+            return pkgs.length > 0 ? (
+              <div>
+                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Пакет занятий</label>
+                <select value={convertForm.subjectPackageId ?? ''} onChange={e => setConvertForm(p => ({ ...p, subjectPackageId: e.target.value || null }))}
+                  className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-violet-500 focus:border-violet-500 text-sm">
+                  <option value="">Без пакета</option>
+                  {pkgs.map(p => <option key={p.id ?? p.name} value={p.id ?? ''}>{p.name}</option>)}
+                </select>
+              </div>
+            ) : null;
+          })()}
+          <div>
+            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Статус студента</label>
+            <select value={convertForm.status !== undefined ? String(convertForm.status) : ''}
+              onChange={e => setConvertForm(p => ({ ...p, status: e.target.value !== '' ? Number(e.target.value) as StudentStatus : undefined }))}
+              className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-violet-500 focus:border-violet-500 text-sm">
+              <option value="">Не указан</option>
+              {(Object.values(StudentStatus).filter(v => typeof v === 'number') as StudentStatus[]).map(s => (
+                <option key={s} value={String(s)}>{getStudentStatusName(s)}</option>
+              ))}
+            </select>
+          </div>
+          {availableFlags.length > 0 && (
+            <div>
+              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Флаги</label>
+              <div className="max-h-32 overflow-y-auto border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 py-1 px-2 space-y-1">
+                {availableFlags.map(flag => (
+                  <label key={flag.id} className="flex items-center gap-2 cursor-pointer py-0.5">
+                    <input type="checkbox" checked={convertForm.flagIds?.includes(flag.id) ?? false}
+                      onChange={e => setConvertForm(p => ({
+                        ...p,
+                        flagIds: e.target.checked
+                          ? [...(p.flagIds ?? []), flag.id]
+                          : (p.flagIds ?? []).filter(id => id !== flag.id),
+                      }))}
+                      className="rounded border-gray-300 text-violet-600 focus:ring-violet-500" />
+                    <span className="text-sm text-gray-700 dark:text-gray-300">{flag.name}</span>
+                  </label>
+                ))}
+              </div>
+            </div>
+          )}
+          <div>
+            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Комментарий</label>
+            <textarea rows={2} value={convertForm.comment ?? ''}
+              onChange={e => setConvertForm(p => ({ ...p, comment: e.target.value }))}
+              placeholder="Дополнительная информация..."
+              className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-violet-500 focus:border-violet-500 text-sm resize-none" />
           </div>
           <div className="flex justify-end gap-3 pt-2">
             <button onClick={() => setShowConvert(false)} className="px-4 py-2 text-gray-700 dark:text-gray-300 border border-gray-300 dark:border-gray-600 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700 text-sm transition-colors">Отмена</button>
