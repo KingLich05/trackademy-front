@@ -56,7 +56,7 @@ const ACTIVITY_TYPES = [
 // ─── Page ─────────────────────────────────────────────────────────────────────
 
 export default function LeadDetailPage() {
-  const { user, isAuthenticated } = useAuth();
+  const { user, isAuthenticated, isLoading: authLoading } = useAuth();
   const { showSuccess, showError } = useToast();
   const router = useRouter();
   const params = useParams<{ leadId: string }>();
@@ -112,10 +112,11 @@ export default function LeadDetailPage() {
 
   // ── init ──
   useEffect(() => {
+    if (authLoading) return;
     if (!isAuthenticated) { router.push('/login'); return; }
     load();
   // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [isAuthenticated, leadId]);
+  }, [authLoading, isAuthenticated, leadId]);
 
   const load = useCallback(async () => {
     if (!leadId || !orgId) return;
@@ -266,11 +267,12 @@ export default function LeadDetailPage() {
     }
     try {
       setConverting(true);
-      const updated = await AuthenticatedApiService.convertLead(lead.id, orgId, {
+      const payload: { login: string; password: string; groupId?: string } = {
         login: convertForm.login.trim(),
         password: convertForm.password,
-        groupId: convertForm.groupId || null,
-      });
+      };
+      if (convertForm.groupId) payload.groupId = convertForm.groupId;
+      const updated = await AuthenticatedApiService.convertLead(lead.id, orgId, payload);
       setLead(prev => prev ? { ...prev, ...updated } : null);
       showSuccess('Лид конвертирован в студента!');
       setShowConvert(false);

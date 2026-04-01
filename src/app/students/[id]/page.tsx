@@ -23,7 +23,7 @@ import { StudentBalanceApiService, AddBalanceRequest, DiscountRequest } from '..
 export default function StudentDetailPage() {
   const params = useParams();
   const router = useRouter();
-  const { isAuthenticated, user } = useAuth();
+  const { isAuthenticated, user, isLoading: authLoading } = useAuth();
   const { showError, showSuccess } = useToast();
   const [studentProfile, setStudentProfile] = useState<StudentProfile | null>(null);
   const [isLoading, setIsLoading] = useState(true);
@@ -82,13 +82,14 @@ export default function StudentDetailPage() {
   const userId = params.id as string;
 
   useEffect(() => {
+    if (authLoading) return;
     if (!isAuthenticated || !userId) {
       router.push('/login');
       return;
     }
 
     fetchStudentProfile();
-  }, [isAuthenticated, userId]);
+  }, [authLoading, isAuthenticated, userId]);
 
   const fetchStudentProfile = async () => {
     try {

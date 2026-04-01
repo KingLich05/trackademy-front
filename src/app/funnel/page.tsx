@@ -289,11 +289,12 @@ export default function FunnelPage() {
     }
     try {
       setConverting(true);
-      const updated = await AuthenticatedApiService.convertLead(convertLeadId, orgId, {
+      const payload: { login: string; password: string; groupId?: string } = {
         login: convertForm.login.trim(),
         password: convertForm.password,
-        groupId: convertForm.groupId || null,
-      });
+      };
+      if (convertForm.groupId) payload.groupId = convertForm.groupId;
+      const updated = await AuthenticatedApiService.convertLead(convertLeadId, orgId, payload);
       setLeads(prev => prev.map(l => l.id === updated.id ? updated : l));
       showSuccess('Лид конвертирован в студента!');
       localStorage.removeItem('pendingConvert');
