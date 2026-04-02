@@ -57,6 +57,11 @@ export const getSuccessMessage = (action: string, entity?: string): string => {
 export const cleanUserFormData = (formData: UserFormData): UserFormData => {
   const cleaned = { ...formData };
   
+  // Omit password if empty so the backend can auto-generate it
+  if (!cleaned.password || (typeof cleaned.password === 'string' && cleaned.password.trim() === '')) {
+    delete cleaned.password;
+  }
+
   // Convert empty strings to null for optional and nullable fields
   if (!cleaned.phone || cleaned.phone.replace(/\D/g, '').length === 0) {
     cleaned.phone = null;

@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect, useCallback, useRef } from 'react';
+import { useState, useEffect, useCallback, useRef, useMemo } from 'react';
 import { useAuth } from '../../contexts/AuthContext';
 import { useToast } from '../../contexts/ToastContext';
 import { AuthenticatedApiService } from '../../services/AuthenticatedApiService';
@@ -19,7 +19,6 @@ import { PageHeaderWithStats } from '../../components/ui/PageHeaderWithStats';
 import { useColumnVisibility, ColumnVisibilityControl } from '../../components/ui/ColumnVisibilityControl';
 import { PhoneInput } from '@/components/ui/PhoneInput';
 import { useApiToast } from '../../hooks/useApiToast';
-import { PasswordInput } from '@/components/ui/PasswordInput';
 import { cleanUserFormData } from '../../utils/apiHelpers';
 import { ImportUsersModal } from '../../components/ImportUsersModal';
 import { BulkAddToGroupModal } from '../../components/BulkAddToGroupModal';
@@ -67,6 +66,21 @@ export default function StudentsPage() {
     groupIds: [] as string[]
   });
   
+  // Stable initial data for the create/edit modal — must be memoized so that
+  // UniversalModal's useEffect (which depends on initialData) does NOT fire on
+  // every parent re-render and accidentally reset the partially-filled form.
+  const userModalInitialData = useMemo(() => ({
+    login: '',
+    fullName: '',
+    phone: '',
+    parentPhone: '',
+    birthday: '',
+    role: 1 as number,
+    organizationId: user?.organizationId || '',
+    isTrial: false,
+    groupIds: [] as string[]
+  }), [user?.organizationId]);
+
   // Toast уведомления для API операций
   const { updateOperation, deleteOperation } = useApiToast();
 
@@ -903,16 +917,7 @@ export default function StudentsPage() {
         gradientFrom={userModal.getConfig().gradientFrom}
         gradientTo={userModal.getConfig().gradientTo}
         maxWidth="2xl"
-        initialData={{
-          login: '',
-          fullName: '',
-          password: '',
-          phone: '',
-          parentPhone: '',
-          birthday: '',
-          role: 1,
-          organizationId: user?.organizationId || ''
-        }}
+        initialData={userModalInitialData}
         data={userModal.editData || undefined}
         onClose={handleCloseModal}
         validate={(data) => {
@@ -931,9 +936,7 @@ export default function StudentsPage() {
             errors.phone = 'Номер телефона обязателен для заполнения';
           }
           
-          if (userModal.mode === 'create' && (!data.password || (typeof data.password === 'string' && data.password.trim() === ''))) {
-            errors.password = 'Пароль обязателен для заполнения';
-          }
+          // password is optional — field is hidden, backend auto-generates if not provided
           
           // Validate birthday
           if (data.birthday && typeof data.birthday === 'string' && data.birthday.trim() !== '') {
@@ -1126,17 +1129,7 @@ export default function StudentsPage() {
               {/* Password и Trial Student Toggle для студентов при создании */}
               {userModal.mode === 'create' && formData.role === 1 && (
                 <>
-                  {/* Password - на всю ширину */}
-                  <div className="hidden">
-                    <label htmlFor="password" className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                      Пароль *
-                    </label>
-                    <PasswordInput
-                      value={(formData.password as string) || ''}
-                      onChange={(value: string) => setFormData((prev: Record<string, unknown>) => ({ ...prev, password: value }))}
-                      required
-                    />
-                  </div>
+                  {/* Password field removed — backend auto-generates password */}
 
                   {/* Group Selection для студентов */}
                   <div>
@@ -1183,19 +1176,7 @@ export default function StudentsPage() {
                 </>
               )}
 
-              {/* Password - для не студентов при создании */}
-              {userModal.mode === 'create' && formData.role !== 1 && (
-                <div className="hidden">
-                  <label htmlFor="password" className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                    Пароль *
-                  </label>
-                  <PasswordInput
-                    value={(formData.password as string) || ''}
-                    onChange={(value: string) => setFormData((prev: Record<string, unknown>) => ({ ...prev, password: value }))}
-                    required
-                  />
-                </div>
-              )}
+              {/* Password field removed — backend auto-generates password */}
 
               {/* Trial Student Toggle - только при редактировании студента */}
               {userModal.mode === 'edit' && formData.role === 1 && (

@@ -256,13 +256,6 @@ const UniversalModal = <T extends Record<string, unknown>>({
           </div>
         )}
         
-        {/* le={subtitle}
-      icon={icon}
-      gradientFrom={gradientFrom}
-      gradientTo={gradientTo}
-      maxWidth={maxWidth}
-    >
-      <form onSubmit={handleSubmit} className="p-6">
         {/* Server Error Banner */}
         {serverError && (
           <div className="mb-4 p-4 bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-lg">
@@ -273,10 +266,8 @@ const UniversalModal = <T extends Record<string, unknown>>({
                 </svg>
               </div>
               <div className="ml-3 flex-1">
-                <h3 className="text-sm font-medium text-red-800 dark:text-red-200">
-                  Ошибка
-                </h3>
-                <div className="mt00">
+                <h3 className="text-sm font-medium text-red-800 dark:text-red-200">Ошибка</h3>
+                <div className="mt-2 text-sm text-red-700 dark:text-red-300">
                   {serverError}
                 </div>
               </div>
@@ -293,7 +284,6 @@ const UniversalModal = <T extends Record<string, unknown>>({
             </div>
           </div>
         )}
-        
         {/* Render form fields */}
         {children({
           formData,
