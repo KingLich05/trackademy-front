@@ -13,6 +13,8 @@ import { useToast } from '@/contexts/ToastContext';
 import { TimeInput } from '@/components/ui/TimeInput';
 import { Room } from '@/types/Room';
 import ReplaceTeacherModal from './ReplaceTeacherModal';
+import QrRegistrationModal from './QrRegistrationModal';
+import { QrCodeIcon } from '@heroicons/react/24/outline';
 
 interface LessonDetailModalProps {
   lesson: Lesson;
@@ -53,6 +55,9 @@ export default function LessonDetailModal({ lesson, isOpen, onClose, onUpdate }:
 
   // Replace teacher modal state
   const [isReplaceTeacherModalOpen, setIsReplaceTeacherModalOpen] = useState(false);
+
+  // QR registration modal state
+  const [isQrModalOpen, setIsQrModalOpen] = useState(false);
 
   // Update note when lesson changes
   useEffect(() => {
@@ -412,6 +417,17 @@ export default function LessonDetailModal({ lesson, isOpen, onClose, onUpdate }:
                 </button>
               </>
             )}
+            {/* QR registration button – shown for all non-cancelled planned/moved lessons */}
+            {activeTab === 'details' && (lesson.lessonStatus === 'Planned' || lesson.lessonStatus === 'Moved') && (isAdministrator || isTeacher || isOwner) && (
+              <button
+                onClick={() => setIsQrModalOpen(true)}
+                className="px-4 py-2 bg-indigo-500 text-white rounded-lg hover:bg-indigo-600 transition-colors flex items-center gap-2"
+              >
+                <QrCodeIcon className="w-5 h-5" />
+                QR-регистрация
+              </button>
+            )}
+
             {/* Show restore button for Cancelled lessons */}
             {activeTab === 'details' && lesson.lessonStatus === 'Cancelled' && (isAdministrator || isTeacher || isOwner) && (
               <button
@@ -692,6 +708,15 @@ export default function LessonDetailModal({ lesson, isOpen, onClose, onUpdate }:
         currentTeacherId={lesson.teacher.id}
         currentTeacherName={lesson.teacher.name}
         onUpdate={onUpdate}
+      />
+
+      <QrRegistrationModal
+        isOpen={isQrModalOpen}
+        onClose={() => setIsQrModalOpen(false)}
+        lessonId={lesson.id}
+        groupId={lesson.group.id}
+        organizationId={user?.organizationId ?? ''}
+        groupName={lesson.group.name}
       />
     </div>
   );

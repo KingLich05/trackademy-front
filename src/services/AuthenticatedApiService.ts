@@ -1233,4 +1233,18 @@ export class AuthenticatedApiService {
   static async deleteLeadActivity(activityId: string, organizationId: string): Promise<void> {
     return this.delete(`/LeadActivity/${activityId}/organization/${organizationId}`);
   }
+
+  // ── Lead Registration (QR) ────────────────────────────────────────────────
+
+  static async generateRegistrationLink(data: import('../types/LeadRegistration').GenerateLinkRequest): Promise<import('../types/LeadRegistration').RegistrationLinkDto> {
+    return this.post<import('../types/LeadRegistration').RegistrationLinkDto>('/LeadRegistration/generate-link', data);
+  }
+
+  static async getRegistrationLinks(organizationId: string): Promise<import('../types/LeadRegistration').RegistrationLinkDto[]> {
+    return this.get<import('../types/LeadRegistration').RegistrationLinkDto[]>(`/LeadRegistration/links/organization/${organizationId}`);
+  }
+
+  static async deactivateRegistrationLink(linkId: string, organizationId: string): Promise<void> {
+    return this.delete(`/LeadRegistration/link/${linkId}/organization/${organizationId}`);
+  }
 }
