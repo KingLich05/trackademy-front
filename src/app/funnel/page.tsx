@@ -784,7 +784,14 @@ export default function FunnelPage() {
         {activeTab === 'tasks' && (
           <div className="space-y-4">
             <div className="flex items-center justify-between">
-              <p className="text-sm text-gray-500 dark:text-gray-400">Предстоящие задачи по всем лидам</p>
+              <div className="flex items-center gap-2">
+                <p className="text-sm text-gray-500 dark:text-gray-400">Предстоящие задачи по всем лидам</p>
+                {!loadingTasks && tasks.length > 0 && (
+                  <span className="text-xs font-semibold bg-violet-100 dark:bg-violet-900/30 text-violet-600 dark:text-violet-400 px-2 py-0.5 rounded-full">
+                    {tasks.length}
+                  </span>
+                )}
+              </div>
               <button onClick={loadTasks} className="p-2 text-gray-400 hover:text-violet-600 transition-colors">
                 <ArrowPathIcon className="h-4 w-4" />
               </button>
@@ -798,8 +805,9 @@ export default function FunnelPage() {
               </div>
             ) : (
               <div className="bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 divide-y divide-gray-100 dark:divide-gray-700">
-                {tasks.map(task => (
+                {tasks.map((task, index) => (
                   <div key={task.id} className="flex items-center gap-4 px-5 py-3.5">
+                    <span className="w-6 h-6 rounded-full bg-gray-100 dark:bg-gray-700 text-gray-500 dark:text-gray-400 text-xs font-semibold flex items-center justify-center shrink-0 select-none tabular-nums">{index + 1}</span>
                     <button
                       onClick={() => handleCompleteTask(task)}
                       className="w-5 h-5 border-2 border-violet-400 rounded-full hover:bg-violet-100 dark:hover:bg-violet-900/30 flex-shrink-0 transition-colors"
