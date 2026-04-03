@@ -914,13 +914,12 @@ export default function HomeworkPage() {
           }
         }}
         title={modalMode === 'create' ? 'Создать задание' : 'Редактировать задание'}
-        customBackground="bg-gray-800 dark:bg-gray-800"
         gradientFrom="from-purple-500"
         gradientTo="to-indigo-600"
       >
         <div className="space-y-4">
           <div>
-            <label className="block text-sm font-medium text-gray-300 mb-2">
+            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
               Описание *
             </label>
             <textarea
@@ -928,19 +927,19 @@ export default function HomeworkPage() {
               onChange={(e) => setFormData({ ...formData, description: e.target.value })}
               rows={4}
               placeholder="Опишите задание..."
-              className="w-full px-3 py-2 border border-gray-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-transparent bg-gray-700 text-white placeholder-gray-400"
+              className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-transparent bg-white dark:bg-gray-700 text-gray-900 dark:text-white placeholder-gray-400"
             />
           </div>
 
           <div>
-            <label className="block text-sm font-medium text-gray-300 mb-2">
+            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
               Группа *
             </label>
             <select
               value={formData.groupId}
               onChange={(e) => setFormData({ ...formData, groupId: e.target.value })}
               disabled={modalMode === 'edit'}
-              className="w-full px-3 py-2 border border-gray-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-transparent bg-gray-700 text-white disabled:opacity-50 disabled:cursor-not-allowed"
+              className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-transparent bg-white dark:bg-gray-700 text-gray-900 dark:text-white disabled:opacity-50 disabled:cursor-not-allowed"
             >
               <option value="">Выберите группу</option>
               {groups.map((group) => (
@@ -950,26 +949,26 @@ export default function HomeworkPage() {
               ))}
             </select>
             {modalMode === 'edit' && (
-              <p className="mt-1 text-xs text-gray-400">
+              <p className="mt-1 text-xs text-gray-500 dark:text-gray-400">
                 Группу нельзя изменить после создания задания
               </p>
             )}
           </div>
 
           <div>
-            <label className="block text-sm font-medium text-gray-300 mb-2">
+            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
               Дедлайн *
             </label>
             <input
               type="date"
               value={modalDueDate}
               onChange={(e) => setModalDueDate(e.target.value)}
-              className="w-full px-3 py-2 border border-gray-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-transparent bg-gray-700 text-white"
+              className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-transparent bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
             />
           </div>
 
           <div>
-            <label className="block text-sm font-medium text-gray-300 mb-2">
+            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
               Прикрепить файл {modalMode === 'edit' && '(необязательно)'}
             </label>
             <input
@@ -978,17 +977,17 @@ export default function HomeworkPage() {
                 const file = e.target.files?.[0];
                 setFormData({ ...formData, attachmentFile: file });
               }}
-              className="w-full px-3 py-2 border border-gray-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-transparent bg-gray-700 text-white file:mr-4 file:py-2 file:px-4 file:rounded-lg file:border-0 file:text-sm file:font-medium file:bg-purple-600 file:text-white hover:file:bg-purple-700"
+              className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-transparent bg-white dark:bg-gray-700 text-gray-900 dark:text-white file:mr-4 file:py-2 file:px-4 file:rounded-lg file:border-0 file:text-sm file:font-medium file:bg-purple-600 file:text-white hover:file:bg-purple-700"
               accept=".pdf,.doc,.docx,.txt,.jpg,.jpeg,.png,.zip,.rar"
             />
-            <p className="mt-1 text-xs text-gray-400">
+            <p className="mt-1 text-xs text-gray-500 dark:text-gray-400">
               {modalMode === 'edit' 
                 ? 'Загрузите новый файл, чтобы заменить существующий. Если файл не выбран, текущий файл останется без изменений.' 
                 : 'Максимальный размер: 10 МБ. Поддерживаемые форматы: PDF, DOC, DOCX, TXT, JPG, PNG, ZIP, RAR'}
             </p>
           </div>
 
-          <div className="flex justify-end gap-3 mt-6 pt-6 border-t border-gray-700">
+          <div className="flex justify-end gap-3 mt-6 pt-6 border-t border-gray-200 dark:border-gray-700">
             <button
               onClick={() => {
                 if (!isSaving) {
@@ -1000,7 +999,7 @@ export default function HomeworkPage() {
                 }
               }}
               disabled={isSaving}
-              className="px-4 py-2 text-sm font-medium text-gray-300 hover:bg-gray-700 rounded-lg transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+              className="px-4 py-2 text-sm font-medium text-gray-600 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
             >
               Отмена
             </button>
@@ -1046,7 +1045,6 @@ export default function HomeworkPage() {
           setStudentFilter('all');
         }}
         title="Детали задания"
-        customBackground="bg-gray-800 dark:bg-gray-800"
         gradientFrom="from-purple-500"
         gradientTo="to-indigo-600"
         maxWidth="4xl"
@@ -1058,13 +1056,13 @@ export default function HomeworkPage() {
         ) : selectedAssignment ? (
           <div className="space-y-6">
             {/* Tabs */}
-            <div className="flex border-b border-gray-700">
+            <div className="flex border-b border-gray-200 dark:border-gray-700">
               <button
                 onClick={() => setDetailActiveTab('details')}
                 className={`px-6 py-3 font-medium text-sm transition-colors ${
                   detailActiveTab === 'details'
-                    ? 'text-purple-400 border-b-2 border-purple-400'
-                    : 'text-gray-400 hover:text-gray-300'
+                    ? 'text-purple-600 dark:text-purple-400 border-b-2 border-purple-500 dark:border-purple-400'
+                    : 'text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-300'
                 }`}
               >
                 Детали задания
@@ -1073,8 +1071,8 @@ export default function HomeworkPage() {
                 onClick={() => setDetailActiveTab('students')}
                 className={`px-6 py-3 font-medium text-sm transition-colors ${
                   detailActiveTab === 'students'
-                    ? 'text-purple-400 border-b-2 border-purple-400'
-                    : 'text-gray-400 hover:text-gray-300'
+                    ? 'text-purple-600 dark:text-purple-400 border-b-2 border-purple-500 dark:border-purple-400'
+                    : 'text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-300'
                 }`}
               >
                 Студенты 
@@ -1091,10 +1089,10 @@ export default function HomeworkPage() {
           <div className="space-y-6">
             {/* Description */}
             <div>
-              <label className="block text-sm font-medium text-gray-400 mb-2">
+              <label className="block text-sm font-medium text-gray-500 dark:text-gray-400 mb-2">
                 Описание
               </label>
-              <div className="bg-gray-700 rounded-lg p-4 text-white break-words overflow-wrap-anywhere">
+              <div className="bg-gray-100 dark:bg-gray-700 rounded-lg p-4 text-gray-900 dark:text-white break-words overflow-wrap-anywhere">
                 {selectedAssignment.description || 'Описание отсутствует'}
               </div>
             </div>
@@ -1102,20 +1100,20 @@ export default function HomeworkPage() {
             {/* Group Info */}
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <div>
-                <label className="block text-sm font-medium text-gray-400 mb-2">
+                <label className="block text-sm font-medium text-gray-500 dark:text-gray-400 mb-2">
                   Группа
                 </label>
-                <div className="bg-gray-700 rounded-lg p-4">
-                  <div className="text-white font-medium">{selectedAssignment.group.name}</div>
-                  <div className="text-gray-400 text-sm">{selectedAssignment.group.code}</div>
+                <div className="bg-gray-100 dark:bg-gray-700 rounded-lg p-4">
+                  <div className="text-gray-900 dark:text-white font-medium">{selectedAssignment.group.name}</div>
+                  <div className="text-gray-500 dark:text-gray-400 text-sm">{selectedAssignment.group.code}</div>
                 </div>
               </div>
 
               <div>
-                <label className="block text-sm font-medium text-gray-400 mb-2">
+                <label className="block text-sm font-medium text-gray-500 dark:text-gray-400 mb-2">
                   Статус
                 </label>
-                <div className="bg-gray-700 rounded-lg p-4">
+                <div className="bg-gray-100 dark:bg-gray-700 rounded-lg p-4">
                   {isOverdue(selectedAssignment.dueDate) ? (
                     <div className="flex items-center space-x-2">
                       <div className="w-3 h-3 bg-red-500 rounded-full"></div>
@@ -1134,32 +1132,32 @@ export default function HomeworkPage() {
             {/* Dates */}
             <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
               <div>
-                <label className="block text-sm font-medium text-gray-400 mb-2">
+                <label className="block text-sm font-medium text-gray-500 dark:text-gray-400 mb-2">
                   Дата назначения
                 </label>
-                <div className="bg-gray-700 rounded-lg p-4 text-white">
+                <div className="bg-gray-100 dark:bg-gray-700 rounded-lg p-4 text-gray-900 dark:text-white">
                   {formatDate(selectedAssignment.assignedDate)}
                 </div>
               </div>
 
               <div>
-                <label className="block text-sm font-medium text-gray-400 mb-2">
+                <label className="block text-sm font-medium text-gray-500 dark:text-gray-400 mb-2">
                   Дедлайн
                 </label>
-                <div className={`bg-gray-700 rounded-lg p-4 font-medium ${
+                <div className={`bg-gray-100 dark:bg-gray-700 rounded-lg p-4 font-medium ${
                   isOverdue(selectedAssignment.dueDate) 
-                    ? 'text-red-400' 
-                    : 'text-white'
+                    ? 'text-red-500 dark:text-red-400' 
+                    : 'text-gray-900 dark:text-white'
                 }`}>
                   {formatDate(selectedAssignment.dueDate)}
                 </div>
               </div>
 
               <div>
-                <label className="block text-sm font-medium text-gray-400 mb-2">
+                <label className="block text-sm font-medium text-gray-500 dark:text-gray-400 mb-2">
                   Дата создания
                 </label>
-                <div className="bg-gray-700 rounded-lg p-4 text-white">
+                <div className="bg-gray-100 dark:bg-gray-700 rounded-lg p-4 text-gray-900 dark:text-white">
                   {formatDate(selectedAssignment.createdAt)}
                 </div>
               </div>
@@ -1168,10 +1166,10 @@ export default function HomeworkPage() {
             {/* Attachment Info */}
             {selectedAssignment.hasAttachment && (
               <div>
-                <label className="block text-sm font-medium text-gray-400 mb-2">
+                <label className="block text-sm font-medium text-gray-500 dark:text-gray-400 mb-2">
                   Прикрепленный файл
                 </label>
-                <div className="bg-gray-700 rounded-lg p-4">
+                <div className="bg-gray-100 dark:bg-gray-700 rounded-lg p-4">
                   <div className="flex items-center justify-between">
                     <div className="flex items-center space-x-3">
                       <div className="w-8 h-8 bg-purple-500 rounded-lg flex items-center justify-center">
@@ -1180,9 +1178,9 @@ export default function HomeworkPage() {
                         </svg>
                       </div>
                       <div>
-                        <div className="text-white font-medium">{selectedAssignment.attachmentName}</div>
+                        <div className="text-gray-900 dark:text-white font-medium">{selectedAssignment.attachmentName}</div>
                         {selectedAssignment.attachmentSize && (
-                          <div className="text-gray-400 text-sm">
+                          <div className="text-gray-500 dark:text-gray-400 text-sm">
                             {(selectedAssignment.attachmentSize / 1024 / 1024).toFixed(2)} МБ
                           </div>
                         )}
@@ -1208,7 +1206,7 @@ export default function HomeworkPage() {
             )}
 
             {/* Actions for Details Tab */}
-            <div className="flex justify-end gap-3 pt-6 border-t border-gray-700">
+            <div className="flex justify-end gap-3 pt-6 border-t border-gray-200 dark:border-gray-700">
               <button
                 onClick={() => {
                   setIsDetailModalOpen(false);
@@ -1216,7 +1214,7 @@ export default function HomeworkPage() {
                   setDetailActiveTab('details');
                   setStudentFilter('all');
                 }}
-                className="px-4 py-2 text-sm font-medium text-gray-300 hover:bg-gray-700 rounded-lg transition-colors"
+                className="px-4 py-2 text-sm font-medium text-gray-600 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg transition-colors"
               >
                 Закрыть
               </button>
@@ -1241,7 +1239,7 @@ export default function HomeworkPage() {
                     className={`px-4 py-2 text-sm font-medium rounded-lg transition-colors ${
                       studentFilter === 'all'
                         ? 'bg-purple-500 text-white'
-                        : 'bg-gray-700 text-gray-300 hover:bg-gray-600'
+                        : 'bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-600'
                     }`}
                   >
                     Все ({selectedAssignment.studentSubmissions?.length || 0})
@@ -1251,7 +1249,7 @@ export default function HomeworkPage() {
                     className={`px-4 py-2 text-sm font-medium rounded-lg transition-colors ${
                       studentFilter === 'submitted'
                         ? 'bg-purple-500 text-white'
-                        : 'bg-gray-700 text-gray-300 hover:bg-gray-600'
+                        : 'bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-600'
                     }`}
                   >
                     Сдавшие ({selectedAssignment.studentSubmissions?.filter(s => s.submission !== null && s.submission.status !== SubmissionStatus.Draft).length || 0})
@@ -1261,7 +1259,7 @@ export default function HomeworkPage() {
                     className={`px-4 py-2 text-sm font-medium rounded-lg transition-colors ${
                       studentFilter === 'notSubmitted'
                         ? 'bg-purple-500 text-white'
-                        : 'bg-gray-700 text-gray-300 hover:bg-gray-600'
+                        : 'bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-600'
                     }`}
                   >
                     Не сдавшие ({selectedAssignment.studentSubmissions?.filter(s => s.submission === null || s.submission.status === SubmissionStatus.Draft).length || 0})
@@ -1269,34 +1267,34 @@ export default function HomeworkPage() {
                 </div>
 
                 {/* Students Table */}
-                <div className="overflow-x-auto rounded-lg border border-gray-700">
-                  <table className="w-full divide-y divide-gray-700">
-                    <thead className="bg-gray-700/50">
+                <div className="overflow-x-auto rounded-lg border border-gray-200 dark:border-gray-700">
+                  <table className="w-full divide-y divide-gray-200 dark:divide-gray-700">
+                    <thead className="bg-gray-100 dark:bg-gray-700/50">
                       <tr>
-                        <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-300 uppercase tracking-wider">
+                        <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-600 dark:text-gray-300 uppercase tracking-wider">
                           №
                         </th>
-                        <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-300 uppercase tracking-wider">
+                        <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-600 dark:text-gray-300 uppercase tracking-wider">
                           Студент
                         </th>
-                        <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-300 uppercase tracking-wider">
+                        <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-600 dark:text-gray-300 uppercase tracking-wider">
                           Логин
                         </th>
-                        <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-300 uppercase tracking-wider">
+                        <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-600 dark:text-gray-300 uppercase tracking-wider">
                           Статус
                         </th>
-                        <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-300 uppercase tracking-wider">
+                        <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-600 dark:text-gray-300 uppercase tracking-wider">
                           Оценка
                         </th>
-                        <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-300 uppercase tracking-wider">
+                        <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-600 dark:text-gray-300 uppercase tracking-wider">
                           Дата сдачи
                         </th>
-                        <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-300 uppercase tracking-wider">
+                        <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-600 dark:text-gray-300 uppercase tracking-wider">
                           Дата проверки
                         </th>
                       </tr>
                     </thead>
-                    <tbody className="bg-gray-800/50 divide-y divide-gray-700">
+                    <tbody className="bg-white dark:bg-gray-800/50 divide-y divide-gray-200 dark:divide-gray-700">
                       {selectedAssignment.studentSubmissions
                         ?.filter(student => {
                           // Treat drafts as not submitted for teachers
@@ -1312,7 +1310,7 @@ export default function HomeworkPage() {
                           return (
                           <tr 
                             key={student.studentId}
-                            className="hover:bg-gray-700/50 cursor-pointer transition-colors"
+                            className="hover:bg-gray-100 dark:hover:bg-gray-700/50 cursor-pointer transition-colors"
                             onClick={() => {
                               if (displaySubmission) {
                                 setSelectedSubmissionId(displaySubmission.id);
@@ -1322,13 +1320,13 @@ export default function HomeworkPage() {
                             }}
                           >
                             <td className="px-6 py-4 whitespace-nowrap">
-                              <div className="text-sm text-gray-400">{index + 1}</div>
+                              <div className="text-sm text-gray-500 dark:text-gray-400">{index + 1}</div>
                             </td>
                             <td className="px-6 py-4 whitespace-nowrap">
-                              <div className="text-sm font-medium text-white">{student.studentName}</div>
+                              <div className="text-sm font-medium text-gray-900 dark:text-white">{student.studentName}</div>
                             </td>
                             <td className="px-6 py-4 whitespace-nowrap">
-                              <div className="text-sm text-gray-300">{student.studentLogin}</div>
+                              <div className="text-sm text-gray-600 dark:text-gray-300">{student.studentLogin}</div>
                             </td>
                             <td className="px-6 py-4 whitespace-nowrap">
                               {displaySubmission ? (
@@ -1350,17 +1348,17 @@ export default function HomeworkPage() {
                             <td className="px-6 py-4 whitespace-nowrap">
                               {displaySubmission?.score !== null && displaySubmission?.score !== undefined ? (
                                 <div className="flex items-center">
-                                  <span className="text-sm font-medium text-white">{displaySubmission.score}</span>
-                                  <span className="text-xs text-gray-400 ml-1">/100</span>
+                                  <span className="text-sm font-medium text-gray-900 dark:text-white">{displaySubmission.score}</span>
+                                  <span className="text-xs text-gray-500 dark:text-gray-400 ml-1">/100</span>
                                 </div>
                               ) : (
                                 <span className="text-sm text-gray-500">—</span>
                               )}
                             </td>
-                            <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-300">
+                            <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-600 dark:text-gray-300">
                               {displaySubmission?.submittedAt ? formatDate(displaySubmission.submittedAt) : '—'}
                             </td>
-                            <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-300">
+                            <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-600 dark:text-gray-300">
                               {displaySubmission?.gradedAt ? formatDate(displaySubmission.gradedAt) : '—'}
                             </td>
                           </tr>
@@ -1373,7 +1371,7 @@ export default function HomeworkPage() {
                     if (studentFilter === 'notSubmitted') return !hasValidSubmission;
                     return true;
                   }).length === 0 && (
-                    <div className="text-center py-8 text-gray-400">
+                    <div className="text-center py-8 text-gray-500 dark:text-gray-400">
                       Нет студентов для отображения
                     </div>
                   )}
@@ -1382,7 +1380,7 @@ export default function HomeworkPage() {
             )}
           </div>
         ) : (
-          <div className="text-center py-8 text-gray-400">
+          <div className="text-center py-8 text-gray-500 dark:text-gray-400">
             Не удалось загрузить данные
           </div>
         )}
