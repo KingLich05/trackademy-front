@@ -10,13 +10,15 @@ import { DateRangePicker } from '../../components/ui/DateRangePicker';
 import { attendanceApi } from '../../services/AttendanceApiService';
 import { ExportAttendanceRequest, AttendanceStatus } from '../../types/Attendance';
 import { API_BASE_URL } from '../../lib/api-config';
+import { ExportPaymentsModal, ExportPaymentsParams } from '../../components/ExportPaymentsModal';
 import { 
   ChartBarIcon, 
   DocumentArrowDownIcon, 
   UsersIcon, 
   UserGroupIcon,
   ClipboardDocumentCheckIcon,
-  CalendarDaysIcon
+  CalendarDaysIcon,
+  CurrencyDollarIcon
 } from '@heroicons/react/24/outline';
 import { canManageUsers } from '../../types/Role';
 
@@ -56,6 +58,10 @@ export default function ReportsPage() {
 
   // Состояние для экспорта расписания
   const [isScheduleExportModalOpen, setIsScheduleExportModalOpen] = useState(false);
+
+  // Состояние для экспорта платежей
+  const [isPaymentsExportModalOpen, setIsPaymentsExportModalOpen] = useState(false);
+  const [isExportingPayments, setIsExportingPayments] = useState(false);
   const [scheduleFilters, setScheduleFilters] = useState({
     organizationId: user?.organizationId || '',
     groupId: '',
@@ -103,6 +109,13 @@ export default function ReportsPage() {
       icon: ClipboardDocumentCheckIcon,
       exportType: 'attendance',
       color: 'purple'
+    },
+    {
+      title: 'Платежи',
+      description: 'Статистика платежей с фильтрацией по датам, группам и типу',
+      icon: CurrencyDollarIcon,
+      exportType: 'payments',
+      color: 'orange'
     },
     {
       title: 'Расписание',
@@ -160,6 +173,10 @@ export default function ReportsPage() {
           setStudentSearchQuery('');
           setIsAttendanceExportModalOpen(true);
           return;
+        case 'payments':
+          await loadGroups();
+          setIsPaymentsExportModalOpen(true);
+          return;
         case 'schedules':
           // Открываем модальное окно для настройки экспорта расписания
           await loadScheduleData();
@@ -173,6 +190,30 @@ export default function ReportsPage() {
       showError(`Ошибка при экспорте: ${title}`);
     } finally {
       setIsExporting(null);
+    }
+  };
+
+  const handleExportPayments = async (params: ExportPaymentsParams) => {
+    if (!user?.organizationId) return;
+    setIsExportingPayments(true);
+    try {
+      const blob = await ExportApiService.exportPayments(
+        user.organizationId,
+        params.startDate,
+        params.endDate,
+        params.groupIds,
+        params.paymentType
+      );
+      ExportApiService.downloadFile(
+        blob,
+        ExportApiService.getExportFilename('payments', 'xlsx')
+      );
+      showSuccess('Файл успешно экспортирован');
+      setIsPaymentsExportModalOpen(false);
+    } catch (error: unknown) {
+      showError('Ошибка при экспорте платежей: ' + ((error as Error)?.message || 'Неизвестная ошибка'));
+    } finally {
+      setIsExportingPayments(false);
     }
   };
 
@@ -1173,6 +1214,13 @@ export default function ReportsPage() {
           </div>
         </div>
       )}
+      <ExportPaymentsModal
+        isOpen={isPaymentsExportModalOpen}
+        onClose={() => setIsPaymentsExportModalOpen(false)}
+        onExport={handleExportPayments}
+        groups={groups}
+        isExporting={isExportingPayments}
+      />
     </>
   );
 }

@@ -7,9 +7,10 @@ import { useToast } from '../../contexts/ToastContext';
 import { AuthenticatedApiService } from '../../services/AuthenticatedApiService';
 import { StudentFlag, CreateStudentFlagRequest } from '../../types/StudentFlag';
 import { OrganizationDetail } from '../../types/Organization';
-import { CogIcon, BuildingOfficeIcon, ChevronRightIcon, FlagIcon, PlusIcon, PencilIcon, TrashIcon, SparklesIcon } from '@heroicons/react/24/outline';
+import { CogIcon, BuildingOfficeIcon, ChevronRightIcon, FlagIcon, PlusIcon, PencilIcon, TrashIcon, SparklesIcon, ServerStackIcon, ArrowPathIcon, XMarkIcon } from '@heroicons/react/24/outline';
 import { RewardRuleDto, RewardEventType, CreateRewardRuleRequest, UpdateRewardRuleRequest } from '../../types/Market';
 import { BaseModal } from '../../components/ui/BaseModal';
+import { SettingDto, SettingDefinition, SettingType, UpsertSettingRequest, SETTING_GROUPS, WEEKDAYS } from '../../types/Setting';
 
 export default function SettingsPage() {
   const { isAuthenticated, user } = useAuth();
@@ -33,6 +34,17 @@ export default function SettingsPage() {
   const [editingRule, setEditingRule] = useState<RewardRuleDto | null>(null);
   const [ruleForm, setRuleForm] = useState({ name: '', eventType: RewardEventType.AttendanceMarked as RewardEventType, coinAmount: 5, minScore: '', isActive: true });
 
+  // System settings state
+  const [definitions, setDefinitions] = useState<SettingDefinition[]>([]);
+  const [savedSettings, setSavedSettings] = useState<SettingDto[]>([]);
+  const [settingsForm, setSettingsForm] = useState<Record<string, unknown>>({});
+  const [dirtyKeys, setDirtyKeys] = useState<Set<string>>(new Set());
+  const [isLoadingSettings, setIsLoadingSettings] = useState(false);
+  const [isSavingSettings, setIsSavingSettings] = useState(false);
+  const [activeSettingsGroup, setActiveSettingsGroup] = useState<string>('general');
+  const [newHolidayDate, setNewHolidayDate] = useState('');
+  const [newLeadSource, setNewLeadSource] = useState('');
+
   useEffect(() => {
     if (!isAuthenticated) {
       router.push('/login');
@@ -51,6 +63,8 @@ export default function SettingsPage() {
       loadOrganizationData();
     } else if (activeTab === 'reward-rules') {
       loadRewardRules();
+    } else if (activeTab === 'system-settings') {
+      loadSystemSettings();
     }
   }, [isAuthenticated, user, router, activeTab]);
 
@@ -69,6 +83,68 @@ export default function SettingsPage() {
       showError('Ошибка при загрузке данных организации');
     } finally {
       setIsLoadingOrganization(false);
+    }
+  };
+
+  const loadSystemSettings = async () => {
+    if (!user?.organizationId) return;
+    setIsLoadingSettings(true);
+    try {
+      const [defs, saved] = await Promise.all([
+        AuthenticatedApiService.getSettingDefinitions(),
+        AuthenticatedApiService.getOrganizationSettings(user.organizationId),
+      ]);
+      setDefinitions(defs);
+      setSavedSettings(saved);
+      const savedMap = new Map(saved.map(s => [s.key, s.value]));
+      const form: Record<string, unknown> = {};
+      defs.forEach(def => {
+        form[def.key] = savedMap.has(def.key) ? savedMap.get(def.key) : def.defaultValue;
+      });
+      setSettingsForm(form);
+      setDirtyKeys(new Set());
+    } catch {
+      showError('Ошибка при загрузке настроек');
+    } finally {
+      setIsLoadingSettings(false);
+    }
+  };
+
+  const handleSettingChange = (key: string, value: unknown) => {
+    setSettingsForm(prev => ({ ...prev, [key]: value }));
+    setDirtyKeys(prev => new Set(prev).add(key));
+  };
+
+  const handleSaveSettings = async () => {
+    if (!user?.organizationId || dirtyKeys.size === 0) return;
+    setIsSavingSettings(true);
+    try {
+      const defsMap = new Map(definitions.map(d => [d.key, d]));
+      const settings: UpsertSettingRequest[] = Array.from(dirtyKeys).map(key => ({
+        key,
+        type: defsMap.get(key)!.type,
+        value: settingsForm[key],
+      }));
+      await AuthenticatedApiService.bulkUpsertSettings(user.organizationId, settings);
+      showSuccess('Настройки сохранены');
+      setDirtyKeys(new Set());
+      await loadSystemSettings();
+    } catch {
+      showError('Ошибка при сохранении');
+    } finally {
+      setIsSavingSettings(false);
+    }
+  };
+
+  const handleResetSetting = async (key: string, defaultValue: unknown) => {
+    if (!user?.organizationId) return;
+    try {
+      await AuthenticatedApiService.deleteOrganizationSetting(user.organizationId, key);
+      setSettingsForm(prev => ({ ...prev, [key]: defaultValue }));
+      setDirtyKeys(prev => { const s = new Set(prev); s.delete(key); return s; });
+      showSuccess('Настройка сброшена к значению по умолчанию');
+    } catch {
+      showError('Ошибка при сбросе');
     }
   };
 
@@ -263,6 +339,12 @@ export default function SettingsPage() {
       label: 'Правила маркета',
       icon: SparklesIcon,
       description: 'Начисление монет за действия'
+    },
+    {
+      id: 'system-settings',
+      label: 'Настройки системы',
+      icon: ServerStackIcon,
+      description: 'Расписание, посещаемость, финансы'
     }
   ];
 
@@ -685,6 +767,255 @@ export default function SettingsPage() {
                       </div>
                     )}
                   </div>
+                </div>
+              )}
+
+              {activeTab === 'system-settings' && (
+                <div className="p-6">
+                  <div className="mb-6 flex items-start justify-between gap-4">
+                    <div>
+                      <h3 className="text-xl font-semibold text-gray-900 dark:text-white mb-1">Настройки системы</h3>
+                      <p className="text-gray-500 dark:text-gray-400 text-sm">Расписание, посещаемость, финансы, уведомления и другие параметры</p>
+                    </div>
+                    {dirtyKeys.size > 0 && (
+                      <button
+                        onClick={handleSaveSettings}
+                        disabled={isSavingSettings}
+                        className="flex items-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors disabled:opacity-50 shrink-0 text-sm font-medium"
+                      >
+                        {isSavingSettings ? <ArrowPathIcon className="w-4 h-4 animate-spin" /> : null}
+                        Сохранить ({dirtyKeys.size})
+                      </button>
+                    )}
+                  </div>
+
+                  {isLoadingSettings ? (
+                    <div className="flex justify-center py-16">
+                      <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600" />
+                    </div>
+                  ) : definitions.length === 0 ? (
+                    <div className="text-center py-12 text-gray-400">Настройки не загружены</div>
+                  ) : (
+                    <div className="flex gap-6">
+                      {/* Group nav */}
+                      <div className="w-40 shrink-0">
+                        <nav className="space-y-1">
+                          {Object.entries(SETTING_GROUPS).filter(([g]) => definitions.some(d => d.group === g)).map(([g, meta]) => (
+                            <button
+                              key={g}
+                              onClick={() => setActiveSettingsGroup(g)}
+                              className={`w-full text-left px-3 py-2 rounded-lg text-sm transition-colors ${
+                                activeSettingsGroup === g
+                                  ? 'bg-blue-50 dark:bg-blue-900/20 text-blue-700 dark:text-blue-300 font-medium'
+                                  : 'text-gray-600 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-700'
+                              }`}
+                            >
+                              {meta.title}
+                            </button>
+                          ))}
+                        </nav>
+                      </div>
+
+                      {/* Settings list */}
+                      <div className="flex-1 min-w-0 space-y-3">
+                        {definitions
+                          .filter(def => def.group === activeSettingsGroup)
+                          .map(def => {
+                            const value = settingsForm[def.key];
+                            const savedMap = new Map(savedSettings.map(s => [s.key, s.value]));
+                            const isCustom = savedMap.has(def.key);
+                            const isDirty = dirtyKeys.has(def.key);
+
+                            return (
+                              <div key={def.key} className={`border rounded-lg p-4 transition-colors ${isDirty ? 'border-blue-400 dark:border-blue-500 bg-blue-50/30 dark:bg-blue-900/10' : 'border-gray-200 dark:border-gray-700'}`}>
+                                <div className="flex items-start justify-between gap-3 mb-2">
+                                  <div className="flex-1 min-w-0">
+                                    <div className="flex items-center gap-2 flex-wrap">
+                                      <span className="font-medium text-gray-900 dark:text-white text-sm">{def.label}</span>
+                                      {isCustom && !isDirty && (
+                                        <span className="text-xs px-1.5 py-0.5 bg-amber-100 dark:bg-amber-900/30 text-amber-700 dark:text-amber-400 rounded">изменено</span>
+                                      )}
+                                      {isDirty && (
+                                        <span className="text-xs px-1.5 py-0.5 bg-blue-100 dark:bg-blue-900/30 text-blue-700 dark:text-blue-400 rounded">не сохранено</span>
+                                      )}
+                                    </div>
+                                    {def.description && (
+                                      <p className="text-xs text-gray-500 dark:text-gray-400 mt-0.5">{def.description}</p>
+                                    )}
+                                  </div>
+                                  {isCustom && (
+                                    <button
+                                      onClick={() => handleResetSetting(def.key, def.defaultValue)}
+                                      className="text-xs text-gray-400 hover:text-red-500 dark:hover:text-red-400 transition-colors shrink-0"
+                                      title="Сбросить к значению по умолчанию"
+                                    >
+                                      <XMarkIcon className="w-4 h-4" />
+                                    </button>
+                                  )}
+                                </div>
+
+                                {/* Boolean */}
+                                {def.type === SettingType.Boolean && (
+                                  <label className="relative inline-flex items-center cursor-pointer">
+                                    <input
+                                      type="checkbox"
+                                      className="sr-only peer"
+                                      checked={value as boolean}
+                                      onChange={e => handleSettingChange(def.key, e.target.checked)}
+                                    />
+                                    <div className="w-11 h-6 bg-gray-200 dark:bg-gray-700 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-blue-600"></div>
+                                  </label>
+                                )}
+
+                                {/* String */}
+                                {def.type === SettingType.String && (
+                                  <input
+                                    type="text"
+                                    value={value as string}
+                                    onChange={e => handleSettingChange(def.key, e.target.value)}
+                                    className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white text-sm focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                                  />
+                                )}
+
+                                {/* Integer */}
+                                {def.type === SettingType.Integer && (
+                                  <input
+                                    type="number"
+                                    step={1}
+                                    value={value as number}
+                                    onChange={e => handleSettingChange(def.key, parseInt(e.target.value, 10) || 0)}
+                                    className="w-40 px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white text-sm focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                                  />
+                                )}
+
+                                {/* Decimal */}
+                                {def.type === SettingType.Decimal && (
+                                  <input
+                                    type="number"
+                                    step={0.01}
+                                    value={value as number}
+                                    onChange={e => handleSettingChange(def.key, parseFloat(e.target.value) || 0)}
+                                    className="w-40 px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white text-sm focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                                  />
+                                )}
+
+                                {/* Json — working_days */}
+                                {def.type === SettingType.Json && def.key === 'schedule.working_days' && (
+                                  <div className="flex flex-wrap gap-2">
+                                    {WEEKDAYS.map(day => {
+                                      const days = (value as number[]) || [];
+                                      const checked = days.includes(day.value);
+                                      return (
+                                        <button
+                                          key={day.value}
+                                          onClick={() => {
+                                            const next = checked
+                                              ? days.filter(d => d !== day.value)
+                                              : [...days, day.value].sort();
+                                            handleSettingChange(def.key, next);
+                                          }}
+                                          className={`px-3 py-1.5 rounded-lg text-sm font-medium transition-colors ${
+                                            checked
+                                              ? 'bg-blue-600 text-white'
+                                              : 'bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-600'
+                                          }`}
+                                        >
+                                          {day.label}
+                                        </button>
+                                      );
+                                    })}
+                                  </div>
+                                )}
+
+                                {/* Json — holidays */}
+                                {def.type === SettingType.Json && def.key === 'org.holidays' && (
+                                  <div className="space-y-2">
+                                    <div className="flex flex-wrap gap-2">
+                                      {((value as string[]) || []).map(date => (
+                                        <span key={date} className="flex items-center gap-1 px-2 py-1 bg-gray-100 dark:bg-gray-700 rounded-lg text-sm text-gray-700 dark:text-gray-300">
+                                          {date}
+                                          <button
+                                            onClick={() => handleSettingChange(def.key, ((value as string[]) || []).filter(d => d !== date))}
+                                            className="text-gray-400 hover:text-red-500 ml-1"
+                                          >
+                                            <XMarkIcon className="w-3 h-3" />
+                                          </button>
+                                        </span>
+                                      ))}
+                                    </div>
+                                    <div className="flex gap-2">
+                                      <input
+                                        type="date"
+                                        value={newHolidayDate}
+                                        onChange={e => setNewHolidayDate(e.target.value)}
+                                        className="px-3 py-1.5 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white text-sm focus:ring-2 focus:ring-blue-500"
+                                      />
+                                      <button
+                                        onClick={() => {
+                                          if (!newHolidayDate) return;
+                                          const arr = (value as string[]) || [];
+                                          if (!arr.includes(newHolidayDate)) {
+                                            handleSettingChange(def.key, [...arr, newHolidayDate].sort());
+                                          }
+                                          setNewHolidayDate('');
+                                        }}
+                                        className="px-3 py-1.5 bg-blue-600 text-white rounded-lg hover:bg-blue-700 text-sm transition-colors"
+                                      >
+                                        Добавить
+                                      </button>
+                                    </div>
+                                  </div>
+                                )}
+
+                                {/* Json — lead_sources */}
+                                {def.type === SettingType.Json && def.key === 'crm.lead_sources' && (
+                                  <div className="space-y-2">
+                                    <div className="flex flex-wrap gap-2">
+                                      {((value as string[]) || []).map((src, i) => (
+                                        <span key={i} className="flex items-center gap-1 px-2 py-1 bg-gray-100 dark:bg-gray-700 rounded-lg text-sm text-gray-700 dark:text-gray-300">
+                                          {src}
+                                          <button
+                                            onClick={() => handleSettingChange(def.key, ((value as string[]) || []).filter((_, idx) => idx !== i))}
+                                            className="text-gray-400 hover:text-red-500 ml-1"
+                                          >
+                                            <XMarkIcon className="w-3 h-3" />
+                                          </button>
+                                        </span>
+                                      ))}
+                                    </div>
+                                    <div className="flex gap-2">
+                                      <input
+                                        type="text"
+                                        value={newLeadSource}
+                                        onChange={e => setNewLeadSource(e.target.value)}
+                                        onKeyDown={e => {
+                                          if (e.key === 'Enter' && newLeadSource.trim()) {
+                                            handleSettingChange(def.key, [...((value as string[]) || []), newLeadSource.trim()]);
+                                            setNewLeadSource('');
+                                          }
+                                        }}
+                                        placeholder="Новый источник..."
+                                        className="px-3 py-1.5 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white text-sm focus:ring-2 focus:ring-blue-500"
+                                      />
+                                      <button
+                                        onClick={() => {
+                                          if (!newLeadSource.trim()) return;
+                                          handleSettingChange(def.key, [...((value as string[]) || []), newLeadSource.trim()]);
+                                          setNewLeadSource('');
+                                        }}
+                                        className="px-3 py-1.5 bg-blue-600 text-white rounded-lg hover:bg-blue-700 text-sm transition-colors"
+                                      >
+                                        Добавить
+                                      </button>
+                                    </div>
+                                  </div>
+                                )}
+                              </div>
+                            );
+                          })}
+                      </div>
+                    </div>
+                  )}
                 </div>
               )}
 

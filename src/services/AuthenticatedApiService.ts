@@ -1252,4 +1252,22 @@ export class AuthenticatedApiService {
   static async deactivateRegistrationLink(linkId: string, organizationId: string): Promise<void> {
     return this.delete(`/LeadRegistration/link/${linkId}/organization/${organizationId}`);
   }
+
+  // ── Settings ──────────────────────────────────────────────────────────────
+
+  static async getSettingDefinitions(): Promise<import('../types/Setting').SettingDefinition[]> {
+    return this.get('/Setting/definitions');
+  }
+
+  static async getOrganizationSettings(organizationId: string): Promise<import('../types/Setting').SettingDto[]> {
+    return this.get(`/Setting/organization/${organizationId}`);
+  }
+
+  static async bulkUpsertSettings(organizationId: string, settings: import('../types/Setting').UpsertSettingRequest[]): Promise<import('../types/Setting').SettingDto[]> {
+    return this.put(`/Setting/organization/${organizationId}/bulk`, { settings });
+  }
+
+  static async deleteOrganizationSetting(organizationId: string, key: string): Promise<void> {
+    return this.delete(`/Setting/organization/${organizationId}/key/${encodeURIComponent(key)}`);
+  }
 }
