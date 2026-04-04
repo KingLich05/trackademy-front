@@ -557,6 +557,11 @@ export class AuthenticatedApiService {
     return response.json();
   }
 
+  // Get single lesson by ID
+  static async getLessonById(lessonId: string): Promise<import('../types/Lesson').Lesson> {
+    return this.get<import('../types/Lesson').Lesson>(`/Lesson/GetLessonById/${lessonId}`);
+  }
+
   // Lesson note management
   static async updateLessonNote(lessonId: string, note: string): Promise<ApiResponse<boolean>> {
     return this.patch(`/Lesson/${lessonId}/note`, { note });

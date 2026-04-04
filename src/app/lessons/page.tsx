@@ -16,7 +16,6 @@ import WeekView from '@/components/calendar/WeekView';
 import MonthView from '@/components/calendar/MonthView';
 import ListView from '@/components/calendar/ListView';
 import RangeCalendarView from '@/components/calendar/RangeCalendarView';
-import LessonDetailModal from '@/components/calendar/LessonDetailModal';
 import TeacherWorkHoursModal from '@/components/TeacherWorkHoursModal';
 import { BaseModal } from '@/components/ui/BaseModal';
 import { TimeInput } from '@/components/ui/TimeInput';
@@ -41,8 +40,6 @@ export default function LessonsPage() {
   const [schedules, setSchedules] = useState<Schedule[]>([]);
   const [currentDate, setCurrentDate] = useState(new Date());
   const [view, setView] = useState<CalendarView>('week');
-  const [selectedLesson, setSelectedLesson] = useState<Lesson | null>(null);
-  const [showLessonModal, setShowLessonModal] = useState(false);
   const [showCreateLessonModal, setShowCreateLessonModal] = useState(false);
   const [showTeacherWorkHoursModal, setShowTeacherWorkHoursModal] = useState(false);
   const [dateFrom, setDateFrom] = useState<string | undefined>(undefined);
@@ -223,20 +220,12 @@ export default function LessonsPage() {
       );
 
       setLessons(response.items);
-      
-      // Обновляем selectedLesson если он открыт
-      if (selectedLesson && showLessonModal) {
-        const updatedLesson = response.items.find(lesson => lesson.id === selectedLesson.id);
-        if (updatedLesson) {
-          setSelectedLesson(updatedLesson);
-        }
-      }
     } catch (error) {
       console.error('Error loading lessons:', error);
     } finally {
       setLoading(false);
     }
-  }, [selectedGroup, selectedTeacher, selectedRoom, selectedSubject, currentDate, view, dateFrom, dateTo, user?.organizationId, loadOperation, selectedLesson, showLessonModal]);
+  }, [selectedGroup, selectedTeacher, selectedRoom, selectedSubject, currentDate, view, dateFrom, dateTo, user?.organizationId, loadOperation]);
 
   const handleCreateLesson = async () => {
     try {
@@ -372,8 +361,7 @@ export default function LessonsPage() {
   };
 
   const handleLessonClick = (lesson: Lesson) => {
-    setSelectedLesson(lesson);
-    setShowLessonModal(true);
+    router.push(`/lessons/${lesson.id}`);
   };
 
   // Format current date for display
@@ -769,16 +757,6 @@ export default function LessonsPage() {
           )}
         </div>
       </div>
-
-      {/* Lesson Details Modal */}
-      {selectedLesson && (
-        <LessonDetailModal
-          lesson={selectedLesson}
-          isOpen={showLessonModal}
-          onClose={() => setShowLessonModal(false)}
-          onUpdate={loadLessons}
-        />
-      )}
 
       {/* Teacher Work Hours Modal */}
       {isAdminOrOwner && user?.organizationId && (
