@@ -260,21 +260,15 @@ function LessonDetailContent({ lessonId }: { lessonId: string }) {
   const unmarkedStudents = lesson.students.filter(s => s.attendanceStatus === null);
 
   return (
-    <div className="space-y-6">
-      {/* ── Breadcrumb ───────────────────────────────────────────────── */}
-      <div className="flex items-center gap-2">
-        <button
-          onClick={() => router.push('/lessons')}
-          className="flex items-center gap-2 text-gray-500 dark:text-gray-400 hover:text-violet-600 dark:hover:text-violet-400 transition-colors text-sm font-medium"
-        >
-          <ArrowLeftIcon className="w-4 h-4" />
-          Расписание
-        </button>
-        <span className="text-gray-300 dark:text-gray-600">/</span>
-        <span className="text-gray-900 dark:text-white text-sm font-medium truncate max-w-xs">
-          {lesson.subject.subjectName}
-        </span>
-      </div>
+    <div className="space-y-4">
+      {/* ── Back button ────────────────────────────────────────────── */}
+      <button
+        onClick={() => router.back()}
+        className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-gray-100 dark:bg-gray-800 hover:bg-gray-200 dark:hover:bg-gray-700 border border-gray-200 dark:border-gray-700 text-gray-700 dark:text-gray-300 hover:text-gray-900 dark:hover:text-white transition-all text-sm font-medium w-fit"
+      >
+        <ArrowLeftIcon className="w-4 h-4" />
+        Назад
+      </button>
 
       {/* ── Hero Card ────────────────────────────────────────────────── */}
       <div

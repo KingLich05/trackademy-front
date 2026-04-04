@@ -24,7 +24,7 @@ export default function LayoutContent({ children }: LayoutContentProps) {
           <main className={`flex-1 min-w-0 overflow-hidden min-h-screen ${
             !isAuthenticated || isLoginPage
               ? 'p-0' 
-              : 'lg:ml-64 p-2 sm:p-4 md:p-6 pb-20 lg:pb-6 pt-[84px]'
+              : 'lg:ml-64 px-2 sm:px-4 md:px-6 pb-20 lg:pb-6 pt-[84px]'
           }`}>
             <div className="max-w-full mx-auto">
               {children}
