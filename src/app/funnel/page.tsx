@@ -337,6 +337,22 @@ export default function FunnelPage() {
     });
   }
 
+  // ── delete task ──
+  function handleDeleteTask(task: LeadActivityDto) {
+    setConfirmDialog({
+      title: 'Удалить задачу',
+      message: `Удалить задачу «${task.description}»? Это действие нельзя отменить.`,
+      danger: true,
+      onConfirm: async () => {
+        try {
+          await AuthenticatedApiService.deleteLeadActivity(task.id, orgId);
+          setTasks(prev => prev.filter(t => t.id !== task.id));
+          showSuccess('Задача удалена');
+        } catch { showError('Ошибка при удалении задачи'); }
+      },
+    });
+  }
+
   // ── complete task ──
   function handleCompleteTask(task: LeadActivityDto) {
     setCompletingTask(task);
@@ -814,6 +830,9 @@ export default function FunnelPage() {
                       title="Отметить выполненной"
                     />
                     <div className="flex-1 min-w-0">
+                      {task.name && (
+                        <p className="text-xs font-semibold text-violet-600 dark:text-violet-400 truncate mb-0.5">{task.name}</p>
+                      )}
                       <div className="flex items-center gap-2 mb-0.5">
                         <span>{activityIcon(task.type)}</span>
                         <span className="font-medium text-gray-900 dark:text-white text-sm truncate">{task.description}</span>
@@ -828,12 +847,24 @@ export default function FunnelPage() {
                         )}
                       </div>
                     </div>
-                    <button
-                      onClick={() => router.push(`/funnel/${task.leadId}`)}
-                      className="text-xs text-violet-600 dark:text-violet-400 hover:underline shrink-0"
-                    >
-                      Лид →
-                    </button>
+                    <div className="flex items-center gap-2 shrink-0">
+                      <button
+                        onClick={() => router.push(`/funnel/${task.leadId}`)}
+                        className="p-1.5 text-violet-600 dark:text-violet-400 hover:bg-violet-50 dark:hover:bg-violet-900/30 rounded-lg transition-colors"
+                        title="Перейти к лиду"
+                      >
+                        <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                          <path strokeLinecap="round" strokeLinejoin="round" d="M9 5l7 7-7 7" />
+                        </svg>
+                      </button>
+                      <button
+                        onClick={() => handleDeleteTask(task)}
+                        className="p-1.5 text-gray-400 hover:text-red-500 dark:hover:text-red-400 hover:bg-red-50 dark:hover:bg-red-900/20 rounded-lg transition-colors"
+                        title="Удалить задачу"
+                      >
+                        <TrashIcon className="h-4 w-4" />
+                      </button>
+                    </div>
                   </div>
                 ))}
               </div>

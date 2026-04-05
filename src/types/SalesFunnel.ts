@@ -146,6 +146,7 @@ export interface LeadStageHistoryDto {
 export interface LeadActivityDto {
   id: string;
   leadId: string;
+  name: string;
   type: LeadActivityType;
   typeName: string;
   description: string;
