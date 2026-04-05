@@ -647,7 +647,7 @@ export default function CreateScheduleDrawer({
                     <div
                       key={i}
                       className="absolute right-2 text-[10px] text-gray-400 dark:text-gray-500 leading-none"
-                      style={{ top: i * 60 * PX_PER_MIN - 6 }}
+                      style={{ top: Math.max(1, i * 60 * PX_PER_MIN - 6) }}
                     >
                       {minutesToHHMM((CALENDAR_START_H + i) * 60)}
                     </div>
