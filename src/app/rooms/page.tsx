@@ -455,19 +455,19 @@ export default function RoomsPage() {
             <div className="space-y-4 p-4">
               {rooms.map((room, index) => (
                 <div key={room.id} className="bg-gradient-to-r from-white to-green-50 dark:from-gray-800 dark:to-gray-700 border border-gray-200/50 dark:border-gray-600/50 rounded-xl p-4 shadow-lg hover:shadow-xl transition-all duration-200 hover:scale-[1.02]">
-                  <div className="flex justify-between items-start mb-3">
-                    <div className="flex items-center gap-3">
-                      <div className="flex items-center justify-center w-8 h-8 bg-gradient-to-r from-green-500 to-emerald-600 text-white text-sm font-medium rounded-lg shadow-sm">
+                  <div className="flex justify-between items-start mb-3 gap-2">
+                    <div className="flex items-start gap-3 min-w-0">
+                      <div className="flex-shrink-0 flex items-center justify-center w-8 h-8 bg-gradient-to-r from-green-500 to-emerald-600 text-white text-sm font-medium rounded-lg shadow-sm">
                         {(currentPage - 1) * pageSize + index + 1}
                       </div>
-                      <div className="flex items-center">
-                        <div className="p-2 bg-gradient-to-r from-green-100 to-emerald-100 dark:from-green-900 dark:to-emerald-900 rounded-lg mr-2">
+                      <div className="flex items-start min-w-0">
+                        <div className="flex-shrink-0 p-2 bg-gradient-to-r from-green-100 to-emerald-100 dark:from-green-900 dark:to-emerald-900 rounded-lg mr-2">
                           <HomeModernIcon className="h-5 w-5 text-green-600 dark:text-green-400" />
                         </div>
-                        <h3 className="text-sm font-semibold text-gray-900 dark:text-white">{room.name}</h3>
+                        <h3 className="text-sm font-semibold text-gray-900 dark:text-white leading-snug break-words">{room.name}</h3>
                       </div>
                     </div>
-                    <div className="flex space-x-2">
+                    <div className="flex-shrink-0 flex space-x-2">
                       <button 
                         onClick={() => handleEdit(room.id)}
                         className="p-2 text-blue-600 hover:text-blue-800 dark:text-blue-400 dark:hover:text-blue-300 bg-blue-50 hover:bg-blue-100 dark:bg-blue-900/30 dark:hover:bg-blue-900/50 rounded-lg transition-all duration-200 hover:scale-110"
