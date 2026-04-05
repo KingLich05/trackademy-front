@@ -963,10 +963,11 @@ export default function Dashboard() {
                   {(summary.upcomingBirthdays as UpcomingBirthday[]).map((b) => {
                     const date = new Date(b.birthday);
                     const dateLabel = date.toLocaleDateString('ru-RU', { day: 'numeric', month: 'long' });
-                    const today = new Date();
-                    const thisYearBirthday = new Date(today.getFullYear(), date.getMonth(), date.getDate());
-                    if (thisYearBirthday < today) thisYearBirthday.setFullYear(today.getFullYear() + 1);
-                    const daysLeft = Math.ceil((thisYearBirthday.getTime() - today.getTime()) / 86400000);
+                    const now = new Date();
+                    const todayMidnight = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+                    const thisYearBirthday = new Date(now.getFullYear(), date.getMonth(), date.getDate());
+                    if (thisYearBirthday < todayMidnight) thisYearBirthday.setFullYear(now.getFullYear() + 1);
+                    const daysLeft = Math.round((thisYearBirthday.getTime() - todayMidnight.getTime()) / 86400000);
                     const isToday = daysLeft === 0;
                     return (
                       <li key={b.studentId} className={`flex items-center gap-4 px-5 py-3 transition-colors hover:bg-gray-50 dark:hover:bg-gray-700/40 ${isToday ? 'bg-pink-50/60 dark:bg-pink-900/10' : ''}`}>

@@ -49,7 +49,7 @@ export default function MaterialsPage() {
   const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false);
   const [isPreviewModalOpen, setIsPreviewModalOpen] = useState(false);
   const [selectedMaterial, setSelectedMaterial] = useState<Material | null>(null);
-  const [fileInputKey, setFileInputKey] = useState(Date.now()); // Ключ для сброса input файла
+  const [fileInputKey, setFileInputKey] = useState(0); // Ключ для сброса input файла
   
   const [uploadData, setUploadData] = useState({
     title: '',
@@ -590,7 +590,7 @@ export default function MaterialsPage() {
         onClose={() => {
           setIsUploadModalOpen(false);
           setUploadData({ title: '', description: '', groupId: '', file: null });
-          setFileInputKey(Date.now()); // Сбрасываем input
+          setFileInputKey(prev => prev + 1); // Сбрасываем input
         }}
         title="Загрузить материал"
       >
@@ -658,7 +658,7 @@ export default function MaterialsPage() {
                 <button
                   onClick={() => {
                     setUploadData({ ...uploadData, file: null });
-                    setFileInputKey(Date.now()); // Сбрасываем input
+                    setFileInputKey(prev => prev + 1); // Сбрасываем input
                   }}
                   className="ml-2 text-red-500 hover:text-red-700 dark:text-red-400 dark:hover:text-red-300"
                   title="Удалить файл"

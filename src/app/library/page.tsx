@@ -46,7 +46,7 @@ export default function LibraryPage() {
   const [editData, setEditData] = useState({ title: '', description: '' });
   const [uploading, setUploading] = useState(false);
   const [deleting, setDeleting] = useState(false);
-  const [fileInputKey, setFileInputKey] = useState(Date.now());
+  const [fileInputKey, setFileInputKey] = useState(0);
 
   const isStudent = user?.role === 'Student';
   const canUpload = !!user && !isStudent;
@@ -120,7 +120,7 @@ export default function LibraryPage() {
       showSuccess('Материал успешно загружен');
       setIsUploadModalOpen(false);
       setUploadData({ title: '', description: '', file: null });
-      setFileInputKey(Date.now());
+      setFileInputKey(prev => prev + 1);
       loadMaterials();
     } catch {
       showError('Ошибка загрузки материала');
@@ -378,7 +378,7 @@ export default function LibraryPage() {
         onClose={() => {
           setIsUploadModalOpen(false);
           setUploadData({ title: '', description: '', file: null });
-          setFileInputKey(Date.now());
+          setFileInputKey(prev => prev + 1);
         }}
         title="Загрузить материал в библиотеку"
         gradientFrom="from-blue-500"
@@ -426,7 +426,7 @@ export default function LibraryPage() {
           </div>
           <div className="flex justify-end gap-3 pt-2">
             <button
-              onClick={() => { setIsUploadModalOpen(false); setUploadData({ title: '', description: '', file: null }); setFileInputKey(Date.now()); }}
+              onClick={() => { setIsUploadModalOpen(false); setUploadData({ title: '', description: '', file: null }); setFileInputKey(prev => prev + 1); }}
               disabled={uploading}
               className="px-4 py-2 text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg disabled:opacity-50"
             >
