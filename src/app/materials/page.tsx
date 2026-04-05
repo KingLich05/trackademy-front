@@ -359,83 +359,152 @@ export default function MaterialsPage() {
               Материалы не найдены
             </div>
           ) : (
-            <div className="overflow-x-auto scrollbar-custom">
-              <table className="w-full divide-y divide-gray-200 dark:divide-gray-700 table-fixed">
-                <thead className="bg-gray-50 dark:bg-gray-700">
-                  <tr>
-                    <th className="px-3 py-3 text-center text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider" style={{ width: '50px' }}>
-                      №
-                    </th>
-                    <th className="px-3 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider" style={{ width: '20%' }}>
-                      Название
-                    </th>
-                    <th className="px-3 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider" style={{ width: '20%' }}>
-                      Файл
-                    </th>
-                    <th className="px-3 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider" style={{ width: '15%' }}>
-                      Группа
-                    </th>
-                    <th className="px-3 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider" style={{ width: '15%' }}>
-                      Загрузил
-                    </th>
-                    <th className="px-3 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider" style={{ width: '10%' }}>
-                      Дата
-                    </th>
-                    <th className="px-3 py-3 text-right text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider" style={{ width: '120px' }}>
-                      Действия
-                    </th>
-                  </tr>
-                </thead>
-                <tbody className="bg-white dark:bg-gray-800 divide-y divide-gray-200 dark:divide-gray-700">
-                  {materials.map((material, index) => (
-                    <tr key={material.id} className="hover:bg-gray-50 dark:hover:bg-gray-700">
-                      <td className="px-3 py-3 text-center">
-                        <div className="text-sm font-medium text-gray-900 dark:text-white">
+            <>
+              {/* Desktop table */}
+              <div className="hidden md:block overflow-x-auto scrollbar-custom">
+                <table className="w-full divide-y divide-gray-200 dark:divide-gray-700 table-fixed" style={{ minWidth: '680px' }}>
+                  <thead className="bg-gray-50 dark:bg-gray-700">
+                    <tr>
+                      <th className="px-3 py-3 text-center text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider" style={{ width: '50px' }}>
+                        №
+                      </th>
+                      <th className="px-3 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider" style={{ width: '20%' }}>
+                        Название
+                      </th>
+                      <th className="px-3 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider" style={{ width: '20%' }}>
+                        Файл
+                      </th>
+                      <th className="px-3 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider" style={{ width: '15%' }}>
+                        Группа
+                      </th>
+                      <th className="px-3 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider" style={{ width: '15%' }}>
+                        Загрузил
+                      </th>
+                      <th className="px-3 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider" style={{ width: '10%' }}>
+                        Дата
+                      </th>
+                      <th className="px-3 py-3 text-right text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider" style={{ width: '120px' }}>
+                        Действия
+                      </th>
+                    </tr>
+                  </thead>
+                  <tbody className="bg-white dark:bg-gray-800 divide-y divide-gray-200 dark:divide-gray-700">
+                    {materials.map((material, index) => (
+                      <tr key={material.id} className="hover:bg-gray-50 dark:hover:bg-gray-700">
+                        <td className="px-3 py-3 text-center">
+                          <div className="text-sm font-medium text-gray-900 dark:text-white">
+                            {(currentPage - 1) * pageSize + index + 1}
+                          </div>
+                        </td>
+                        <td className="px-3 py-3">
+                          <div className="text-sm font-medium text-gray-900 dark:text-white truncate">
+                            {material.title}
+                          </div>
+                          {material.description && (
+                            <div className="text-sm text-gray-500 dark:text-gray-400 mt-1 truncate">
+                              {material.description}
+                            </div>
+                          )}
+                        </td>
+                        <td className="px-3 py-3">
+                          <div className="text-sm text-gray-900 dark:text-white truncate">
+                            {material.originalFileName}
+                          </div>
+                          <div className="text-sm text-gray-500 dark:text-gray-400">
+                            {formatFileSize(material.fileSize)}
+                          </div>
+                        </td>
+                        <td className="px-3 py-3 text-sm text-gray-900 dark:text-white truncate">
+                          {material.groupName}
+                        </td>
+                        <td className="px-3 py-3 text-sm text-gray-900 dark:text-white truncate">
+                          {material.uploadedByName}
+                        </td>
+                        <td className="px-3 py-3 text-sm text-gray-500 dark:text-gray-400 whitespace-nowrap">
+                          {new Date(material.createdAt).toLocaleDateString('ru-RU')}
+                        </td>
+                        <td className="px-3 py-3 text-right">
+                          <div className="flex justify-end items-center gap-1">
+                            <button
+                              onClick={() => {
+                                setSelectedMaterial(material);
+                                setIsPreviewModalOpen(true);
+                              }}
+                              className="text-purple-600 hover:text-purple-900 dark:text-purple-400 dark:hover:text-purple-300 p-1.5"
+                              title="Просмотр"
+                            >
+                              <EyeIcon className="w-5 h-5" />
+                            </button>
+                            <button
+                              onClick={() => handleDownload(material)}
+                              className="text-blue-600 hover:text-blue-900 dark:text-blue-400 dark:hover:text-blue-300 p-1.5"
+                              title="Скачать"
+                            >
+                              <ArrowDownTrayIcon className="w-5 h-5" />
+                            </button>
+                            {canEditDelete(material) && (
+                              <>
+                                <button
+                                  onClick={() => handleEdit(material)}
+                                  className="text-yellow-600 hover:text-yellow-900 dark:text-yellow-400 dark:hover:text-yellow-300 p-1.5"
+                                  title="Редактировать"
+                                >
+                                  <PencilIcon className="w-5 h-5" />
+                                </button>
+                                <button
+                                  onClick={() => handleDelete(material)}
+                                  className="text-red-600 hover:text-red-900 dark:text-red-400 dark:hover:text-red-300 p-1.5"
+                                  title="Удалить"
+                                >
+                                  <TrashIcon className="w-5 h-5" />
+                                </button>
+                              </>
+                            )}
+                          </div>
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+
+              {/* Mobile cards */}
+              <div className="block md:hidden divide-y divide-gray-200 dark:divide-gray-700">
+                {materials.map((material, index) => (
+                  <div key={material.id} className="p-4 hover:bg-gray-50 dark:hover:bg-gray-700/50">
+                    <div className="flex items-start justify-between gap-2">
+                      <div className="flex items-start gap-3 min-w-0">
+                        <div className="flex-shrink-0 w-7 h-7 rounded-lg bg-gradient-to-r from-purple-500 to-pink-600 flex items-center justify-center text-white text-xs font-semibold">
                           {(currentPage - 1) * pageSize + index + 1}
                         </div>
-                      </td>
-                      <td className="px-3 py-3">
-                        <div className="text-sm font-medium text-gray-900 dark:text-white truncate">
-                          {material.title}
-                        </div>
-                        {material.description && (
-                          <div className="text-sm text-gray-500 dark:text-gray-400 mt-1 truncate">
-                            {material.description}
+                        <div className="min-w-0">
+                          <div className="text-sm font-semibold text-gray-900 dark:text-white truncate">
+                            {material.title}
                           </div>
-                        )}
-                      </td>
-                      <td className="px-3 py-3">
-                        <div className="text-sm text-gray-900 dark:text-white truncate">
-                          {material.originalFileName}
+                          {material.description && (
+                            <div className="text-xs text-gray-500 dark:text-gray-400 truncate">
+                              {material.description}
+                            </div>
+                          )}
+                          <div className="text-xs text-gray-500 dark:text-gray-400 mt-1 truncate">
+                            {material.originalFileName} · {formatFileSize(material.fileSize)}
+                          </div>
                         </div>
-                        <div className="text-sm text-gray-500 dark:text-gray-400">
-                          {formatFileSize(material.fileSize)}
-                        </div>
-                      </td>
-                      <td className="px-3 py-3 text-sm text-gray-900 dark:text-white truncate">
-                        {material.groupName}
-                      </td>
-                      <td className="px-3 py-3 text-sm text-gray-900 dark:text-white truncate">
-                        {material.uploadedByName}
-                      </td>
-                      <td className="px-3 py-3 text-sm text-gray-500 dark:text-gray-400 whitespace-nowrap">
-                        {new Date(material.createdAt).toLocaleDateString('ru-RU')}
-                      </td>
-                      <td className="px-3 py-3 text-right">
-                        <div className="flex justify-end items-center gap-1">
+                      </div>
+                      <div className="flex items-center gap-1 flex-shrink-0">
                         <button
                           onClick={() => {
                             setSelectedMaterial(material);
                             setIsPreviewModalOpen(true);
                           }}
-                          className="text-purple-600 hover:text-purple-900 dark:text-purple-400 dark:hover:text-purple-300 p-1.5"
+                          className="text-purple-600 hover:text-purple-900 dark:text-purple-400 dark:hover:text-purple-300 p-2"
                           title="Просмотр"
                         >
                           <EyeIcon className="w-5 h-5" />
                         </button>
                         <button
                           onClick={() => handleDownload(material)}
-                          className="text-blue-600 hover:text-blue-900 dark:text-blue-400 dark:hover:text-blue-300 p-1.5"
+                          className="text-blue-600 hover:text-blue-900 dark:text-blue-400 dark:hover:text-blue-300 p-2"
                           title="Скачать"
                         >
                           <ArrowDownTrayIcon className="w-5 h-5" />
@@ -444,27 +513,31 @@ export default function MaterialsPage() {
                           <>
                             <button
                               onClick={() => handleEdit(material)}
-                              className="text-yellow-600 hover:text-yellow-900 dark:text-yellow-400 dark:hover:text-yellow-300 p-1.5"
+                              className="text-yellow-600 hover:text-yellow-900 dark:text-yellow-400 dark:hover:text-yellow-300 p-2"
                               title="Редактировать"
                             >
                               <PencilIcon className="w-5 h-5" />
                             </button>
                             <button
                               onClick={() => handleDelete(material)}
-                              className="text-red-600 hover:text-red-900 dark:text-red-400 dark:hover:text-red-300 p-1.5"
+                              className="text-red-600 hover:text-red-900 dark:text-red-400 dark:hover:text-red-300 p-2"
                               title="Удалить"
                             >
                               <TrashIcon className="w-5 h-5" />
                             </button>
                           </>
                         )}
-                        </div>
-                      </td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-            </div>
+                      </div>
+                    </div>
+                    <div className="flex flex-wrap gap-x-4 gap-y-1 mt-2 ml-10 text-xs text-gray-500 dark:text-gray-400">
+                      <span>Группа: <span className="text-gray-700 dark:text-gray-300">{material.groupName}</span></span>
+                      <span>Загрузил: <span className="text-gray-700 dark:text-gray-300">{material.uploadedByName}</span></span>
+                      <span>{new Date(material.createdAt).toLocaleDateString('ru-RU')}</span>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </>
           )}
 
           {/* Pagination */}
