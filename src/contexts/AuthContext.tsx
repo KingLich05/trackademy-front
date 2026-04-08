@@ -50,12 +50,12 @@ export function AuthProvider({ children }: Readonly<{ children: ReactNode }>) {
   const [hasAgreedToTerms, setHasAgreedToTerms] = useState<boolean>(false);
   const [needsAgreement, setNeedsAgreement] = useState<boolean>(false);
 
-  const login = (userData: User) => {
+  const login = useCallback((userData: User) => {
     setUser(userData);
     localStorage.setItem('user', JSON.stringify(userData));
-  };
+  }, []);
 
-  const logout = () => {
+  const logout = useCallback(() => {
     setUser(null);
     setToken(null);
     localStorage.removeItem('user');
@@ -65,9 +65,9 @@ export function AuthProvider({ children }: Readonly<{ children: ReactNode }>) {
     
     // Redirect to login page after logout
     globalThis.location.href = '/login';
-  };
+  }, []);
 
-  const register = async (userData: RegisterData) => {
+  const register = useCallback(async (userData: RegisterData) => {
     try {
       // Split fullName into firstName and lastName for API
       const nameParts = userData.fullName.trim().split(' ');
@@ -117,7 +117,8 @@ export function AuthProvider({ children }: Readonly<{ children: ReactNode }>) {
       console.error('Registration error:', error);
       throw error;
     }
-  };
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   // Check for stored user on component mount
   useEffect(() => {
@@ -182,12 +183,13 @@ export function AuthProvider({ children }: Readonly<{ children: ReactNode }>) {
     }
   }, [login]);
 
-  const getAuthToken = () => {
+  const getAuthToken = useCallback(() => {
     return localStorage.getItem('authToken');
-  };
+  }, []);
 
   const checkAgreementStatus = useCallback(async () => {
-    if (!user) {
+    const userId = user?.id;
+    if (!userId) {
       setHasAgreedToTerms(false);
       setNeedsAgreement(false);
       // Очищаем localStorage если нет пользователя
@@ -202,7 +204,7 @@ export function AuthProvider({ children }: Readonly<{ children: ReactNode }>) {
       try {
         localData = JSON.parse(storedAgreement);
         // Если данные для текущего пользователя, используем их временно
-        if (localData.userId === user.id) {
+        if (localData.userId === userId) {
           setHasAgreedToTerms(localData.hasAgreedToTerms || false);
           setNeedsAgreement(localData.needsAgreement !== false);
         }
@@ -234,7 +236,7 @@ export function AuthProvider({ children }: Readonly<{ children: ReactNode }>) {
         
         // Сохраняем актуальные данные в localStorage
         const agreementData = {
-          userId: user.id,
+          userId,
           hasAgreedToTerms: hasAgreed,
           needsAgreement: needsAgreement,
           lastUpdated: new Date().toISOString(),
@@ -246,7 +248,7 @@ export function AuthProvider({ children }: Readonly<{ children: ReactNode }>) {
       } else {
         console.error('Failed to get user agreement status from API');
         // Если не можем получить с сервера, используем localStorage или по умолчанию требуем согласие
-        if (!localData || localData.userId !== user.id) {
+        if (!localData || localData.userId !== userId) {
           setHasAgreedToTerms(false);
           setNeedsAgreement(true);
         }
@@ -254,16 +256,17 @@ export function AuthProvider({ children }: Readonly<{ children: ReactNode }>) {
     } catch (error) {
       console.error('Error checking agreement status:', error);
       // В случае ошибки API используем localStorage или по умолчанию требуем согласие  
-      if (!localData || localData.userId !== user.id) {
+      if (!localData || localData.userId !== userId) {
         setHasAgreedToTerms(false);
         setNeedsAgreement(true);
       }
     }
-  }, [user, getAuthToken]);
+  }, [user?.id, getAuthToken]);  // depend on user?.id not the whole user object
 
   // Быстрая проверка из localStorage для инициализации
   const checkLocalAgreementStatus = useCallback(() => {
-    if (!user) {
+    const userId = user?.id;
+    if (!userId) {
       setHasAgreedToTerms(false);
       setNeedsAgreement(false);
       return;
@@ -273,7 +276,7 @@ export function AuthProvider({ children }: Readonly<{ children: ReactNode }>) {
     if (storedAgreement) {
       try {
         const agreement = JSON.parse(storedAgreement);
-        if (agreement.userId === user.id) {
+        if (agreement.userId === userId) {
           setHasAgreedToTerms(agreement.hasAgreedToTerms || false);
           setNeedsAgreement(agreement.needsAgreement !== false);
           return;
@@ -286,7 +289,7 @@ export function AuthProvider({ children }: Readonly<{ children: ReactNode }>) {
     // По умолчанию требуем согласие
     setHasAgreedToTerms(false);
     setNeedsAgreement(true);
-  }, [user]);
+  }, [user?.id]);  // depend on user?.id not the whole user object
 
   const agreeToTerms = useCallback(async () => {
     if (!user?.id) return;
@@ -386,7 +389,8 @@ export function AuthProvider({ children }: Readonly<{ children: ReactNode }>) {
       setHasAgreedToTerms(false);
       setNeedsAgreement(false);
     }
-  }, [user, checkLocalAgreementStatus, checkAgreementStatus]);
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [user?.id]);  // only re-run when user id changes, not on every re-render
 
   const refreshUser = useCallback(async () => {
     if (!user?.id) return;

@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useRef } from 'react';
 import { useAuth } from '../../contexts/AuthContext';
 import { AuthenticatedApiService } from '../../services/AuthenticatedApiService';
 import { CalendarDaysIcon, PencilIcon, TrashIcon, PlusIcon, DocumentArrowDownIcon, ArrowUturnLeftIcon } from '@heroicons/react/24/outline';
@@ -26,6 +26,7 @@ import { DaysOfWeekDisplay } from '../../components/ui/DaysOfWeekDisplay';
 import UniversalModal from '../../components/ui/UniversalModal';
 import { useUniversalModal } from '../../hooks/useUniversalModal';
 import CreateScheduleDrawer from '../../components/CreateScheduleDrawer';
+import CreateMakeUpLessonModal from '../../components/CreateMakeUpLessonModal';
 import { TimeInput } from '../../components/ui/TimeInput';
 import { DaysOfWeekSelector } from '../../components/ui/DaysOfWeekSelector';
 import { DateRangePicker } from '../../components/ui/DateRangePicker';
@@ -62,6 +63,7 @@ export default function SchedulesPage() {
   const [deletingSchedule, setDeletingSchedule] = useState<Schedule | null>(null);
   const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false);
   const [isScheduleDrawerOpen, setIsScheduleDrawerOpen] = useState(false);
+  const [isMakeUpModalOpen, setIsMakeUpModalOpen] = useState(false);
 
   // Универсальная система модалов для расписаний
   const scheduleModal = useUniversalModal('schedule', {
@@ -197,9 +199,13 @@ export default function SchedulesPage() {
     }
   }, [user?.organizationId]);
 
+  // Track if initial load is done
+  const initialLoadDone = useRef(false);
+
   // Initial load
   useEffect(() => {
-    if (isAuthenticated && user?.organizationId) {
+    if (isAuthenticated && user?.organizationId && !initialLoadDone.current) {
+      initialLoadDone.current = true;
       setFilters(prev => ({ ...prev, organizationId: user.organizationId || '' }));
       loadFilterData();
       loadSchedules(1, true);
@@ -207,8 +213,9 @@ export default function SchedulesPage() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [isAuthenticated, user?.organizationId]);
 
-  // Reload data when archive mode changes
+  // Reload data when archive mode changes (skip initial mount)
   useEffect(() => {
+    if (!initialLoadDone.current) return;
     if (isAuthenticated && user?.organizationId) {
       loadSchedules(1, true);
       setCurrentPage(1);
@@ -840,6 +847,13 @@ export default function SchedulesPage() {
                 Экспорт
               </button>
               <button
+                onClick={() => setIsMakeUpModalOpen(true)}
+                className="px-4 py-2 bg-amber-100 hover:bg-amber-200 dark:bg-amber-900/30 dark:hover:bg-amber-900/50 text-amber-700 dark:text-amber-300 rounded-lg font-medium transition-all duration-200 flex items-center gap-2"
+              >
+                <PlusIcon className="w-4 h-4" />
+                Создать отработку
+              </button>
+              <button
                 onClick={() => {
                   setShowArchive(!showArchive);
                   setFilters(prev => ({ ...prev, includeDeleted: !showArchive, pageNumber: 1 }));
@@ -1286,6 +1300,12 @@ export default function SchedulesPage() {
           subjects={subjects}
           students={students}
           organizationId={user?.organizationId || ''}
+        />
+
+        {/* Create Make-Up Lesson Modal */}
+        <CreateMakeUpLessonModal
+          isOpen={isMakeUpModalOpen}
+          onClose={() => setIsMakeUpModalOpen(false)}
         />
 
         {/* Delete Confirmation Modal */}

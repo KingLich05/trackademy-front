@@ -167,6 +167,12 @@ export default function LeadDetailPage() {
       showSuccess('Этап обновлён');
       setMoveTarget(null);
       setMoveComment('');
+      // If moved to a "Записан" (isClosedWon) stage — open convert modal
+      const targetStage = stages.find(s => s.id === moveTarget);
+      if (targetStage?.isClosedWon && !updated.convertedUserId) {
+        setConvertForm({ login: '', password: '', groupId: null, subjectPackageId: null, flagIds: [], comment: '' });
+        setShowConvert(true);
+      }
       await load();
     } catch { showError('Ошибка при смене этапа'); }
     finally { setStageChanging(false); }

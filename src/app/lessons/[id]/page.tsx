@@ -35,7 +35,13 @@ import {
   CheckCircleIcon,
   XCircleIcon,
   PencilSquareIcon,
+  PlusIcon,
+  TrashIcon,
+  MagnifyingGlassIcon,
 } from '@heroicons/react/24/outline';
+
+import { MakeUpStudentDto } from '@/types/UserLesson';
+import type { User } from '@/types/User';
 
 // ─── Types ───────────────────────────────────────────────────────────────────
 
@@ -98,6 +104,16 @@ function LessonDetailContent({ lessonId }: { lessonId: string }) {
   const [selectedStudent, setSelectedStudent] = useState<Lesson['students'][0] | null>(null);
   const [isGradeModalOpen, setIsGradeModalOpen] = useState(false);
 
+  // ── Make-up state ──
+  const [makeUpStudents, setMakeUpStudents] = useState<MakeUpStudentDto[]>([]);
+  const [makeUpLoading, setMakeUpLoading] = useState(false);
+  const [isAddMakeUpOpen, setIsAddMakeUpOpen] = useState(false);
+  const [makeUpSearch, setMakeUpSearch] = useState('');
+  const [makeUpSearchResults, setMakeUpSearchResults] = useState<User[]>([]);
+  const [makeUpSearchLoading, setMakeUpSearchLoading] = useState(false);
+  const [selectedMakeUpStudent, setSelectedMakeUpStudent] = useState<User | null>(null);
+  const [isAddingMakeUp, setIsAddingMakeUp] = useState(false);
+
   // ── Roles ──
   const userRole = user?.role;
   const roleStr = String(userRole);
@@ -120,9 +136,26 @@ function LessonDetailContent({ lessonId }: { lessonId: string }) {
     }
   }, [lessonId]);
 
+  // ── Load make-up students ──
+  const loadMakeUpStudents = useCallback(async () => {
+    setMakeUpLoading(true);
+    try {
+      const data = await AuthenticatedApiService.getMakeUpStudentsByLesson(lessonId);
+      setMakeUpStudents(data);
+    } catch {
+      // non-critical, silently fail
+    } finally {
+      setMakeUpLoading(false);
+    }
+  }, [lessonId]);
+
   useEffect(() => {
     loadLesson();
   }, [loadLesson]);
+
+  useEffect(() => {
+    if (!isStudent) loadMakeUpStudents();
+  }, [lessonId, isStudent, loadMakeUpStudents]);
 
   // Collapse action panel when lesson status changes (after action)
   useEffect(() => {
@@ -226,6 +259,76 @@ function LessonDetailContent({ lessonId }: { lessonId: string }) {
     }
   };
 
+  // ── Make-up search ──
+  const searchMakeUpStudents = useCallback(async (q: string) => {
+    const orgId = user?.organizationId;
+    if (!orgId) return;
+    setMakeUpSearchLoading(true);
+    try {
+      const res = await AuthenticatedApiService.getUsers({
+        organizationId: orgId,
+        pageSize: 20,
+        roleIds: [1], // Student role
+        search: q || undefined,
+      });
+      setMakeUpSearchResults(res.items);
+    } catch {
+      // ignore
+    } finally {
+      setMakeUpSearchLoading(false);
+    }
+  }, [user?.organizationId]);
+
+  const handleOpenAddMakeUp = () => {
+    setMakeUpSearch('');
+    setSelectedMakeUpStudent(null);
+    setMakeUpSearchResults([]);
+    setIsAddMakeUpOpen(true);
+    searchMakeUpStudents('');
+  };
+
+  const handleConfirmAddMakeUp = async () => {
+    if (!selectedMakeUpStudent || !lesson) return;
+    setIsAddingMakeUp(true);
+    try {
+      await AuthenticatedApiService.addStudentToMakeUp({
+        userId: selectedMakeUpStudent.id,
+        lessonId: lesson.id,
+      });
+      showToast('Студент добавлен на отработку', 'success');
+      setIsAddMakeUpOpen(false);
+      await Promise.all([loadLesson(), loadMakeUpStudents()]);
+    } catch (e) {
+      const msg = (e as { response?: { data?: { error?: string } }; message?: string })?.response?.data?.error ||
+        (e as { message?: string })?.message || 'Ошибка';
+      showToast(msg, 'error');
+    } finally {
+      setIsAddingMakeUp(false);
+    }
+  };
+
+  const handleDeleteMakeUp = async (makeUp: MakeUpStudentDto) => {
+    try {
+      await AuthenticatedApiService.removeStudentFromMakeUp(makeUp.id);
+      showToast('Студент убран из отработки', 'success');
+      await Promise.all([loadLesson(), loadMakeUpStudents()]);
+    } catch {
+      showToast('Ошибка при удалении', 'error');
+    }
+  };
+
+  const handleDeleteMakeUpLesson = async () => {
+    if (!lesson) return;
+    if (!confirm('Удалить весь урок-отработку? Все записи студентов будут удалены.')) return;
+    try {
+      await AuthenticatedApiService.deleteMakeUpLesson(lesson.id);
+      showToast('Урок-отработка удалён', 'success');
+      router.back();
+    } catch {
+      showToast('Ошибка при удалении урока-отработки', 'error');
+    }
+  };
+
   // ─── Render states ───────────────────────────────────────────────────────
 
   if (loading) {
@@ -292,6 +395,11 @@ function LessonDetailContent({ lessonId }: { lessonId: string }) {
                 >
                   {getLessonStatusText(lesson.lessonStatus)}
                 </span>
+                {lesson.isMakeUp && (
+                  <span className="px-3 py-1 rounded-full text-sm font-semibold bg-amber-100 dark:bg-amber-900/40 text-amber-700 dark:text-amber-300 border border-amber-300 dark:border-amber-600">
+                    🔄 Отработка
+                  </span>
+                )}
               </div>
 
               <div className="grid grid-cols-2 sm:grid-cols-4 gap-4 mt-4">
@@ -352,6 +460,16 @@ function LessonDetailContent({ lessonId }: { lessonId: string }) {
                   />
                 )}
               </div>
+            )}
+            {/* Delete makeup lesson button */}
+            {lesson.isMakeUp && (isAdministrator || isOwner) && (
+              <button
+                onClick={handleDeleteMakeUpLesson}
+                className="flex items-center gap-1.5 px-3 py-2 bg-red-50 dark:bg-red-900/20 text-red-600 dark:text-red-400 border border-red-200 dark:border-red-700 rounded-xl text-sm font-medium hover:bg-red-100 dark:hover:bg-red-900/40 transition-colors flex-shrink-0"
+              >
+                <TrashIcon className="w-4 h-4" />
+                Удалить отработку
+              </button>
             )}
           </div>
         </div>
@@ -633,59 +751,105 @@ function LessonDetailContent({ lessonId }: { lessonId: string }) {
               </div>
 
               {lesson.lessonStatus === 'Planned' ? (
-                <div className="text-center py-12 text-gray-400 dark:text-gray-500">
-                  <span className="text-4xl">📅</span>
-                  <p className="mt-3 font-medium text-gray-600 dark:text-gray-400">Занятие ещё не проведено</p>
-                  <p className="text-sm mt-1">Посещаемость будет доступна после проведения</p>
-                </div>
+                <>
+                  <div className="text-center py-12 text-gray-400 dark:text-gray-500">
+                    <span className="text-4xl">📅</span>
+                    <p className="mt-3 font-medium text-gray-600 dark:text-gray-400">Занятие ещё не проведено</p>
+                    <p className="text-sm mt-1">Посещаемость будет доступна после проведения</p>
+                  </div>
+                  {/* Make-up section even for planned lessons */}
+                  {(isAdministrator || isOwner) && (
+                    <MakeUpSection
+                      makeUpStudents={makeUpStudents}
+                      makeUpLoading={makeUpLoading}
+                      onAdd={handleOpenAddMakeUp}
+                      onDelete={handleDeleteMakeUp}
+                    />
+                  )}
+                </>
               ) : (
                 <>
                   <div className="bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-700 rounded-lg p-3 text-sm text-blue-700 dark:text-blue-300">
                     Нажмите на студента для редактирования статуса, оценки и комментария
                   </div>
                   <div className="space-y-2">
-                    {lesson.students.map((student) => (
-                      <div
-                        key={student.id}
-                        onClick={() => { setSelectedStudent(student); setIsGradeModalOpen(true); }}
-                        className="flex items-center justify-between p-4 bg-gray-50 dark:bg-gray-700/50 rounded-xl border border-transparent hover:border-violet-200 dark:hover:border-violet-700 hover:bg-white dark:hover:bg-gray-700 cursor-pointer transition-all"
-                      >
-                        <div className="flex items-center gap-3 min-w-0">
-                          {student.photoPath ? (
-                            <img src={student.photoPath} alt={student.fullName} className="w-10 h-10 rounded-full object-cover flex-shrink-0" />
-                          ) : (
-                            <div className="w-10 h-10 rounded-full bg-violet-100 dark:bg-violet-900/30 flex items-center justify-center flex-shrink-0">
-                              <span className="text-violet-600 dark:text-violet-300 font-semibold text-sm">{student.fullName.charAt(0)}</span>
+                    {lesson.students.map((student) => {
+                      const makeUpEntry = makeUpStudents.find(m => m.userId === student.id);
+                      const isMakeUp = !!makeUpEntry;
+                      return (
+                        <div
+                          key={student.id}
+                          className={`flex items-center justify-between p-4 rounded-xl border transition-all ${
+                            isMakeUp
+                              ? 'bg-amber-50 dark:bg-amber-900/10 border-amber-200 dark:border-amber-700/50'
+                              : 'bg-gray-50 dark:bg-gray-700/50 border-transparent hover:border-violet-200 dark:hover:border-violet-700 hover:bg-white dark:hover:bg-gray-700 cursor-pointer'
+                          }`}
+                          onClick={isMakeUp ? undefined : () => { setSelectedStudent(student); setIsGradeModalOpen(true); }}
+                        >
+                          <div className="flex items-center gap-3 min-w-0">
+                            {student.photoPath ? (
+                              <img src={student.photoPath} alt={student.fullName} className="w-10 h-10 rounded-full object-cover flex-shrink-0" />
+                            ) : (
+                              <div className={`w-10 h-10 rounded-full flex items-center justify-center flex-shrink-0 ${isMakeUp ? 'bg-amber-100 dark:bg-amber-900/30' : 'bg-violet-100 dark:bg-violet-900/30'}`}>
+                                <span className={`font-semibold text-sm ${isMakeUp ? 'text-amber-600 dark:text-amber-300' : 'text-violet-600 dark:text-violet-300'}`}>{student.fullName.charAt(0)}</span>
+                              </div>
+                            )}
+                            <div className="min-w-0">
+                              <div className="flex items-center gap-2 flex-wrap">
+                                <p className="font-medium text-gray-900 dark:text-white truncate">{student.fullName}</p>
+                                {isMakeUp && (
+                                  <span className="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-semibold bg-amber-100 dark:bg-amber-900/40 text-amber-700 dark:text-amber-300 flex-shrink-0">
+                                    🔄 Отработка
+                                  </span>
+                                )}
+                              </div>
+                              <p className={`text-xs mt-0.5 ${student.remainingLessons === 0 && !isMakeUp ? 'text-red-500' : student.remainingLessons <= 2 && !isMakeUp ? 'text-amber-500' : 'text-gray-400'}`}>
+                                {isMakeUp ? 'Замещающий урок' : `Ост. занятий: ${student.remainingLessons}`}
+                              </p>
                             </div>
-                          )}
-                          <div className="min-w-0">
-                            <p className="font-medium text-gray-900 dark:text-white truncate">{student.fullName}</p>
-                            <p className={`text-xs mt-0.5 ${student.remainingLessons === 0 ? 'text-red-500' : student.remainingLessons <= 2 ? 'text-amber-500' : 'text-gray-400'}`}>
-                              Ост. занятий: {student.remainingLessons}
-                            </p>
+                          </div>
+                          <div className="flex items-center gap-2 flex-shrink-0">
+                            <span
+                              className="px-3 py-1 rounded-full text-xs font-medium"
+                              style={{ backgroundColor: getAttendanceStatusColor(student.attendanceStatus) + '20', color: getAttendanceStatusColor(student.attendanceStatus) }}
+                            >
+                              {getAttendanceStatusText(student.attendanceStatus)}
+                            </span>
+                            {(student.grade || student.comment) && (
+                              <span className="text-xs text-gray-400">
+                                {student.grade ? `${student.grade}б` : ''}
+                                {student.grade && student.comment ? ' · ' : ''}
+                                {student.comment ? '📝' : ''}
+                              </span>
+                            )}
+                            {isMakeUp && (isAdministrator || isOwner) ? (
+                              <button
+                                onClick={(e) => { e.stopPropagation(); handleDeleteMakeUp(makeUpEntry!); }}
+                                className="p-1.5 text-red-400 hover:text-red-600 dark:hover:text-red-400 hover:bg-red-50 dark:hover:bg-red-900/20 rounded-lg transition-colors"
+                                title="Удалить отработку"
+                              >
+                                <TrashIcon className="w-4 h-4" />
+                              </button>
+                            ) : !isMakeUp ? (
+                              <svg className="w-4 h-4 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
+                              </svg>
+                            ) : null}
                           </div>
                         </div>
-                        <div className="flex items-center gap-2 flex-shrink-0">
-                          <span
-                            className="px-3 py-1 rounded-full text-xs font-medium"
-                            style={{ backgroundColor: getAttendanceStatusColor(student.attendanceStatus) + '20', color: getAttendanceStatusColor(student.attendanceStatus) }}
-                          >
-                            {getAttendanceStatusText(student.attendanceStatus)}
-                          </span>
-                          {(student.grade || student.comment) && (
-                            <span className="text-xs text-gray-400">
-                              {student.grade ? `${student.grade}б` : ''}
-                              {student.grade && student.comment ? ' · ' : ''}
-                              {student.comment ? '📝' : ''}
-                            </span>
-                          )}
-                          <svg className="w-4 h-4 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
-                          </svg>
-                        </div>
-                      </div>
-                    ))}
+                      );
+                    })}
                   </div>
+
+                  {/* Make-up section */}
+                  {(isAdministrator || isOwner) && (
+                    <MakeUpSection
+                      makeUpStudents={makeUpStudents}
+                      makeUpLoading={makeUpLoading}
+                      onAdd={handleOpenAddMakeUp}
+                      onDelete={handleDeleteMakeUp}
+                    />
+                  )}
                 </>
               )}
             </div>
@@ -729,6 +893,94 @@ function LessonDetailContent({ lessonId }: { lessonId: string }) {
           onClose={() => { setIsGradeModalOpen(false); setSelectedStudent(null); }}
           onUpdate={loadLesson}
         />
+      )}
+
+      {/* ── Add Make-up Modal ─────────────────────────────────────── */}
+      {isAddMakeUpOpen && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50 backdrop-blur-sm">
+          <div className="bg-white dark:bg-gray-800 rounded-2xl shadow-2xl w-full max-w-md max-h-[80vh] flex flex-col">
+            <div className="flex items-center justify-between px-6 py-4 border-b border-gray-200 dark:border-gray-700">
+              <h3 className="text-base font-semibold text-gray-900 dark:text-white">Добавить студента на отработку</h3>
+              <button
+                onClick={() => setIsAddMakeUpOpen(false)}
+                className="text-gray-400 hover:text-gray-600 dark:hover:text-gray-200 transition-colors"
+              >
+                <XCircleIcon className="w-5 h-5" />
+              </button>
+            </div>
+            <div className="px-6 py-4 border-b border-gray-200 dark:border-gray-700">
+              <div className="relative">
+                <MagnifyingGlassIcon className="w-4 h-4 absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" />
+                <input
+                  type="text"
+                  placeholder="Поиск по имени или телефону..."
+                  value={makeUpSearch}
+                  onChange={(e) => {
+                    setMakeUpSearch(e.target.value);
+                    searchMakeUpStudents(e.target.value);
+                  }}
+                  className="w-full pl-9 pr-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg text-sm bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-violet-500"
+                  autoFocus
+                />
+              </div>
+            </div>
+            <div className="flex-1 overflow-y-auto py-2">
+              {makeUpSearchLoading ? (
+                <div className="flex justify-center py-8">
+                  <div className="animate-spin h-6 w-6 border-b-2 border-violet-600 rounded-full" />
+                </div>
+              ) : makeUpSearchResults.length === 0 ? (
+                <p className="text-center text-sm text-gray-500 dark:text-gray-400 py-8">Студенты не найдены</p>
+              ) : (
+                makeUpSearchResults.map((student) => (
+                  <button
+                    key={student.id}
+                    onClick={() => setSelectedMakeUpStudent(s => s?.id === student.id ? null : student)}
+                    className={`w-full flex items-center gap-3 px-6 py-3 text-left hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors ${
+                      selectedMakeUpStudent?.id === student.id ? 'bg-violet-50 dark:bg-violet-900/20' : ''
+                    }`}
+                  >
+                    <div className="w-8 h-8 rounded-full bg-violet-100 dark:bg-violet-900/30 flex items-center justify-center flex-shrink-0">
+                      <span className="text-violet-600 dark:text-violet-300 text-sm font-semibold">
+                        {(student.fullName || student.name).charAt(0)}
+                      </span>
+                    </div>
+                    <div className="min-w-0 flex-1">
+                      <p className="text-sm font-medium text-gray-900 dark:text-white truncate">{student.fullName || student.name}</p>
+                      <p className="text-xs text-gray-500 dark:text-gray-400">{student.phone}</p>
+                    </div>
+                    {selectedMakeUpStudent?.id === student.id && (
+                      <CheckCircleIcon className="w-5 h-5 text-violet-600 dark:text-violet-400 flex-shrink-0" />
+                    )}
+                  </button>
+                ))
+              )}
+            </div>
+            <div className="px-6 py-4 border-t border-gray-200 dark:border-gray-700 flex justify-end gap-3">
+              <button
+                onClick={() => setIsAddMakeUpOpen(false)}
+                className="px-4 py-2 text-sm text-gray-600 dark:text-gray-300 hover:text-gray-800 dark:hover:text-white transition-colors"
+              >
+                Отмена
+              </button>
+              <button
+                onClick={handleConfirmAddMakeUp}
+                disabled={!selectedMakeUpStudent || isAddingMakeUp}
+                className="px-5 py-2 bg-amber-500 hover:bg-amber-600 text-white rounded-lg text-sm font-medium transition-colors disabled:opacity-50 flex items-center gap-2"
+              >
+                {isAddingMakeUp ? (
+                  <>
+                    <svg className="animate-spin h-4 w-4" fill="none" viewBox="0 0 24 24">
+                      <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
+                      <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z" />
+                    </svg>
+                    Назначаем...
+                  </>
+                ) : 'Назначить на отработку'}
+              </button>
+            </div>
+          </div>
+        </div>
       )}
     </div>
   );
@@ -846,6 +1098,65 @@ function ActionPanel({ title, onClose, children }: { title: string; onClose: () 
       </div>
       {children}
     </div>
+  );
+}
+
+// ─── Make-Up Section ─────────────────────────────────────────────────────────
+function MakeUpSection({
+  makeUpStudents, makeUpLoading, onAdd, onDelete,
+}: {
+  makeUpStudents: MakeUpStudentDto[];
+  makeUpLoading: boolean;
+  onAdd: () => void;
+  onDelete: (m: MakeUpStudentDto) => void;
+}) {
+  return (
+    <section className="border-t border-gray-200 dark:border-gray-700 pt-5 mt-4">
+      <div className="flex items-center justify-between mb-3">
+        <h3 className="text-sm font-semibold text-gray-900 dark:text-white flex items-center gap-2">
+          <span>🔄</span> Студенты на отработке
+          {makeUpStudents.length > 0 && (
+            <span className="text-xs font-semibold bg-amber-100 dark:bg-amber-900/30 text-amber-700 dark:text-amber-300 px-2 py-0.5 rounded-full">
+              {makeUpStudents.length}
+            </span>
+          )}
+        </h3>
+        <button
+          onClick={onAdd}
+          className="flex items-center gap-1.5 px-3 py-1.5 bg-amber-50 dark:bg-amber-900/20 text-amber-700 dark:text-amber-300 border border-amber-200 dark:border-amber-700 rounded-lg text-xs font-medium hover:bg-amber-100 dark:hover:bg-amber-900/40 transition-colors"
+        >
+          <PlusIcon className="w-3.5 h-3.5" />
+          Добавить отработку
+        </button>
+      </div>
+      {makeUpLoading ? (
+        <div className="flex justify-center py-4">
+          <div className="animate-spin h-5 w-5 border-b-2 border-amber-500 rounded-full" />
+        </div>
+      ) : makeUpStudents.length === 0 ? (
+        <p className="text-sm text-gray-400 dark:text-gray-500 italic py-2">Нет студентов на отработке</p>
+      ) : (
+        <div className="space-y-2">
+          {makeUpStudents.map((m) => (
+            <div key={m.id} className="flex items-center justify-between p-3 bg-amber-50 dark:bg-amber-900/10 border border-amber-200 dark:border-amber-700/50 rounded-xl">
+              <div className="flex items-center gap-2 min-w-0">
+                <div className="w-8 h-8 rounded-full bg-amber-100 dark:bg-amber-900/30 flex items-center justify-center flex-shrink-0">
+                  <span className="text-amber-600 dark:text-amber-300 font-semibold text-xs">{m.studentName.charAt(0)}</span>
+                </div>
+                <span className="text-sm font-medium text-gray-900 dark:text-white truncate">{m.studentName}</span>
+              </div>
+              <button
+                onClick={() => onDelete(m)}
+                className="flex-shrink-0 p-1.5 text-red-400 hover:text-red-600 hover:bg-red-50 dark:hover:bg-red-900/20 rounded-lg transition-colors"
+                title="Удалить отработку"
+              >
+                <TrashIcon className="w-4 h-4" />
+              </button>
+            </div>
+          ))}
+        </div>
+      )}
+    </section>
   );
 }
 

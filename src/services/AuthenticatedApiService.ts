@@ -1239,6 +1239,38 @@ export class AuthenticatedApiService {
     return this.delete(`/LeadActivity/${activityId}/organization/${organizationId}`);
   }
 
+  // ── Make-Up Lessons (UserLesson) ─────────────────────────────────────────
+
+  /** POST /UserLesson/create-makeup — создать новый урок-отработку */
+  static async createMakeUpLesson(data: import('../types/UserLesson').MakeUpLessonCreateModel): Promise<import('../types/UserLesson').CreateMakeUpResponse> {
+    return this.post<import('../types/UserLesson').CreateMakeUpResponse>('/UserLesson/create-makeup', data);
+  }
+
+  /** POST /UserLesson/add-student — добавить студента к существующей отработке */
+  static async addStudentToMakeUp(data: import('../types/UserLesson').UserLessonAddModel): Promise<import('../types/UserLesson').UserLessonDto> {
+    return this.post<import('../types/UserLesson').UserLessonDto>('/UserLesson/add-student', data);
+  }
+
+  /** DELETE /UserLesson/remove-student/{userLessonId} — убрать студента из отработки */
+  static async removeStudentFromMakeUp(userLessonId: string): Promise<void> {
+    return this.delete(`/UserLesson/remove-student/${userLessonId}`);
+  }
+
+  /** DELETE /UserLesson/delete-lesson/{lessonId} — удалить весь урок-отработку */
+  static async deleteMakeUpLesson(lessonId: string): Promise<void> {
+    return this.delete(`/UserLesson/delete-lesson/${lessonId}`);
+  }
+
+  /** GET /UserLesson/by-lesson/{lessonId} — список студентов урока-отработки */
+  static async getMakeUpStudentsByLesson(lessonId: string): Promise<import('../types/UserLesson').UserLessonDto[]> {
+    return this.get<import('../types/UserLesson').UserLessonDto[]>(`/UserLesson/by-lesson/${lessonId}`);
+  }
+
+  /** GET /UserLesson/by-student/{studentId}?organizationId — все отработки студента */
+  static async getUserLessonsByStudent(studentId: string, organizationId: string): Promise<import('../types/UserLesson').UserLessonDto[]> {
+    return this.get<import('../types/UserLesson').UserLessonDto[]>(`/UserLesson/by-student/${studentId}?organizationId=${organizationId}`);
+  }
+
   // ── Lead Registration (QR) ────────────────────────────────────────────────
 
   static async generateRegistrationLink(data: import('../types/LeadRegistration').GenerateLinkRequest): Promise<import('../types/LeadRegistration').RegistrationLinkDto> {

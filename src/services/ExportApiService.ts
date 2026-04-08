@@ -100,6 +100,32 @@ export class ExportApiService {
   }
 
   /**
+   * Экспорт статистики маркета
+   */
+  static async exportMarketStats(
+    organizationId: string,
+    startDate?: string,
+    endDate?: string,
+    groupIds?: string[],
+    statuses?: number[]
+  ): Promise<Blob> {
+    const requestBody: {
+      organizationId: string;
+      startDate?: string;
+      endDate?: string;
+      groupIds?: string[];
+      statuses?: number[];
+    } = { organizationId };
+
+    if (startDate) requestBody.startDate = startDate;
+    if (endDate) requestBody.endDate = endDate;
+    if (groupIds && groupIds.length > 0) requestBody.groupIds = groupIds;
+    if (statuses && statuses.length > 0) requestBody.statuses = statuses;
+
+    return await AuthenticatedApiService.postBlob('/Export/market-stats', requestBody);
+  }
+
+  /**
    * Универсальная функция для скачивания файла
    */
   static downloadFile(blob: Blob, filename: string): void {
@@ -123,7 +149,8 @@ export class ExportApiService {
       groups: 'группы',
       attendance: 'посещаемость',
       schedules: 'расписания',
-      payments: 'платежи'
+      payments: 'платежи',
+      market: 'маркет'
     };
     
     const typeName = typeNames[type] || type;

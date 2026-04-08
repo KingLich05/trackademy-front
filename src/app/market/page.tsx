@@ -5,6 +5,9 @@ import { useRouter } from 'next/navigation';
 import { useAuth } from '../../contexts/AuthContext';
 import { useToast } from '../../contexts/ToastContext';
 import { AuthenticatedApiService } from '../../services/AuthenticatedApiService';
+import { ExportApiService } from '../../services/ExportApiService';
+import { ExportMarketModal, ExportMarketParams } from '../../components/ExportMarketModal';
+import { Group, GroupsResponse } from '../../types/Group';
 import {
   CoinAccountDetailedDto,
   CoinAccountDto,
@@ -32,6 +35,7 @@ import {
   StarIcon,
   AdjustmentsHorizontalIcon,
   CogIcon,
+  DocumentArrowDownIcon,
 } from '@heroicons/react/24/outline';
 
 // ─── helpers ────────────────────────────────────────────────────────────────
@@ -139,6 +143,11 @@ export default function MarketPage() {
 
   // purchase filter
   const [purchaseFilter, setPurchaseFilter] = useState<'all' | 'pending' | 'fulfilled' | 'cancelled'>('all');
+
+  // market export
+  const [isMarketExportModalOpen, setIsMarketExportModalOpen] = useState(false);
+  const [isExportingMarket, setIsExportingMarket] = useState(false);
+  const [exportGroups, setExportGroups] = useState<Group[]>([]);
 
   // ── initial load ──
   useEffect(() => {
@@ -406,6 +415,44 @@ export default function MarketPage() {
       showSuccess('Товар удалён');
       await loadItems();
     } catch { showError('Ошибка при удалении товара'); }
+  }
+
+  async function handleOpenMarketExport() {
+    try {
+      const response = await AuthenticatedApiService.post<GroupsResponse>('/Group/get-groups', {
+        pageNumber: 1,
+        pageSize: 200,
+        organizationId: orgId,
+      });
+      setExportGroups(response.items || []);
+    } catch {
+      setExportGroups([]);
+    }
+    setIsMarketExportModalOpen(true);
+  }
+
+  async function handleExportMarket(params: ExportMarketParams) {
+    if (!orgId) return;
+    setIsExportingMarket(true);
+    try {
+      const blob = await ExportApiService.exportMarketStats(
+        orgId,
+        params.startDate,
+        params.endDate,
+        params.groupIds,
+        params.statuses
+      );
+      ExportApiService.downloadFile(
+        blob,
+        ExportApiService.getExportFilename('market', 'xlsx')
+      );
+      showSuccess('Файл успешно экспортирован');
+      setIsMarketExportModalOpen(false);
+    } catch (error: unknown) {
+      showError('Ошибка при экспорте маркета: ' + ((error as Error)?.message || 'Неизвестная ошибка'));
+    } finally {
+      setIsExportingMarket(false);
+    }
   }
 
   // ── render helpers ──
@@ -806,6 +853,15 @@ export default function MarketPage() {
               </p>
             </div>
           </div>
+          {isAdmin && (
+            <button
+              onClick={handleOpenMarketExport}
+              className="flex items-center gap-2 px-4 py-2 bg-amber-500 hover:bg-amber-600 text-white rounded-lg transition-colors text-sm font-medium shadow-sm"
+            >
+              <DocumentArrowDownIcon className="h-4 w-4" />
+              Экспорт
+            </button>
+          )}
           {!isAdmin && myAccount && (
             <div className="flex items-center gap-2 bg-amber-50 dark:bg-amber-900/20 border border-amber-200 dark:border-amber-800 text-amber-700 dark:text-amber-400 rounded-xl px-4 py-2 font-bold text-lg">
               <SparklesIcon className="h-5 w-5" />
@@ -1104,6 +1160,14 @@ export default function MarketPage() {
           </div>
         </div>
       </BaseModal>
+
+      <ExportMarketModal
+        isOpen={isMarketExportModalOpen}
+        onClose={() => setIsMarketExportModalOpen(false)}
+        onExport={handleExportMarket}
+        groups={exportGroups}
+        isExporting={isExportingMarket}
+      />
     </div>
   );
 }

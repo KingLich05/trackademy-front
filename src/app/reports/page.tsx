@@ -11,6 +11,7 @@ import { attendanceApi } from '../../services/AttendanceApiService';
 import { ExportAttendanceRequest, AttendanceStatus } from '../../types/Attendance';
 import { API_BASE_URL } from '../../lib/api-config';
 import { ExportPaymentsModal, ExportPaymentsParams } from '../../components/ExportPaymentsModal';
+import { ExportMarketModal, ExportMarketParams } from '../../components/ExportMarketModal';
 import { 
   ChartBarIcon, 
   DocumentArrowDownIcon, 
@@ -18,7 +19,8 @@ import {
   UserGroupIcon,
   ClipboardDocumentCheckIcon,
   CalendarDaysIcon,
-  CurrencyDollarIcon
+  CurrencyDollarIcon,
+  SparklesIcon
 } from '@heroicons/react/24/outline';
 import { canManageUsers } from '../../types/Role';
 
@@ -62,6 +64,10 @@ export default function ReportsPage() {
   // Состояние для экспорта платежей
   const [isPaymentsExportModalOpen, setIsPaymentsExportModalOpen] = useState(false);
   const [isExportingPayments, setIsExportingPayments] = useState(false);
+
+  // Состояние для экспорта маркета
+  const [isMarketExportModalOpen, setIsMarketExportModalOpen] = useState(false);
+  const [isExportingMarket, setIsExportingMarket] = useState(false);
   const [scheduleFilters, setScheduleFilters] = useState({
     organizationId: user?.organizationId || '',
     groupId: '',
@@ -123,6 +129,13 @@ export default function ReportsPage() {
       icon: CalendarDaysIcon,
       exportType: 'schedules',
       color: 'indigo'
+    },
+    {
+      title: 'Маркет',
+      description: 'Статистика покупок в маркете с фильтрацией по датам, группам и статусу',
+      icon: SparklesIcon,
+      exportType: 'market',
+      color: 'amber'
     }
   ];
 
@@ -135,7 +148,8 @@ export default function ReportsPage() {
       indigo: 'border-indigo-200 dark:border-indigo-800 bg-indigo-50 dark:bg-indigo-900/20 text-indigo-600 dark:text-indigo-400 hover:bg-indigo-100 dark:hover:bg-indigo-900/30',
       red: 'border-red-200 dark:border-red-800 bg-red-50 dark:bg-red-900/20 text-red-600 dark:text-red-400 hover:bg-red-100 dark:hover:bg-red-900/30',
       orange: 'border-orange-200 dark:border-orange-800 bg-orange-50 dark:bg-orange-900/20 text-orange-600 dark:text-orange-400 hover:bg-orange-100 dark:hover:bg-orange-900/30',
-      teal: 'border-teal-200 dark:border-teal-800 bg-teal-50 dark:bg-teal-900/20 text-teal-600 dark:text-teal-400 hover:bg-teal-100 dark:hover:bg-teal-900/30'
+      teal: 'border-teal-200 dark:border-teal-800 bg-teal-50 dark:bg-teal-900/20 text-teal-600 dark:text-teal-400 hover:bg-teal-100 dark:hover:bg-teal-900/30',
+      amber: 'border-amber-200 dark:border-amber-800 bg-amber-50 dark:bg-amber-900/20 text-amber-600 dark:text-amber-400 hover:bg-amber-100 dark:hover:bg-amber-900/30'
     };
     return colors[color as keyof typeof colors] || colors.blue;
   };
@@ -177,6 +191,10 @@ export default function ReportsPage() {
           await loadGroups();
           setIsPaymentsExportModalOpen(true);
           return;
+        case 'market':
+          await loadGroups();
+          setIsMarketExportModalOpen(true);
+          return;
         case 'schedules':
           // Открываем модальное окно для настройки экспорта расписания
           await loadScheduleData();
@@ -190,6 +208,30 @@ export default function ReportsPage() {
       showError(`Ошибка при экспорте: ${title}`);
     } finally {
       setIsExporting(null);
+    }
+  };
+
+  const handleExportMarket = async (params: ExportMarketParams) => {
+    if (!user?.organizationId) return;
+    setIsExportingMarket(true);
+    try {
+      const blob = await ExportApiService.exportMarketStats(
+        user.organizationId,
+        params.startDate,
+        params.endDate,
+        params.groupIds,
+        params.statuses
+      );
+      ExportApiService.downloadFile(
+        blob,
+        ExportApiService.getExportFilename('market', 'xlsx')
+      );
+      showSuccess('Файл успешно экспортирован');
+      setIsMarketExportModalOpen(false);
+    } catch (error: unknown) {
+      showError('Ошибка при экспорте маркета: ' + ((error as Error)?.message || 'Неизвестная ошибка'));
+    } finally {
+      setIsExportingMarket(false);
     }
   };
 
@@ -1220,6 +1262,13 @@ export default function ReportsPage() {
         onExport={handleExportPayments}
         groups={groups}
         isExporting={isExportingPayments}
+      />
+      <ExportMarketModal
+        isOpen={isMarketExportModalOpen}
+        onClose={() => setIsMarketExportModalOpen(false)}
+        onExport={handleExportMarket}
+        groups={groups}
+        isExporting={isExportingMarket}
       />
     </>
   );

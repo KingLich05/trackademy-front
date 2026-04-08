@@ -4,6 +4,7 @@ export interface Lesson {
   startTime: string; // "09:00:00" format
   endTime: string; // "10:30:00" format
   lessonStatus: 'Planned' | 'Completed' | 'Cancelled' | 'Moved';
+  isMakeUp: boolean; // true for makeup (отработка) lessons
   subject: {
     subjectId: string;
     subjectName: string;
