@@ -151,157 +151,140 @@ export default function WeekView({ date, lessons, onLessonClick }: WeekViewProps
   };
 
   return (
-    <div className="flex flex-col h-full">
-      {/* Week header */}
-      <div className="sticky top-0 bg-white dark:bg-gray-800 border-b border-gray-200 dark:border-gray-700 z-10">
-        <div className="flex">
-          {/* Time column header */}
-          <div className="w-16 flex-shrink-0 p-2 border-r border-gray-200 dark:border-gray-700">
-            <div className="text-xs text-gray-500 dark:text-gray-400">Время</div>
+    <div className="flex flex-col h-full overflow-hidden">
+      {/* Single scrollable container — scrolls both X and Y together */}
+      <div className="flex-1 overflow-auto">
+        {/* Min-width wrapper: 64px time col + 7 × 110px day cols = 834px */}
+        <div style={{ minWidth: '834px' }}>
+
+          {/* Header — sticky to top of scroll container */}
+          <div className="sticky top-0 z-20 bg-white dark:bg-gray-800 border-b border-gray-200 dark:border-gray-700">
+            <div className="flex">
+              {/* Time column header — also sticky to left */}
+              <div className="sticky left-0 z-30 w-16 flex-shrink-0 p-2 border-r border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800">
+                <div className="text-xs text-gray-500 dark:text-gray-400">Время</div>
+              </div>
+
+              {/* Day headers — fixed 110px each */}
+              {weekDays.map((day, index) => {
+                const dayLessons = getLessonsForDay(lessons, day);
+                const isToday = day.toDateString() === new Date().toDateString();
+
+                return (
+                  <div
+                    key={day.toISOString()}
+                    className="flex-shrink-0 w-[110px] p-2 border-r border-gray-200 dark:border-gray-700 last:border-r-0"
+                  >
+                    <div className={`text-center ${isToday ? 'text-violet-600 dark:text-violet-400 font-semibold' : 'text-gray-900 dark:text-white'}`}>
+                      <div className="text-sm font-medium">{dayNames[index]}</div>
+                      <div className={`text-lg ${isToday ? 'bg-violet-600 text-white rounded-full w-8 h-8 flex items-center justify-center mx-auto' : ''}`}>
+                        {day.getDate()}
+                      </div>
+                      <div className="text-xs text-gray-500 dark:text-gray-400 mt-1">
+                        {dayLessons.length} занятий
+                      </div>
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
           </div>
 
-          {/* Day headers */}
-          {weekDays.map((day, index) => {
-            const dayLessons = getLessonsForDay(lessons, day);
-            const isToday = day.toDateString() === new Date().toDateString();
-            
-            return (
+          {/* Time grid — positioned relative for absolutely-placed lesson cards */}
+          <div className="relative">
+            {/* Time slot rows */}
+            {timeSlots.map((timeSlot) => (
               <div
-                key={day.toISOString()}
-                className="flex-1 p-2 border-r border-gray-200 dark:border-gray-700 last:border-r-0"
+                key={timeSlot}
+                className="flex border-b border-gray-100 dark:border-gray-700 min-h-[120px]"
               >
-                <div className={`text-center ${isToday ? 'text-violet-600 dark:text-violet-400 font-semibold' : 'text-gray-900 dark:text-white'}`}>
-                  <div className="text-sm font-medium">{dayNames[index]}</div>
-                  <div className={`text-lg ${isToday ? 'bg-violet-600 text-white rounded-full w-8 h-8 flex items-center justify-center mx-auto' : ''}`}>
-                    {day.getDate()}
-                  </div>
-                  <div className="text-xs text-gray-500 dark:text-gray-400 mt-1">
-                    {dayLessons.length} занятий
-                  </div>
+                {/* Time label — sticky to left, above lesson cards (z-20 > z-10) */}
+                <div className="sticky left-0 z-20 w-16 flex-shrink-0 p-2 text-sm text-gray-500 dark:text-gray-400 border-r border-gray-100 dark:border-gray-700 bg-white dark:bg-gray-800">
+                  {timeSlot}
                 </div>
-              </div>
-            );
-          })}
-        </div>
-      </div>
 
-      {/* Time grid */}
-      <div className="flex-1 overflow-y-auto">
-        <div className="relative">
-          {/* Time slots grid */}
-          {timeSlots.map((timeSlot) => (
-            <div
-              key={timeSlot}
-              className="flex border-b border-gray-100 dark:border-gray-700 min-h-[120px]"
-            >
-              {/* Time label */}
-              <div className="w-16 flex-shrink-0 p-2 text-sm text-gray-500 dark:text-gray-400 border-r border-gray-100 dark:border-gray-700">
-                {timeSlot}
+                {/* Day cells — fixed 110px each */}
+                {weekDays.map((day) => (
+                  <div
+                    key={`${day.toISOString()}-${timeSlot}`}
+                    className="flex-shrink-0 w-[110px] border-r border-gray-100 dark:border-gray-700 last:border-r-0"
+                  />
+                ))}
               </div>
+            ))}
 
-              {/* Day columns */}
-              {weekDays.map((day) => (
+            {/* Absolutely positioned lesson columns — pixel offsets */}
+            {weekDays.map((day, dayIndex) => {
+              const dayLessons = getLessonsForDay(lessons, day);
+              const timeSlotGroups = groupOverlappingLessons(dayLessons);
+
+              return (
                 <div
-                  key={`${day.toISOString()}-${timeSlot}`}
-                  className="flex-1 p-1 border-r border-gray-100 dark:border-gray-700 last:border-r-0 relative"
+                  key={`lessons-${day.toISOString()}`}
+                  className="absolute top-0 pointer-events-none"
+                  style={{
+                    left: `${64 + dayIndex * 110}px`,
+                    width: '108px',
+                    height: '100%',
+                    zIndex: 10
+                  }}
                 >
-                  {/* This space will be filled by absolutely positioned lessons */}
-                </div>
-              ))}
-            </div>
-          ))}
+                  {timeSlotGroups.map((slot, idx) => {
+                    const hasOverlap = slot.lessons.length > 1;
+                    const position = hasOverlap
+                      ? getTimeSlotPosition(slot.startTime, slot.endTime)
+                      : getLessonPosition(slot.lessons[0]);
 
-          {/* Absolutely positioned lessons for each day */}
-          {weekDays.map((day, dayIndex) => {
-            const dayLessons = getLessonsForDay(lessons, day);
-            const timeSlotGroups = groupOverlappingLessons(dayLessons);
-            
-            // Debug: выводим информацию о группах
-            if (dayLessons.length > 0) {
-              console.log(`День ${dayIndex}, уроков: ${dayLessons.length}, групп: ${timeSlotGroups.length}`);
-              timeSlotGroups.forEach((group, i) => {
-                console.log(`  Группа ${i}: ${group.lessons.length} уроков, ${group.startTime}-${group.endTime}`);
-                group.lessons.forEach(l => {
-                  console.log(`    - ${l.subject.subjectName}: ${l.startTime}-${l.endTime}`);
-                });
-              });
-            }
-            
-            return (
-              <div
-                key={`lessons-${day.toISOString()}`}
-                className="absolute inset-0 pointer-events-none"
-                style={{
-                  left: `calc(4rem + ${dayIndex} * (100% - 4rem) / 7)`, // 4rem = w-16 for time column
-                  width: `calc((100% - 4rem) / 7 - 2px)`, // Equal width minus borders
-                  height: '100%',
-                  zIndex: 10
-                }}
-              >
-                {timeSlotGroups.map((slot, idx) => {
-                  const hasOverlap = slot.lessons.length > 1;
-                  // Use slot's min/max times for overlapping lessons block
-                  const position = hasOverlap 
-                    ? getTimeSlotPosition(slot.startTime, slot.endTime)
-                    : getLessonPosition(slot.lessons[0]);
-                  
-                  if (hasOverlap) {
-                    // Получаем все предметы для отображения
-                    const subjects = slot.lessons.map(l => l.subject.subjectName).join(', ');
-                    
-                    return (
-                      <div
-                        key={`overlap-${idx}`}
-                        className="absolute left-1 right-1 pointer-events-auto cursor-pointer"
-                        style={{
-                          top: `${position.top}px`,
-                          height: `${position.height}px`
-                        }}
-                        onClick={() => setOverlappingModal({
-                          isOpen: true,
-                          lessons: slot.lessons,
-                          timeSlot: `${formatTime(slot.startTime)} - ${formatTime(slot.endTime)}`
-                        })}
-                        title={`${slot.lessons.length} накладывающихся ${slot.lessons.length === 1 ? 'занятие' : slot.lessons.length < 5 ? 'занятия' : 'занятий'} (${formatTime(slot.startTime)}-${formatTime(slot.endTime)})\n${subjects}`}
-                      >
-                        <div className="w-full h-full p-1.5 rounded text-xs bg-gradient-to-r from-amber-50 to-amber-100 dark:from-amber-900/30 dark:to-amber-800/30 border border-amber-300 dark:border-amber-600 hover:shadow-sm transition-all overflow-hidden">
-                          <div className="flex flex-col h-full justify-center gap-0.5">
-                            <span className="font-semibold text-amber-900 dark:text-amber-100 truncate text-center">
-                              {formatTime(slot.startTime)}-{formatTime(slot.endTime)}
-                            </span>
-                            <span className="text-amber-700 dark:text-amber-300 text-[10px] truncate text-center">
-                              {subjects}
-                            </span>
+                    if (hasOverlap) {
+                      const subjects = slot.lessons.map(l => l.subject.subjectName).join(', ');
+                      return (
+                        <div
+                          key={`overlap-${idx}`}
+                          className="absolute left-1 right-1 pointer-events-auto cursor-pointer"
+                          style={{ top: `${position.top}px`, height: `${position.height}px` }}
+                          onClick={() => setOverlappingModal({
+                            isOpen: true,
+                            lessons: slot.lessons,
+                            timeSlot: `${formatTime(slot.startTime)} - ${formatTime(slot.endTime)}`
+                          })}
+                          title={`${slot.lessons.length} занятий (${formatTime(slot.startTime)}-${formatTime(slot.endTime)})\n${subjects}`}
+                        >
+                          <div className="w-full h-full p-1.5 rounded text-xs bg-gradient-to-r from-amber-50 to-amber-100 dark:from-amber-900/30 dark:to-amber-800/30 border border-amber-300 dark:border-amber-600 hover:shadow-sm transition-all overflow-hidden">
+                            <div className="flex flex-col h-full justify-center gap-0.5">
+                              <span className="font-semibold text-amber-900 dark:text-amber-100 truncate text-center">
+                                {formatTime(slot.startTime)}-{formatTime(slot.endTime)}
+                              </span>
+                              <span className="text-amber-700 dark:text-amber-300 text-[10px] truncate text-center">
+                                {subjects}
+                              </span>
+                            </div>
                           </div>
                         </div>
-                      </div>
-                    );
-                  } else {
-                    const lesson = slot.lessons[0];
-                    return (
-                      <div
-                        key={lesson.id}
-                        className="absolute left-1 right-1 pointer-events-auto"
-                        style={{
-                          top: `${position.top}px`,
-                          height: `${position.height}px`
-                        }}
-                      >
-                        <WeekLessonBlock
-                          lesson={lesson}
-                          onClick={() => onLessonClick(lesson)}
-                          height={position.height}
-                        />
-                      </div>
-                    );
-                  }
-                })}
-              </div>
-            );
-          })}
+                      );
+                    } else {
+                      const lesson = slot.lessons[0];
+                      return (
+                        <div
+                          key={lesson.id}
+                          className="absolute left-1 right-1 pointer-events-auto"
+                          style={{ top: `${position.top}px`, height: `${position.height}px` }}
+                        >
+                          <WeekLessonBlock
+                            lesson={lesson}
+                            onClick={() => onLessonClick(lesson)}
+                            height={position.height}
+                          />
+                        </div>
+                      );
+                    }
+                  })}
+                </div>
+              );
+            })}
+          </div>
         </div>
       </div>
-      
+
       <OverlappingLessonsModal
         isOpen={overlappingModal.isOpen}
         onClose={() => setOverlappingModal({ isOpen: false, lessons: [], timeSlot: '' })}

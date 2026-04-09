@@ -1,8 +1,17 @@
 import React, { useState, useMemo } from 'react';
-import { Schedule, formatTimeRange } from '../../types/Schedule';
+import { Schedule, formatTimeRange, formatScheduleSlots } from '../../types/Schedule';
 import { DaysOfWeekDisplay } from './DaysOfWeekDisplay';
 import { ChevronLeftIcon, ChevronRightIcon } from '@heroicons/react/24/outline';
 import { OverlappingSchedulesModal } from './OverlappingSchedulesModal';
+
+// Helper: get startTime/endTime for a schedule (uses first slot as fallback)
+function scheduleTime(s: Schedule): { startTime: string; endTime: string } {
+  const slot = s.scheduleSlots[0];
+  return { startTime: slot?.startTime ?? '', endTime: slot?.endTime ?? '' };
+}
+function scheduleIncludesDay(s: Schedule, day: number): boolean {
+  return s.scheduleSlots.some(sl => sl.weekDay === day);
+}
 
 interface ScheduleCalendarProps {
   schedules: Schedule[];
@@ -54,9 +63,9 @@ export const ScheduleCalendar: React.FC<ScheduleCalendarProps> = ({
     if (schedulesList.length === 0) return [];
     
     const sorted = [...schedulesList].sort((a, b) => {
-      const timeA = a.startTime.localeCompare(b.startTime);
+      const timeA = scheduleTime(a).startTime.localeCompare(scheduleTime(b).startTime);
       if (timeA !== 0) return timeA;
-      return a.endTime.localeCompare(b.endTime);
+      return scheduleTime(a).endTime.localeCompare(scheduleTime(b).endTime);
     });
     
     const timeSlots: TimeSlot[] = [];
@@ -68,8 +77,8 @@ export const ScheduleCalendar: React.FC<ScheduleCalendarProps> = ({
       // Создаем группу для текущего расписания
       const currentGroup: Schedule[] = [sorted[i]];
       used.add(sorted[i].id);
-      let groupStartTime = sorted[i].startTime;
-      let groupEndTime = sorted[i].endTime;
+      let groupStartTime = scheduleTime(sorted[i]).startTime;
+      let groupEndTime = scheduleTime(sorted[i]).endTime;
       
       // Ищем расписания, которые НАПРЯМУЮ пересекаются с временным окном группы
       let changed = true;
@@ -80,16 +89,16 @@ export const ScheduleCalendar: React.FC<ScheduleCalendarProps> = ({
           if (used.has(sorted[j].id)) continue;
           
           // Проверяем, пересекается ли расписание j с временным окном ГРУППЫ
-          if (timeRangesOverlap(groupStartTime, groupEndTime, sorted[j].startTime, sorted[j].endTime)) {
+          if (timeRangesOverlap(groupStartTime, groupEndTime, scheduleTime(sorted[j]).startTime, scheduleTime(sorted[j]).endTime)) {
             currentGroup.push(sorted[j]);
             used.add(sorted[j].id);
             
             // Расширяем временное окно группы
-            if (sorted[j].startTime < groupStartTime) {
-              groupStartTime = sorted[j].startTime;
+            if (scheduleTime(sorted[j]).startTime < groupStartTime) {
+              groupStartTime = scheduleTime(sorted[j]).startTime;
             }
-            if (sorted[j].endTime > groupEndTime) {
-              groupEndTime = sorted[j].endTime;
+            if (scheduleTime(sorted[j]).endTime > groupEndTime) {
+              groupEndTime = scheduleTime(sorted[j]).endTime;
             }
             
             changed = true;
@@ -147,7 +156,7 @@ export const ScheduleCalendar: React.FC<ScheduleCalendarProps> = ({
     
     const filtered = schedules.filter(schedule => {
       // Check if this day of week is in the schedule
-      if (!schedule.daysOfWeek.includes(dayOfWeek)) return false;
+      if (!scheduleIncludesDay(schedule, dayOfWeek)) return false;
       
       // Check if the schedule is active on this date
       // Parse dates as local dates (without time zone conversion)
@@ -194,8 +203,8 @@ export const ScheduleCalendar: React.FC<ScheduleCalendarProps> = ({
     // Calculate schedule position - each hour slot is exactly 60px
     const getSchedulePosition = (schedule: Schedule) => {
       // Extract hours and minutes from time string "HH:mm:ss" or "HH:mm"
-      const startParts = schedule.startTime.split(':');
-      const endParts = schedule.endTime.split(':');
+      const startParts = scheduleTime(schedule).startTime.split(':');
+      const endParts = scheduleTime(schedule).endTime.split(':');
       
       const startHours = parseInt(startParts[0], 10);
       const startMinutes = parseInt(startParts[1], 10);
@@ -306,7 +315,7 @@ export const ScheduleCalendar: React.FC<ScheduleCalendarProps> = ({
                             <div className="font-semibold text-sm mb-2 text-violet-300">{schedule.subject.subjectName}</div>
                             <div className="space-y-1">
                               <div><span className="text-gray-400">Группа:</span> {schedule.group.name}</div>
-                              <div><span className="text-gray-400">Время:</span> {formatTimeRange(schedule.startTime, schedule.endTime)}</div>
+                              <div><span className="text-gray-400">Время:</span> {formatScheduleSlots(schedule.scheduleSlots)}</div>
                               <div><span className="text-gray-400">Кабинет:</span> {schedule.room.name}</div>
                               <div><span className="text-gray-400">Преподаватель:</span> {schedule.teacher.name}</div>
                             </div>
@@ -322,7 +331,7 @@ export const ScheduleCalendar: React.FC<ScheduleCalendarProps> = ({
                                   👥 {schedule.group.name}
                                 </div>
                                 <div className="text-lg text-gray-700 dark:text-gray-300">
-                                  🕐 {formatTimeRange(schedule.startTime, schedule.endTime)}
+                                  🕐 {formatScheduleSlots(schedule.scheduleSlots)}
                                 </div>
                                 <div className="text-lg text-gray-700 dark:text-gray-300 truncate">
                                   📍 {schedule.room.name}
@@ -341,7 +350,7 @@ export const ScheduleCalendar: React.FC<ScheduleCalendarProps> = ({
                                   👥 {schedule.group.name}
                                 </div>
                                 <div className="text-base text-gray-700 dark:text-gray-300">
-                                  🕐 {formatTimeRange(schedule.startTime, schedule.endTime)}
+                                  🕐 {formatScheduleSlots(schedule.scheduleSlots)}
                                 </div>
                                 <div className="text-base text-gray-700 dark:text-gray-300 truncate">
                                   📍 {schedule.room.name}
@@ -360,7 +369,7 @@ export const ScheduleCalendar: React.FC<ScheduleCalendarProps> = ({
                                   👥 {schedule.group.name}
                                 </div>
                                 <div className="text-sm text-gray-700 dark:text-gray-300">
-                                  🕐 {formatTimeRange(schedule.startTime, schedule.endTime)}
+                                  🕐 {formatScheduleSlots(schedule.scheduleSlots)}
                                 </div>
                                 <div className="text-sm text-gray-700 dark:text-gray-300 truncate">
                                   📍 {schedule.room.name}
@@ -376,7 +385,7 @@ export const ScheduleCalendar: React.FC<ScheduleCalendarProps> = ({
                                   👥 {schedule.group.name}
                                 </div>
                                 <div className="text-xs text-gray-700 dark:text-gray-300">
-                                  🕐 {formatTimeRange(schedule.startTime, schedule.endTime)}
+                                  🕐 {formatScheduleSlots(schedule.scheduleSlots)}
                                 </div>
                               </>
                             )}
@@ -396,10 +405,10 @@ export const ScheduleCalendar: React.FC<ScheduleCalendarProps> = ({
 
   // Функция для расчета высоты урока в пикселях
   const calculateLessonHeight = (schedule: Schedule): number => {
-    const startHour = parseInt(schedule.startTime.split(':')[0]);
-    const startMinute = parseInt(schedule.startTime.split(':')[1]);
-    const endHour = parseInt(schedule.endTime.split(':')[0]);
-    const endMinute = parseInt(schedule.endTime.split(':')[1]);
+    const startHour = parseInt(scheduleTime(schedule).startTime.split(':')[0]);
+    const startMinute = parseInt(scheduleTime(schedule).startTime.split(':')[1]);
+    const endHour = parseInt(scheduleTime(schedule).endTime.split(':')[0]);
+    const endMinute = parseInt(scheduleTime(schedule).endTime.split(':')[1]);
     
     const startTime = startHour + (startMinute / 60);
     const endTime = endHour + (endMinute / 60);
@@ -487,8 +496,8 @@ export const ScheduleCalendar: React.FC<ScheduleCalendarProps> = ({
               >
                 {daySchedules.map((schedule) => {
                   // Extract hours and minutes from time string "HH:mm:ss" or "HH:mm"
-                  const startParts = schedule.startTime.split(':');
-                  const endParts = schedule.endTime.split(':');
+                  const startParts = scheduleTime(schedule).startTime.split(':');
+                  const endParts = scheduleTime(schedule).endTime.split(':');
                   
                   const startHours = parseInt(startParts[0], 10);
                   const startMinutes = parseInt(startParts[1], 10);
@@ -512,13 +521,13 @@ export const ScheduleCalendar: React.FC<ScheduleCalendarProps> = ({
                         height: `${height}px`
                       }}
                       onClick={() => onEventClick?.(schedule)}
-                      title={`${schedule.subject.subjectName}\n${schedule.group.name}\n${formatTimeRange(schedule.startTime, schedule.endTime)}\n${schedule.room.name}\n${schedule.teacher.name}`}
+                      title={`${schedule.subject.subjectName}\n${schedule.group.name}\n${formatScheduleSlots(schedule.scheduleSlots)}\n${schedule.room.name}\n${schedule.teacher.name}`}
                     >
                       {/* Tooltip при наведении */}
                       <div className="absolute left-0 top-full mt-1 hidden group-hover:block z-50 bg-gray-900 text-white text-xs rounded p-2 shadow-lg min-w-[200px]">
                         <div className="font-semibold mb-1">{schedule.subject.subjectName}</div>
                         <div>Группа: {schedule.group.name}</div>
-                        <div>Время: {formatTimeRange(schedule.startTime, schedule.endTime)}</div>
+                        <div>Время: {formatScheduleSlots(schedule.scheduleSlots)}</div>
                         <div>Кабинет: {schedule.room.name}</div>
                         <div>Преподаватель: {schedule.teacher.name}</div>
                       </div>
@@ -533,7 +542,7 @@ export const ScheduleCalendar: React.FC<ScheduleCalendarProps> = ({
                               👥 {schedule.group.name}
                             </div>
                             <div className="text-violet-600 dark:text-violet-400 text-[10px]">
-                              🕐 {formatTimeRange(schedule.startTime, schedule.endTime)}
+                              🕐 {formatScheduleSlots(schedule.scheduleSlots)}
                             </div>
                             <div className="text-violet-600 dark:text-violet-400 text-[10px] truncate">
                               📍 {schedule.room.name}
@@ -549,7 +558,7 @@ export const ScheduleCalendar: React.FC<ScheduleCalendarProps> = ({
                               {schedule.subject.subjectName}
                             </div>
                             <div className="text-violet-600 dark:text-violet-400 text-[10px]">
-                              🕐 {formatTimeRange(schedule.startTime, schedule.endTime)}
+                              🕐 {formatScheduleSlots(schedule.scheduleSlots)}
                             </div>
                             <div className="text-violet-600 dark:text-violet-400 text-[10px] truncate">
                               📍 {schedule.room.name}
@@ -562,7 +571,7 @@ export const ScheduleCalendar: React.FC<ScheduleCalendarProps> = ({
                               {schedule.subject.subjectName}
                             </div>
                             <div className="text-violet-600 dark:text-violet-400 text-[9px]">
-                              🕐 {formatTimeRange(schedule.startTime, schedule.endTime)}
+                              🕐 {formatScheduleSlots(schedule.scheduleSlots)}
                             </div>
                           </>
                         )}

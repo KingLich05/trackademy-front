@@ -4,7 +4,7 @@ import { useState, useEffect, useCallback } from 'react';
 import { useAuth } from '../../contexts/AuthContext';
 import { useToast } from '../../contexts/ToastContext';
 import { AuthenticatedApiService } from '../../services/AuthenticatedApiService';
-import { DocumentTextIcon, ArrowDownTrayIcon, PencilIcon, TrashIcon, EyeIcon } from '@heroicons/react/24/outline';
+import { DocumentTextIcon, ArrowDownTrayIcon, PencilIcon, TrashIcon, EyeIcon, LockClosedIcon } from '@heroicons/react/24/outline';
 import { Material } from '../../types/Material';
 import { Group } from '../../types/Group';
 import { PageHeaderWithStats } from '../../components/ui/PageHeaderWithStats';
@@ -13,17 +13,11 @@ import { BaseModal } from '../../components/ui/BaseModal';
 import { MaterialPreviewModal } from '../../components/ui/MaterialPreviewModal';
 import { useDebounce } from '../../hooks/useDebounce';
 
-// 🔒 БЕЗОПАСНЫЕ форматы файлов (исключены исполняемые)
 const ALLOWED_EXTENSIONS = [
-  '.pdf', '.txt', '.rtf', 
-  '.jpg', '.jpeg', '.png', '.gif'
-];
-
-// ⚠️ ОПАСНЫЕ форматы - временно отключены
-const DANGEROUS_EXTENSIONS = [
-  '.doc', '.docx', '.ppt', '.pptx', '.xls', '.xlsx', // Могут содержать макросы
-  '.zip', '.rar', '.7z', // Могут содержать исполняемые файлы
-  '.exe', '.bat', '.cmd', '.sh', '.js', '.html' // Исполняемые файлы
+  '.pdf', '.doc', '.docx', '.txt', '.rtf',
+  '.ppt', '.pptx', '.xls', '.xlsx', '.csv',
+  '.jpg', '.jpeg', '.png', '.gif',
+  '.zip', '.rar', '.7z', '.epub', '.djvu'
 ];
 
 const MAX_FILE_SIZE = 150 * 1024 * 1024; // 150MB
@@ -55,6 +49,7 @@ export default function MaterialsPage() {
     title: '',
     description: '',
     groupId: '',
+    isPrivate: false,
     file: null as File | null
   });
   
@@ -130,49 +125,10 @@ export default function MaterialsPage() {
     }
 
     const fileExtension = '.' + uploadData.file.name.split('.').pop()?.toLowerCase();
-    
-    // 🛡️ ПРОВЕРКА 1: Опасные расширения
-    if (DANGEROUS_EXTENSIONS.includes(fileExtension)) {
-      showError('⚠️ ОПАСНЫЙ ФОРМАТ! Этот тип файла временно заблокирован по соображениям безопасности.');
-      return;
-    }
-    
-    // 🛡️ ПРОВЕРКА 2: Разрешенные форматы
     if (!ALLOWED_EXTENSIONS.includes(fileExtension)) {
-      showError('Недопустимый формат файла. Разрешены только: ' + ALLOWED_EXTENSIONS.join(', '));
+      showError('Недопустимый формат файла. Разрешены: ' + ALLOWED_EXTENSIONS.join(', '));
       return;
     }
-    
-    // 🛡️ ПРОВЕРКА 3: Подозрительные паттерны в имени файла
-    const suspiciousPatterns = /(\.exe|\.bat|\.cmd|\.sh|\.js|\.vbs|script|malware|virus|trojan|miner|bot|hack)/i;
-    if (suspiciousPatterns.test(uploadData.file.name)) {
-      showError('🚨 ПОДОЗРИТЕЛЬНЫЙ ФАЙЛ! Обнаружены потенциально опасные элементы в имени файла.');
-      return;
-    }
-
-    // 🛡️ ПРОВЕРКА 4: Размер файла (защита от ZIP-бомб)
-    if (uploadData.file.size > MAX_FILE_SIZE) {
-      showError('Размер файла не должен превышать 150 МБ');
-      return;
-    }
-
-    // 🛡️ ПРОВЕРКА 5: MIME-type должен соответствовать расширению
-    const expectedMimeTypes: Record<string, string[]> = {
-      '.pdf': ['application/pdf'],
-      '.txt': ['text/plain'],
-      '.rtf': ['application/rtf', 'text/rtf'],
-      '.jpg': ['image/jpeg'],
-      '.jpeg': ['image/jpeg'],
-      '.png': ['image/png'],
-      '.gif': ['image/gif']
-    };
-    
-    if (expectedMimeTypes[fileExtension] && 
-        !expectedMimeTypes[fileExtension].includes(uploadData.file.type)) {
-      showError('🚨 НЕСООТВЕТСТВИЕ! MIME-тип файла не соответствует расширению. Возможная подмена.');
-      return;
-    }
-
     if (uploadData.file.size > MAX_FILE_SIZE) {
       showError('Размер файла не должен превышать 150 МБ');
       return;
@@ -186,12 +142,13 @@ export default function MaterialsPage() {
         formData.append('Description', uploadData.description);
       }
       formData.append('GroupId', uploadData.groupId);
+      formData.append('IsPrivate', uploadData.isPrivate.toString());
       formData.append('File', uploadData.file);
 
       await AuthenticatedApiService.uploadMaterial(formData);
       showSuccess('Материал успешно загружен');
       setIsUploadModalOpen(false);
-      setUploadData({ title: '', description: '', groupId: '', file: null });
+      setUploadData({ title: '', description: '', groupId: '', isPrivate: false, file: null });
       loadMaterials();
     } catch (error) {
       console.error('Failed to upload material:', error);
@@ -397,8 +354,9 @@ export default function MaterialsPage() {
                           </div>
                         </td>
                         <td className="px-3 py-3">
-                          <div className="text-sm font-medium text-gray-900 dark:text-white truncate">
+                          <div className="text-sm font-medium text-gray-900 dark:text-white truncate flex items-center gap-1">
                             {material.title}
+                            {material.isPrivate && <LockClosedIcon className="w-3.5 h-3.5 text-gray-400 flex-shrink-0" title="Приватный" />}
                           </div>
                           {material.description && (
                             <div className="text-sm text-gray-500 dark:text-gray-400 mt-1 truncate">
@@ -436,9 +394,10 @@ export default function MaterialsPage() {
                               <EyeIcon className="w-5 h-5" />
                             </button>
                             <button
-                              onClick={() => handleDownload(material)}
-                              className="text-blue-600 hover:text-blue-900 dark:text-blue-400 dark:hover:text-blue-300 p-1.5"
-                              title="Скачать"
+                              onClick={() => !material.isPrivate && handleDownload(material)}
+                              disabled={material.isPrivate}
+                              className={material.isPrivate ? "text-gray-400 dark:text-gray-600 p-1.5 cursor-not-allowed" : "text-blue-600 hover:text-blue-900 dark:text-blue-400 dark:hover:text-blue-300 p-1.5"}
+                              title={material.isPrivate ? "Скачивание запрещено" : "Скачать"}
                             >
                               <ArrowDownTrayIcon className="w-5 h-5" />
                             </button>
@@ -478,8 +437,9 @@ export default function MaterialsPage() {
                           {(currentPage - 1) * pageSize + index + 1}
                         </div>
                         <div className="min-w-0">
-                          <div className="text-sm font-semibold text-gray-900 dark:text-white truncate">
+                          <div className="text-sm font-semibold text-gray-900 dark:text-white truncate flex items-center gap-1">
                             {material.title}
+                            {material.isPrivate && <LockClosedIcon className="w-3.5 h-3.5 text-gray-400 flex-shrink-0" title="Приватный" />}
                           </div>
                           {material.description && (
                             <div className="text-xs text-gray-500 dark:text-gray-400 truncate">
@@ -503,9 +463,10 @@ export default function MaterialsPage() {
                           <EyeIcon className="w-5 h-5" />
                         </button>
                         <button
-                          onClick={() => handleDownload(material)}
-                          className="text-blue-600 hover:text-blue-900 dark:text-blue-400 dark:hover:text-blue-300 p-2"
-                          title="Скачать"
+                          onClick={() => !material.isPrivate && handleDownload(material)}
+                          disabled={material.isPrivate}
+                          className={material.isPrivate ? "text-gray-400 dark:text-gray-600 p-2 cursor-not-allowed" : "text-blue-600 hover:text-blue-900 dark:text-blue-400 dark:hover:text-blue-300 p-2"}
+                          title={material.isPrivate ? "Скачивание запрещено" : "Скачать"}
                         >
                           <ArrowDownTrayIcon className="w-5 h-5" />
                         </button>
@@ -589,7 +550,7 @@ export default function MaterialsPage() {
         isOpen={isUploadModalOpen}
         onClose={() => {
           setIsUploadModalOpen(false);
-          setUploadData({ title: '', description: '', groupId: '', file: null });
+          setUploadData({ title: '', description: '', groupId: '', isPrivate: false, file: null });
           setFileInputKey(prev => prev + 1); // Сбрасываем input
         }}
         title="Загрузить материал"
@@ -671,20 +632,28 @@ export default function MaterialsPage() {
               <p className="text-xs text-gray-500 dark:text-gray-400">
                 Максимальный размер: 150 МБ. Разрешенные форматы: {ALLOWED_EXTENSIONS.join(', ')}
               </p>
-              <div className="p-3 bg-yellow-50 dark:bg-yellow-900/20 border border-yellow-200 dark:border-yellow-800 rounded-lg">
-                <p className="text-xs text-yellow-800 dark:text-yellow-200">
-                  🔒 <strong>Меры безопасности:</strong> Office документы (.doc, .docx, .xls, .xlsx) и архивы временно заблокированы
-                  для предотвращения загрузки вредоносного кода. Используйте PDF или изображения.
-                </p>
-              </div>
             </div>
+          </div>
+
+          <div className="flex items-center gap-3">
+            <input
+              type="checkbox"
+              id="isPrivate"
+              checked={uploadData.isPrivate}
+              onChange={(e) => setUploadData({ ...uploadData, isPrivate: e.target.checked })}
+              className="w-4 h-4 text-purple-600 border-gray-300 rounded focus:ring-purple-500"
+            />
+            <label htmlFor="isPrivate" className="text-sm text-gray-700 dark:text-gray-300 flex items-center gap-1">
+              <LockClosedIcon className="w-4 h-4 text-gray-400" />
+              Приватный (скачивание запрещено для студентов)
+            </label>
           </div>
 
           <div className="flex justify-end gap-3 pt-4">
             <button
               onClick={() => {
                 setIsUploadModalOpen(false);
-                setUploadData({ title: '', description: '', groupId: '', file: null });
+                setUploadData({ title: '', description: '', groupId: '', isPrivate: false, file: null });
               }}
               disabled={uploading}
               className="px-4 py-2 text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg"

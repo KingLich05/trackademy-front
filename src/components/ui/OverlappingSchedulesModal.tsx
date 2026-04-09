@@ -1,6 +1,6 @@
 import React from 'react';
 import { XMarkIcon, ClockIcon, UserGroupIcon, UserIcon, HomeIcon } from '@heroicons/react/24/outline';
-import { Schedule, formatTimeRange } from '../../types/Schedule';
+import { Schedule, formatScheduleSlots } from '../../types/Schedule';
 
 interface OverlappingSchedulesModalProps {
   isOpen: boolean;
@@ -89,7 +89,7 @@ export const OverlappingSchedulesModal: React.FC<OverlappingSchedulesModalProps>
                       <div className="flex items-center gap-2 mt-1">
                         <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-violet-100 text-violet-800 dark:bg-violet-900/50 dark:text-violet-300">
                           <ClockIcon className="w-3 h-3 mr-1" />
-                          {formatTimeRange(schedule.startTime, schedule.endTime)}
+                          {formatScheduleSlots(schedule.scheduleSlots)}
                         </span>
                       </div>
                     </div>

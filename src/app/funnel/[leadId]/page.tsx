@@ -303,8 +303,10 @@ export default function LeadDetailPage() {
       showSuccess('Лид конвертирован в студента!');
       setShowConvert(false);
       setConvertForm({ login: '', password: '', groupId: null, subjectPackageId: null, flagIds: [], comment: '' });
-    } catch { showError('Ошибка при конвертации лида'); }
-    finally { setConverting(false); }
+    } catch (err: unknown) {
+      const message = (err as { message?: string })?.message;
+      showError(message && message !== 'Failed to fetch' ? message : 'Ошибка при конвертации лида');
+    } finally { setConverting(false); }
   }
 
   // ── lose ──

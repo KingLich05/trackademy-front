@@ -76,7 +76,7 @@ export const PageHeaderWithStats: React.FC<PageHeaderWithStatsProps> = ({
               <p className="text-white/80 text-xs sm:text-sm truncate">{subtitle}</p>
             </div>
           </div>
-          <div className="flex items-center space-x-2 md:space-x-3 flex-shrink-0">
+          <div className="flex flex-wrap justify-end items-center gap-2">
             {extraActions}
             {actionLabel && onAction && (
               <button 

@@ -13,6 +13,8 @@ import {
   StudentGroupedBalancesDto,
   SubjectPaymentInfo,
   CreateBranchOwnerUserRequest,
+  BranchOwnerCreatedResponse,
+  BranchOwnerUserDto,
   BranchOwnerLinkRequest,
   BranchOwnerPagedResult,
 } from '../types/BranchOwner';
@@ -56,7 +58,7 @@ export class BranchOwnerApiService {
   ): Promise<BranchOwnerPagedResult<GroupAttendanceStatsDto>> {
     return AuthenticatedApiService.post<BranchOwnerPagedResult<GroupAttendanceStatsDto>>(
       `${BASE}/organizations/${organizationId}/attendance/stats/groups`,
-      request
+      { ...request, organizationId }
     );
   }
 
@@ -66,7 +68,7 @@ export class BranchOwnerApiService {
   ): Promise<BranchOwnerPagedResult<LessonAttendanceMonitoringDto>> {
     return AuthenticatedApiService.post<BranchOwnerPagedResult<LessonAttendanceMonitoringDto>>(
       `${BASE}/organizations/${organizationId}/attendance/monitoring/lessons`,
-      request
+      { ...request, organizationId }
     );
   }
 
@@ -83,7 +85,7 @@ export class BranchOwnerApiService {
   ): Promise<Blob> {
     return AuthenticatedApiService.postBlob(
       `${BASE}/organizations/${organizationId}/attendance/export`,
-      request
+      { ...request, organizationId }
     );
   }
 
@@ -95,7 +97,7 @@ export class BranchOwnerApiService {
   ): Promise<BranchOwnerPagedResult<StudentGroupedBalancesDto>> {
     return AuthenticatedApiService.post<BranchOwnerPagedResult<StudentGroupedBalancesDto>>(
       `${BASE}/organizations/${organizationId}/balances`,
-      request
+      { ...request, organizationId }
     );
   }
 
@@ -107,7 +109,7 @@ export class BranchOwnerApiService {
   ): Promise<BranchOwnerPagedResult<SubjectPaymentInfo>> {
     return AuthenticatedApiService.post<BranchOwnerPagedResult<SubjectPaymentInfo>>(
       `${BASE}/organizations/${organizationId}/payments-grouped`,
-      request
+      { ...request, organizationId }
     );
   }
 
@@ -136,8 +138,16 @@ export class BranchOwnerApiService {
 
   // ── Management (Owner only) ────────────────────────────────────────────────
 
-  static async createUser(data: CreateBranchOwnerUserRequest): Promise<unknown> {
-    return AuthenticatedApiService.post<unknown>(`${BASE}/create-user`, data);
+  static async getUsers(): Promise<BranchOwnerUserDto[]> {
+    return AuthenticatedApiService.get<BranchOwnerUserDto[]>(`${BASE}/users`);
+  }
+
+  static async getUserById(userId: string): Promise<BranchOwnerUserDto> {
+    return AuthenticatedApiService.get<BranchOwnerUserDto>(`${BASE}/users/${userId}`);
+  }
+
+  static async createUser(data: CreateBranchOwnerUserRequest): Promise<BranchOwnerCreatedResponse> {
+    return AuthenticatedApiService.post<BranchOwnerCreatedResponse>(`${BASE}/create-user`, data);
   }
 
   static async assignOrganization(data: BranchOwnerLinkRequest): Promise<void> {

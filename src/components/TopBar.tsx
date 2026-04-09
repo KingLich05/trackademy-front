@@ -5,7 +5,7 @@ import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import { useAuth } from '../contexts/AuthContext';
 import { getRoleName } from '../types/Role';
-import { ChevronDownIcon, UserIcon, ArrowRightOnRectangleIcon, PhoneIcon, QuestionMarkCircleIcon, CogIcon } from '@heroicons/react/24/outline';
+import { ChevronDownIcon, UserIcon, ArrowRightOnRectangleIcon, PhoneIcon, QuestionMarkCircleIcon, CogIcon, DocumentTextIcon, ShieldCheckIcon } from '@heroicons/react/24/outline';
 import ThemeToggle from './ThemeToggle';
 import { BaseModal } from './ui/BaseModal';
 
@@ -266,13 +266,13 @@ const TopBar: React.FC = () => {
               <div className="flex items-center gap-2">
                 <span className="text-sm text-gray-600 dark:text-gray-400">Телефон:</span>
                 <div className="flex items-center gap-2">
-                  <a href="tel:+77020663888" className="text-lg font-semibold text-blue-600 dark:text-blue-400 hover:text-blue-800 dark:hover:text-blue-300 transition-colors">
-                    +7 702 066 3888
+                  <a href="tel:+77474397079" className="text-lg font-semibold text-blue-600 dark:text-blue-400 hover:text-blue-800 dark:hover:text-blue-300 transition-colors">
+                    +7 747 439 7079
                   </a>
                   <button
                     onClick={async () => {
                       try {
-                        await navigator.clipboard.writeText('+77020663888');
+                        await navigator.clipboard.writeText('+77474397079');
                         setIsCopied(true);
                         // Сброс состояния через 2 секунды
                         setTimeout(() => {
@@ -295,7 +295,7 @@ const TopBar: React.FC = () => {
               </div>
               <div className="flex items-center gap-2">
                 <span className="text-sm text-gray-600 dark:text-gray-400">WhatsApp:</span>
-                <a href="https://wa.me/77020663888" target="_blank" rel="noopener noreferrer" className="text-sm text-green-600 dark:text-green-400 hover:text-green-800 dark:hover:text-green-300 transition-colors">
+                <a href="https://wa.me/77474397079" target="_blank" rel="noopener noreferrer" className="text-sm text-green-600 dark:text-green-400 hover:text-green-800 dark:hover:text-green-300 transition-colors">
                   Написать в WhatsApp
                 </a>
               </div>
@@ -318,6 +318,31 @@ const TopBar: React.FC = () => {
                 <span className="text-blue-600 dark:text-blue-400 font-bold">•</span>
                 <span>Проверьте интернет-соединение при ошибках API</span>
               </div>
+            </div>
+          </div>
+
+          {/* Документы */}
+          <div className="border-t border-gray-200 dark:border-gray-700 pt-4">
+            <h3 className="text-sm font-semibold text-gray-900 dark:text-white mb-3">Документы</h3>
+            <div className="flex flex-col gap-2">
+              <a
+                href="/documents/public-offer"
+                target="_blank"
+                rel="noopener noreferrer"
+                className="flex items-center gap-2 text-sm text-blue-600 dark:text-blue-400 hover:text-blue-800 dark:hover:text-blue-300 transition-colors"
+              >
+                <DocumentTextIcon className="w-4 h-4 flex-shrink-0" />
+                Публичная оферта
+              </a>
+              <a
+                href="/documents/privacy-policy"
+                target="_blank"
+                rel="noopener noreferrer"
+                className="flex items-center gap-2 text-sm text-blue-600 dark:text-blue-400 hover:text-blue-800 dark:hover:text-blue-300 transition-colors"
+              >
+                <ShieldCheckIcon className="w-4 h-4 flex-shrink-0" />
+                Политика конфиденциальности
+              </a>
             </div>
           </div>
         </div>

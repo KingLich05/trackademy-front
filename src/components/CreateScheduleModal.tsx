@@ -2,7 +2,6 @@
 
 import React, { useState, useEffect } from 'react';
 import { XMarkIcon, CalendarDaysIcon } from '@heroicons/react/24/outline';
-import { ScheduleFormData } from '../types/Schedule';
 import { Group } from '../types/Group';
 import { Subject } from '../types/Subject';
 import { User } from '../types/User';
@@ -10,10 +9,23 @@ import { Room } from '../types/Room';
 import { AuthenticatedApiService } from '../services/AuthenticatedApiService';
 import { MultiSelect } from './ui/MultiSelect';
 
+// Legacy flat form data shape (this component is not currently in use)
+interface LegacyScheduleFormData {
+  daysOfWeek: number[];
+  startTime: string | null;
+  endTime: string | null;
+  effectiveFrom: string | null;
+  effectiveTo?: string | null;
+  groupId: string | null;
+  teacherId: string | null;
+  roomId: string | null;
+  organizationId: string;
+}
+
 interface CreateScheduleModalProps {
   isOpen: boolean;
   onClose: () => void;
-  onSave: (formData: ScheduleFormData) => Promise<void>;
+  onSave: (formData: LegacyScheduleFormData) => Promise<void>;
   organizationId: string;
 }
 
@@ -23,7 +35,7 @@ const CreateScheduleModal: React.FC<CreateScheduleModalProps> = ({
   onSave,
   organizationId
 }) => {
-  const [formData, setFormData] = useState<ScheduleFormData>({
+  const [formData, setFormData] = useState<LegacyScheduleFormData>({
     daysOfWeek: [],
     startTime: null,
     endTime: null,
@@ -174,7 +186,7 @@ const CreateScheduleModal: React.FC<CreateScheduleModalProps> = ({
     }
   };
 
-  const handleInputChange = (field: keyof ScheduleFormData, value: string | string[]) => {
+  const handleInputChange = (field: keyof LegacyScheduleFormData, value: string | string[]) => {
     // Convert empty strings to null for nullable fields
     const processedValue = typeof value === 'string' && value === '' ? null : value;
     

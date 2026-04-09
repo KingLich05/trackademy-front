@@ -169,7 +169,9 @@ export default function RegisterPage({ params }: { params: Promise<{ code: strin
             {context.lessonDate && (
               <InfoRow
                 label="Дата"
-                value={new Date(context.lessonDate).toLocaleDateString('ru-RU', {
+                value={new Date(
+                  context.lessonDate.includes('T') ? context.lessonDate : context.lessonDate + 'T00:00:00'
+                ).toLocaleDateString('ru-RU', {
                   weekday: 'long',
                   day: 'numeric',
                   month: 'long',

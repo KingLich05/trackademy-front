@@ -66,7 +66,7 @@ export const AddBalanceModal: React.FC<AddBalanceModalProps> = ({
       ];
       const monthName = monthNames[currentDate.getMonth()];
       const year = currentDate.getFullYear();
-      const description = `пополнение за ${monthName} ${year}`;
+      const description = `Пополнение за ${monthName} ${year}`;
       
       onConfirm(parseFloat(amount), description);
       handleClose();

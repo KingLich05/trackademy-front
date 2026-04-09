@@ -1,8 +1,13 @@
+export interface ScheduleSlot {
+  id: string;
+  weekDay: number; // 1=Пн ... 7=Вс
+  startTime: string; // "HH:mm:ss"
+  endTime: string;   // "HH:mm:ss"
+}
+
 export interface Schedule {
   id: string;
-  daysOfWeek: number[];
-  startTime: string; // "09:00:00" format
-  endTime: string;   // "10:30:00" format
+  scheduleSlots: ScheduleSlot[];
   effectiveFrom: string; // "2025-10-18" format
   effectiveTo: string | null; // null means indefinite
   subject: {
@@ -16,6 +21,7 @@ export interface Schedule {
   teacher: {
     id: string;
     name: string;
+    hasPhoto?: boolean;
   };
   room: {
     id: string;
@@ -23,31 +29,36 @@ export interface Schedule {
   };
 }
 
+export interface ScheduleSlotInput {
+  weekDay: number;
+  startTime: string; // "HH:mm:ss"
+  endTime: string;   // "HH:mm:ss"
+}
+
 export interface ScheduleFormData {
-  daysOfWeek: number[];
-  startTime: string | null; // "09:00:00" format or null
-  endTime: string | null;   // "10:00:00" format or null
-  effectiveFrom: string | null; // "2025-10-27" format or null
-  effectiveTo?: string | null; // Optional or null
+  scheduleSlots: ScheduleSlotInput[];
+  effectiveFrom: string | null;
+  effectiveTo?: string | null;
   groupId: string | null;
   teacherId: string | null;
   roomId: string | null;
   organizationId: string;
 }
 
+export interface ScheduleSlotUpdate {
+  id: string; // existing slot GUID or "00000000-0000-0000-0000-000000000000" for new
+  weekDay: number;
+  startTime: string;
+  endTime: string;
+}
+
 export interface ScheduleUpdateData {
-  daysOfWeek: number[];
-  startTime: {
-    ticks: number;
-  };
-  endTime: {
-    ticks: number;
-  };
-  effectiveFrom: string;
-  effectiveTo?: string;
-  groupId: string;
-  teacherId: string;
-  roomId: string;
+  scheduleSlots: ScheduleSlotUpdate[];
+  effectiveFrom: string | null;
+  effectiveTo?: string | null;
+  groupId: string | null;
+  teacherId: string | null;
+  roomId: string | null;
 }
 
 export interface SchedulesResponse {
@@ -114,8 +125,28 @@ export const formatTime = (timeString: string): string => {
 };
 
 export const formatTimeRange = (startTime: string, endTime: string): string => {
-  return `${formatTime(startTime)} - ${formatTime(endTime)}`;
+  return `${formatTime(startTime)} – ${formatTime(endTime)}`;
 };
+
+// Get unique sorted week days from slots
+export const getSlotDays = (slots: ScheduleSlot[]): number[] => {
+  return [...new Set(slots.map(s => s.weekDay))].sort((a, b) => a - b);
+};
+
+// Format slots for compact display: "Пн, Ср 10:00–11:00" or "Пн 10:00 • Ср 14:00"
+export const formatScheduleSlots = (slots: ScheduleSlot[]): string => {
+  if (!slots || slots.length === 0) return '—';
+  const firstKey = `${slots[0].startTime}|${slots[0].endTime}`;
+  const allSameTime = slots.every(s => `${s.startTime}|${s.endTime}` === firstKey);
+  if (allSameTime) {
+    const days = slots.map(s => getDayShortName(s.weekDay)).join(', ');
+    return `${days} ${formatTime(slots[0].startTime)}–${formatTime(slots[0].endTime)}`;
+  }
+  return slots
+    .map(s => `${getDayShortName(s.weekDay)} ${formatTime(s.startTime)}–${formatTime(s.endTime)}`)
+    .join(' • ');
+};
+
 
 export const formatEffectivePeriod = (effectiveFrom: string, effectiveTo: string | null): string => {
   const fromDate = new Date(effectiveFrom).toLocaleDateString('ru-RU');

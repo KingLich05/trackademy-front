@@ -7,6 +7,7 @@ export interface LibraryMaterial {
   fileSize: number;
   uploadedById: string;
   uploadedByName: string;
+  isPrivate: boolean;
   createdAt: string;
   updatedAt: string;
 }

@@ -216,11 +216,27 @@ export interface SubjectPaymentInfo {
 
 // ─── Management (Owner only) ──────────────────────────────────────────────────
 
+export interface BranchOwnerUserDto {
+  id: string;
+  fullName: string;
+  login: string;
+  phone: string;
+  createdDate: string;
+  organizations: BranchOwnerOrganizationDto[];
+}
+
 export interface CreateBranchOwnerUserRequest {
   login: string;
   fullName: string;
-  password: string;
   phone: string;
+  organizationId: string;
+}
+
+export interface BranchOwnerCreatedResponse {
+  id: string;
+  fullName: string;
+  login: string;
+  generatedPassword: string;
   organizationId: string;
 }
 

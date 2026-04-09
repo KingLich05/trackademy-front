@@ -6,10 +6,9 @@ import {
   ChevronLeftIcon,
   ChevronRightIcon,
   CalendarDaysIcon,
-  CheckCircleIcon,
 } from '@heroicons/react/24/outline';
 import { AuthenticatedApiService } from '../services/AuthenticatedApiService';
-import { DaysOfWeekSelector } from './ui/DaysOfWeekSelector';
+
 import { TimeInput } from './ui/TimeInput';
 import { Group } from '../types/Group';
 import { User } from '../types/User';
@@ -193,9 +192,7 @@ function TimeHoverBadge({ clientX, clientY, min }: { clientX: number; clientY: n
 interface DayColumnProps {
   dayNumber: number;
   dayAvail: DayAvailability;
-  selectedStart: string;
-  selectedEnd: string;
-  isSelectedDay: boolean;
+  slot: { startTime: string; endTime: string } | null;
   drag: DragState | null;
   containerRef: (el: HTMLDivElement | null) => void;
   onMouseDown: (e: React.MouseEvent<HTMLDivElement>) => void;
@@ -208,9 +205,7 @@ interface DayColumnProps {
 function DayColumn({
   dayNumber,
   dayAvail,
-  selectedStart,
-  selectedEnd,
-  isSelectedDay,
+  slot,
   drag,
   containerRef,
   onMouseDown,
@@ -219,8 +214,8 @@ function DayColumn({
   onHover,
   onHoverEnd,
 }: DayColumnProps) {
-  const selStart = selectedStart && selectedEnd ? timeToMinutes(selectedStart) : null;
-  const selEnd   = selectedStart && selectedEnd ? timeToMinutes(selectedEnd)   : null;
+  const selStart = slot ? timeToMinutes(slot.startTime) : null;
+  const selEnd   = slot ? timeToMinutes(slot.endTime)   : null;
 
   const isDragCol    = drag?.day === dayNumber;
   const dragTopMin   = isDragCol ? Math.min(drag.anchorMin, drag.curMin) : null;
@@ -314,7 +309,7 @@ function DayColumn({
       )}
 
       {/* Committed selection */}
-      {isSelectedDay && selStart !== null && selEnd !== null && !isDragCol && (
+      {slot !== null && selStart !== null && selEnd !== null && !isDragCol && (
         <div
           className="absolute inset-x-0.5 rounded pointer-events-none
                      bg-violet-200/80 dark:bg-violet-700/50
@@ -361,9 +356,7 @@ export default function CreateScheduleDrawer({
   const [mode, setMode] = useState<'group' | 'individual'>('group');
 
   // Form state
-  const [daysOfWeek, setDaysOfWeek]       = useState<number[]>([]);
-  const [startTime, setStartTime]         = useState('');
-  const [endTime, setEndTime]             = useState('');
+  const [slots, setSlots] = useState<{ day: number; startTime: string; endTime: string }[]>([]);
   const [effectiveFrom, setEffectiveFrom] = useState('');
   const [effectiveTo, setEffectiveTo]     = useState('');
   const [groupId, setGroupId]             = useState('');
@@ -431,9 +424,7 @@ export default function CreateScheduleDrawer({
   useEffect(() => {
     if (isOpen) {
       setMode('group');
-      setDaysOfWeek([]);
-      setStartTime('');
-      setEndTime('');
+      setSlots([]);
       setEffectiveFrom('');
       setEffectiveTo('');
       setGroupId('');
@@ -473,9 +464,12 @@ export default function CreateScheduleDrawer({
       // Short tap → default 1h slot
       const finalE = rawE - rawS < MIN_DURATION_MIN ? rawS + 60 : rawE;
 
-      setStartTime(minutesToHHMM(rawS));
-      setEndTime(minutesToHHMM(Math.min(finalE, CALENDAR_END_H * 60)));
-      setDaysOfWeek(prev => prev.includes(drag.day) ? prev : [...prev, drag.day]);
+      const newStart = minutesToHHMM(rawS);
+      const newEnd = minutesToHHMM(Math.min(finalE, CALENDAR_END_H * 60));
+      setSlots(prev => {
+        const filtered = prev.filter(s => s.day !== drag.day);
+        return [...filtered, { day: drag.day, startTime: newStart, endTime: newEnd }];
+      });
       setDrag(null);
     };
 
@@ -518,10 +512,17 @@ export default function CreateScheduleDrawer({
 
   const validate = (): boolean => {
     const errs: Record<string, string> = {};
-    if (daysOfWeek.length === 0)                              errs.daysOfWeek    = 'Выберите хотя бы один день';
-    if (!startTime)                                           errs.startTime     = 'Укажите время начала';
-    if (!endTime)                                             errs.endTime       = 'Укажите время окончания';
-    if (startTime && endTime && startTime >= endTime)         errs.endTime       = 'Время окончания должно быть позже начала';
+    if (slots.length === 0) errs.slots = 'Выберите хотя бы один день в календаре';
+    for (const s of slots) {
+      if (s.startTime && s.endTime && s.startTime >= s.endTime) {
+        errs.slots = 'Время начала должно быть раньше времени окончания';
+        break;
+      }
+      if (!s.startTime || !s.endTime) {
+        errs.slots = 'Укажите время для каждого дня';
+        break;
+      }
+    }
     if (!effectiveFrom)                                       errs.effectiveFrom = 'Укажите дату начала';
     if (effectiveFrom && effectiveTo && effectiveTo < effectiveFrom)
                                                               errs.effectiveTo   = 'Дата окончания не может быть раньше даты начала';
@@ -542,8 +543,13 @@ export default function CreateScheduleDrawer({
     if (!validate()) return;
     setIsSaving(true);
     try {
+      const scheduleSlots = slots.map(s => ({
+        weekDay: s.day,
+        startTime: s.startTime,
+        endTime: s.endTime,
+      }));
       const baseData: Record<string, unknown> = {
-        mode, daysOfWeek: daysOfWeek.join(','), startTime, endTime,
+        mode, scheduleSlots,
         effectiveFrom, effectiveTo, teacherId, roomId, organizationId,
       };
       if (mode === 'group') {
@@ -667,7 +673,7 @@ export default function CreateScheduleDrawer({
                       <div
                         className={`sticky top-0 z-10 text-center py-2 text-xs font-semibold
                           border-l border-gray-200 dark:border-gray-700/50 bg-white dark:bg-gray-900
-                          ${daysOfWeek.includes(dayNum)
+                          ${slots.some(s => s.day === dayNum)
                             ? 'text-violet-600 dark:text-violet-400 bg-violet-50 dark:bg-violet-900/20'
                             : 'text-gray-500 dark:text-gray-400'}`}
                       >
@@ -677,9 +683,7 @@ export default function CreateScheduleDrawer({
                       <DayColumn
                         dayNumber={dayNum}
                         dayAvail={dayAvail}
-                        selectedStart={startTime}
-                        selectedEnd={endTime}
-                        isSelectedDay={daysOfWeek.includes(dayNum)}
+                        slot={slots.find(s => s.day === dayNum) ?? null}
                         drag={drag}
                         containerRef={(el) => { colRefs.current[idx] = el; }}
                         onMouseDown={makeColumnMouseDown(idx, dayNum)}
@@ -874,28 +878,43 @@ export default function CreateScheduleDrawer({
 
             <div className="border-t border-gray-200 dark:border-gray-700" />
 
-            {/* Days of week */}
+            {/* Per-day slots */}
             <div>
               <label className="block text-xs font-semibold text-gray-600 dark:text-gray-400 uppercase tracking-wide mb-1.5">
-                Дни недели <span className="text-red-500">*</span>
+                Дни и время <span className="text-red-500">*</span>
               </label>
-              <DaysOfWeekSelector value={daysOfWeek} onChange={setDaysOfWeek} error={errors.daysOfWeek} />
-            </div>
-
-            {/* Times */}
-            <div className="grid grid-cols-2 gap-3">
-              <div>
-                <label className="block text-xs font-semibold text-gray-600 dark:text-gray-400 uppercase tracking-wide mb-1.5">
-                  Начало <span className="text-red-500">*</span>
-                </label>
-                <TimeInput value={startTime} onChange={v => setStartTime(v || '')} placeholder="ЧЧ:ММ" required error={errors.startTime} />
-              </div>
-              <div>
-                <label className="block text-xs font-semibold text-gray-600 dark:text-gray-400 uppercase tracking-wide mb-1.5">
-                  Конец <span className="text-red-500">*</span>
-                </label>
-                <TimeInput value={endTime} onChange={v => setEndTime(v || '')} placeholder="ЧЧ:ММ" required error={errors.endTime} />
-              </div>
+              {slots.length === 0 ? (
+                <p className="text-xs text-gray-400 dark:text-gray-500 italic py-1">Перетащите мышью по дню в календаре слева</p>
+              ) : (
+                <div className="space-y-2">
+                  {[...slots].sort((a, b) => a.day - b.day).map(s => (
+                    <div key={s.day} className="flex items-center gap-1.5 bg-violet-50 dark:bg-violet-900/20 border border-violet-200 dark:border-violet-800 rounded-lg px-2.5 py-1.5">
+                      <span className="text-xs font-semibold text-violet-700 dark:text-violet-300 w-5 shrink-0">{DAYS_SHORT[s.day - 1]}</span>
+                      <TimeInput
+                        value={s.startTime}
+                        onChange={v => setSlots(prev => prev.map(x => x.day === s.day ? { ...x, startTime: v || '' } : x))}
+                        placeholder="ЧЧ:ММ"
+                        required
+                      />
+                      <span className="text-gray-400 text-xs shrink-0">—</span>
+                      <TimeInput
+                        value={s.endTime}
+                        onChange={v => setSlots(prev => prev.map(x => x.day === s.day ? { ...x, endTime: v || '' } : x))}
+                        placeholder="ЧЧ:ММ"
+                        required
+                      />
+                      <button
+                        type="button"
+                        onClick={() => setSlots(prev => prev.filter(x => x.day !== s.day))}
+                        className="ml-auto p-1 rounded hover:bg-red-100 dark:hover:bg-red-900/30 text-gray-400 hover:text-red-500 transition-colors shrink-0"
+                      >
+                        <XMarkIcon className="w-3.5 h-3.5" />
+                      </button>
+                    </div>
+                  ))}
+                </div>
+              )}
+              {errors.slots && <p className="mt-1 text-xs text-red-500">{errors.slots}</p>}
             </div>
 
             {/* Effective dates */}
@@ -931,19 +950,7 @@ export default function CreateScheduleDrawer({
               </div>
             </div>
 
-            {/* Summary chip */}
-            {startTime && endTime && daysOfWeek.length > 0 && (
-              <div className="rounded-xl bg-violet-50 dark:bg-violet-900/20 border border-violet-200 dark:border-violet-700/50 p-3">
-                <div className="flex items-center gap-2 text-sm text-violet-700 dark:text-violet-300">
-                  <CheckCircleIcon className="w-4 h-4 shrink-0" />
-                  <span className="font-medium">
-                    {startTime} – {endTime}
-                    {' · '}
-                    {daysOfWeek.sort((a, b) => a - b).map(d => DAYS_SHORT[d - 1]).join(', ')}
-                  </span>
-                </div>
-              </div>
-            )}
+
           </div>
 
           {/* Footer */}

@@ -4,7 +4,7 @@ import { useState, useEffect, useCallback } from 'react';
 import { useAuth } from '../../contexts/AuthContext';
 import { useToast } from '../../contexts/ToastContext';
 import { AuthenticatedApiService } from '../../services/AuthenticatedApiService';
-import { BookOpenIcon, ArrowDownTrayIcon, PencilIcon, TrashIcon, EyeIcon } from '@heroicons/react/24/outline';
+import { BookOpenIcon, ArrowDownTrayIcon, PencilIcon, TrashIcon, EyeIcon, LockClosedIcon } from '@heroicons/react/24/outline';
 import { LibraryMaterial } from '../../types/LibraryMaterial';
 import { PageHeaderWithStats } from '../../components/ui/PageHeaderWithStats';
 import { DeleteConfirmationModal } from '../../components/ui/DeleteConfirmationModal';
@@ -42,7 +42,7 @@ export default function LibraryPage() {
   const [isPreviewModalOpen, setIsPreviewModalOpen] = useState(false);
   const [previewMaterial, setPreviewMaterial] = useState<LibraryMaterial | null>(null);
 
-  const [uploadData, setUploadData] = useState({ title: '', description: '', file: null as File | null });
+  const [uploadData, setUploadData] = useState({ title: '', description: '', isPrivate: false, file: null as File | null });
   const [editData, setEditData] = useState({ title: '', description: '' });
   const [uploading, setUploading] = useState(false);
   const [deleting, setDeleting] = useState(false);
@@ -115,11 +115,12 @@ export default function LibraryPage() {
       if (uploadData.description.trim()) {
         formData.append('description', uploadData.description.trim());
       }
+      formData.append('isPrivate', uploadData.isPrivate.toString());
       formData.append('file', uploadData.file);
       await AuthenticatedApiService.uploadLibraryMaterial(formData);
       showSuccess('Материал успешно загружен');
       setIsUploadModalOpen(false);
-      setUploadData({ title: '', description: '', file: null });
+      setUploadData({ title: '', description: '', isPrivate: false, file: null });
       setFileInputKey(prev => prev + 1);
       loadMaterials();
     } catch {
@@ -276,8 +277,9 @@ export default function LibraryPage() {
                         </div>
                       </td>
                       <td className="px-3 py-3">
-                        <div className="text-sm font-medium text-gray-900 dark:text-white">
+                        <div className="text-sm font-medium text-gray-900 dark:text-white flex items-center gap-1">
                           {material.title}
+                          {material.isPrivate && <LockClosedIcon className="w-3.5 h-3.5 text-gray-400 flex-shrink-0" title="Приватный" />}
                         </div>
                         {material.description && (
                           <div className="text-xs text-gray-500 dark:text-gray-400 mt-0.5 truncate max-w-xs">
@@ -312,9 +314,10 @@ export default function LibraryPage() {
                             <EyeIcon className="h-4 w-4" />
                           </button>
                           <button
-                            onClick={() => handleDownload(material)}
-                            className="p-2 text-blue-600 hover:text-blue-800 dark:text-blue-400 dark:hover:text-blue-300 hover:bg-blue-50 dark:hover:bg-blue-900/20 rounded-lg transition-all"
-                            title="Скачать"
+                            onClick={() => !material.isPrivate && handleDownload(material)}
+                            disabled={material.isPrivate}
+                            className={material.isPrivate ? "p-2 text-gray-400 dark:text-gray-600 rounded-lg cursor-not-allowed" : "p-2 text-blue-600 hover:text-blue-800 dark:text-blue-400 dark:hover:text-blue-300 hover:bg-blue-50 dark:hover:bg-blue-900/20 rounded-lg transition-all"}
+                            title={material.isPrivate ? "Скачивание запрещено" : "Скачать"}
                           >
                             <ArrowDownTrayIcon className="h-4 w-4" />
                           </button>
@@ -377,7 +380,7 @@ export default function LibraryPage() {
         isOpen={isUploadModalOpen}
         onClose={() => {
           setIsUploadModalOpen(false);
-          setUploadData({ title: '', description: '', file: null });
+          setUploadData({ title: '', description: '', isPrivate: false, file: null });
           setFileInputKey(prev => prev + 1);
         }}
         title="Загрузить материал в библиотеку"
@@ -424,9 +427,22 @@ export default function LibraryPage() {
             />
             <p className="mt-1 text-xs text-gray-400">Макс. 150 МБ · {ALLOWED_EXTENSIONS.join(', ')}</p>
           </div>
+          <div className="flex items-center gap-3">
+            <input
+              type="checkbox"
+              id="libIsPrivate"
+              checked={uploadData.isPrivate}
+              onChange={(e) => setUploadData({ ...uploadData, isPrivate: e.target.checked })}
+              className="w-4 h-4 text-blue-600 border-gray-300 rounded focus:ring-blue-500"
+            />
+            <label htmlFor="libIsPrivate" className="text-sm text-gray-700 dark:text-gray-300 flex items-center gap-1">
+              <LockClosedIcon className="w-4 h-4 text-gray-400" />
+              Приватный (скачивание запрещено для студентов)
+            </label>
+          </div>
           <div className="flex justify-end gap-3 pt-2">
             <button
-              onClick={() => { setIsUploadModalOpen(false); setUploadData({ title: '', description: '', file: null }); setFileInputKey(prev => prev + 1); }}
+              onClick={() => { setIsUploadModalOpen(false); setUploadData({ title: '', description: '', isPrivate: false, file: null }); setFileInputKey(prev => prev + 1); }}
               disabled={uploading}
               className="px-4 py-2 text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg disabled:opacity-50"
             >

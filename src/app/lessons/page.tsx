@@ -665,14 +665,14 @@ export default function LessonsPage() {
               )}
             </div>
             
-            <div className="flex items-center justify-between">
-              <div className="bg-white/70 dark:bg-gray-700/70 backdrop-blur-sm rounded-lg px-4 py-2 border border-gray-200/50 dark:border-gray-600/50 shadow-lg">
-                <div className="text-lg font-semibold text-gray-900 dark:text-white">
+            <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
+              <div className="flex items-center gap-2">
+                <span className="text-sm font-semibold text-gray-900 dark:text-white whitespace-nowrap">
                   {getCurrentDateText()}
-                </div>
-                <div className="text-xs text-gray-500 dark:text-gray-400 text-center">
+                </span>
+                <span className="text-xs text-gray-400 dark:text-gray-500 whitespace-nowrap">
                   {getViewTitle()}
-                </div>
+                </span>
               </div>
 
               <div className="flex items-center gap-3">

@@ -9,11 +9,13 @@ import { useColumnVisibility, ColumnVisibilityControl } from '../../components/u
 import { API_BASE_URL } from '../../lib/api-config';
 import { 
   Schedule, 
-  ScheduleFormData, 
   SchedulesResponse, 
   ScheduleFilters,
-  formatTimeRange,
-  generateSubjectColor
+  formatScheduleSlots,
+  getSlotDays,
+  generateSubjectColor,
+  getDayShortName,
+  formatTime
 } from '../../types/Schedule';
 import { canManageUsers } from '../../types/Role';
 import { Group } from '../../types/Group';
@@ -67,6 +69,7 @@ export default function SchedulesPage() {
 
   // Универсальная система модалов для расписаний
   const scheduleModal = useUniversalModal('schedule', {
+    scheduleId: '',
     daysOfWeek: '', // Handle as string for form input
     startTime: '',
     endTime: '',
@@ -470,10 +473,12 @@ export default function SchedulesPage() {
   const handleEditUniversal = (id: string) => {
     const schedule = schedules.find(s => s.id === id);
     if (schedule) {
+      const firstSlot = schedule.scheduleSlots[0];
       scheduleModal.openEditModal({
-        daysOfWeek: schedule.daysOfWeek.join(','), // Convert array to string for form
-        startTime: formatTimeForDisplay(schedule.startTime),
-        endTime: formatTimeForDisplay(schedule.endTime),
+        scheduleId: schedule.id,
+        daysOfWeek: schedule.scheduleSlots.map(s => s.weekDay).join(','),
+        startTime: firstSlot ? formatTimeForDisplay(firstSlot.startTime) : '',
+        endTime: firstSlot ? formatTimeForDisplay(firstSlot.endTime) : '',
         effectiveFrom: schedule.effectiveFrom,
         effectiveTo: schedule.effectiveTo || '',
         groupId: schedule.group.id,
@@ -500,20 +505,30 @@ export default function SchedulesPage() {
 
   // Handlers for Universal Modal save operations
   const handleSaveCreate = async (formData: Record<string, unknown>) => {
-    if (formData.mode === 'individual') {
-      // Individual schedule
-      const daysOfWeekStr = formData.daysOfWeek as string;
-      const daysOfWeekArray = daysOfWeekStr ?
-        daysOfWeekStr.split(',').map(day => parseInt(day.trim())).filter(day => !isNaN(day)) : [];
+    const directSlots = formData.scheduleSlots as { weekDay: number; startTime: string; endTime: string }[] | undefined;
 
+    if (formData.mode === 'individual') {
+      let scheduleSlots: { weekDay: number; startTime: string; endTime: string }[];
+      if (directSlots) {
+        scheduleSlots = directSlots.map(s => ({
+          weekDay: s.weekDay,
+          startTime: formatTimeWithSeconds(s.startTime) || '',
+          endTime: formatTimeWithSeconds(s.endTime) || '',
+        }));
+      } else {
+        const daysOfWeekStr = formData.daysOfWeek as string;
+        const daysOfWeekArray = daysOfWeekStr ?
+          daysOfWeekStr.split(',').map(day => parseInt(day.trim())).filter(day => !isNaN(day)) : [];
+        const slotStartTime = formatTimeWithSeconds(formData.startTime && (formData.startTime as string).trim() !== '' ? formData.startTime as string : null) || '';
+        const slotEndTime = formatTimeWithSeconds(formData.endTime && (formData.endTime as string).trim() !== '' ? formData.endTime as string : null) || '';
+        scheduleSlots = daysOfWeekArray.map(day => ({ weekDay: day, startTime: slotStartTime, endTime: slotEndTime }));
+      }
       const individualData = {
         studentId: formData.studentId as string,
         subjectPackageId: formData.subjectPackageId as string,
         subjectId: formData.subjectId as string,
         ...(formData.groupName ? { groupName: formData.groupName as string } : {}),
-        daysOfWeek: daysOfWeekArray,
-        startTime: formatTimeWithSeconds(formData.startTime && (formData.startTime as string).trim() !== '' ? formData.startTime as string : null),
-        endTime: formatTimeWithSeconds(formData.endTime && (formData.endTime as string).trim() !== '' ? formData.endTime as string : null),
+        scheduleSlots,
         effectiveFrom: formData.effectiveFrom && (formData.effectiveFrom as string).trim() !== '' ? formData.effectiveFrom as string : null,
         effectiveTo: formData.effectiveTo && (formData.effectiveTo as string).trim() !== '' ? formData.effectiveTo as string : null,
         teacherId: formData.teacherId && (formData.teacherId as string).trim() !== '' ? formData.teacherId as string : null,
@@ -533,14 +548,23 @@ export default function SchedulesPage() {
       return;
     }
 
-    const daysOfWeekStr = formData.daysOfWeek as string;
-    const daysOfWeekArray = daysOfWeekStr ? 
-      daysOfWeekStr.split(',').map(day => parseInt(day.trim())).filter(day => !isNaN(day)) : [];
-    
-    const scheduleData: ScheduleFormData = {
-      daysOfWeek: daysOfWeekArray,
-      startTime: formatTimeWithSeconds(formData.startTime && (formData.startTime as string).trim() !== '' ? formData.startTime as string : null),
-      endTime: formatTimeWithSeconds(formData.endTime && (formData.endTime as string).trim() !== '' ? formData.endTime as string : null),
+    let scheduleSlots: { weekDay: number; startTime: string; endTime: string }[];
+    if (directSlots) {
+      scheduleSlots = directSlots.map(s => ({
+        weekDay: s.weekDay,
+        startTime: formatTimeWithSeconds(s.startTime) || '',
+        endTime: formatTimeWithSeconds(s.endTime) || '',
+      }));
+    } else {
+      const daysOfWeekStr = formData.daysOfWeek as string;
+      const daysOfWeekArray = daysOfWeekStr ?
+        daysOfWeekStr.split(',').map(day => parseInt(day.trim())).filter(day => !isNaN(day)) : [];
+      const createStartTime = formatTimeWithSeconds(formData.startTime && (formData.startTime as string).trim() !== '' ? formData.startTime as string : null) || '';
+      const createEndTime = formatTimeWithSeconds(formData.endTime && (formData.endTime as string).trim() !== '' ? formData.endTime as string : null) || '';
+      scheduleSlots = daysOfWeekArray.map(day => ({ weekDay: day, startTime: createStartTime, endTime: createEndTime }));
+    }
+    const scheduleData = {
+      scheduleSlots,
       effectiveFrom: formData.effectiveFrom && (formData.effectiveFrom as string).trim() !== '' ? formData.effectiveFrom as string : null,
       effectiveTo: formData.effectiveTo && (formData.effectiveTo as string).trim() !== '' ? formData.effectiveTo as string : null,
       groupId: formData.groupId && (formData.groupId as string).trim() !== '' ? formData.groupId as string : null,
@@ -570,47 +594,49 @@ export default function SchedulesPage() {
 
   const handleSaveEdit = async (formData: Record<string, unknown>) => {
     const daysOfWeekStr = formData.daysOfWeek as string;
-    const daysOfWeekArray = daysOfWeekStr ? 
+    const daysOfWeekArray = daysOfWeekStr ?
       daysOfWeekStr.split(',').map(day => parseInt(day.trim())).filter(day => !isNaN(day)) : [];
-    
+
+    const editStartTime = formatTimeWithSeconds(formData.startTime && (formData.startTime as string).trim() !== '' ? formData.startTime as string : null) || '';
+    const editEndTime = formatTimeWithSeconds(formData.endTime && (formData.endTime as string).trim() !== '' ? formData.endTime as string : null) || '';
+
+    // Find the schedule by stored ID (preferred) or by matching fields
+    const scheduleId = formData.scheduleId as string | undefined;
+    const scheduleToEdit = scheduleId
+      ? schedules.find(s => s.id === scheduleId)
+      : schedules.find(s =>
+          s.group.id === (formData.groupId as string) &&
+          s.teacher.id === (formData.teacherId as string) &&
+          s.room.id === (formData.roomId as string)
+        );
+
+    if (!scheduleToEdit) return;
+
     const updateData = {
-      daysOfWeek: daysOfWeekArray,
-      startTime: formatTimeWithSeconds(formData.startTime && (formData.startTime as string).trim() !== '' ? formData.startTime as string : null),
-      endTime: formatTimeWithSeconds(formData.endTime && (formData.endTime as string).trim() !== '' ? formData.endTime as string : null),
+      scheduleSlots: daysOfWeekArray.map(day => {
+        const existing = scheduleToEdit.scheduleSlots.find(s => s.weekDay === day);
+        return {
+          id: existing?.id ?? '00000000-0000-0000-0000-000000000000',
+          weekDay: day,
+          startTime: editStartTime,
+          endTime: editEndTime,
+        };
+      }),
       effectiveFrom: formData.effectiveFrom && (formData.effectiveFrom as string).trim() !== '' ? formData.effectiveFrom as string : null,
       effectiveTo: formData.effectiveTo && (formData.effectiveTo as string).trim() !== '' ? formData.effectiveTo as string : null,
       groupId: formData.groupId && (formData.groupId as string).trim() !== '' ? formData.groupId as string : null,
       teacherId: formData.teacherId && (formData.teacherId as string).trim() !== '' ? formData.teacherId as string : null,
-      roomId: formData.roomId && (formData.roomId as string).trim() !== '' ? formData.roomId as string : null
+      roomId: formData.roomId && (formData.roomId as string).trim() !== '' ? formData.roomId as string : null,
     };
-    
-    if (scheduleModal.editData) {
-      // Find the schedule to get its ID
-      const scheduleToEdit = schedules.find(s => 
-        s.group.id === scheduleModal.editData?.groupId &&
-        s.teacher.id === scheduleModal.editData?.teacherId &&
-        s.room.id === scheduleModal.editData?.roomId
-      );
-      
-      if (scheduleToEdit) {
-        try {
-          // Вызываем API напрямую для обработки ошибок
-          await AuthenticatedApiService.put(`/Schedule/update-schedule/${scheduleToEdit.id}`, updateData);
-          
-          // Если успех - показываем уведомление
-          await updateOperation(() => Promise.resolve(), 'расписание');
-          
-          // Перезагружаем данные и закрываем модалку
-          await loadSchedules(currentPage, true);
-          scheduleModal.closeModal();
-        } catch (error) {
-          // При ошибке показываем toast уведомление
-          await updateOperation(() => Promise.reject(error), 'расписание');
-          
-          // И пробрасываем ошибку для отображения в красном баннере модалки
-          throw error;
-        }
-      }
+
+    try {
+      await AuthenticatedApiService.put(`/Schedule/update-schedule/${scheduleToEdit.id}`, updateData);
+      await updateOperation(() => Promise.resolve(), 'расписание');
+      await loadSchedules(currentPage, true);
+      scheduleModal.closeModal();
+    } catch (error) {
+      await updateOperation(() => Promise.reject(error), 'расписание');
+      throw error;
     }
   };
 
@@ -838,33 +864,40 @@ export default function SchedulesPage() {
           actionLabel="Создать шаблон"
           onAction={handleCreate}
           extraActions={
-            <div className="flex items-center gap-3">
+            <div className="flex flex-wrap justify-end items-center gap-2">
               <button
                 onClick={() => setIsExportModalOpen(true)}
-                className="px-4 py-2 bg-blue-100 hover:bg-blue-200 dark:bg-blue-900/30 dark:hover:bg-blue-900/50 text-blue-700 dark:text-blue-300 rounded-lg font-medium transition-all duration-200 flex items-center gap-2"
+                className="px-3 py-1.5 bg-blue-100 hover:bg-blue-200 dark:bg-blue-900/30 dark:hover:bg-blue-900/50 text-blue-700 dark:text-blue-300 rounded-lg text-sm font-medium transition-all duration-200 flex items-center gap-1.5"
               >
-                <DocumentArrowDownIcon className="w-4 h-4" />
-                Экспорт
+                <DocumentArrowDownIcon className="w-4 h-4 flex-shrink-0" />
+                <span>Экспорт</span>
               </button>
               <button
                 onClick={() => setIsMakeUpModalOpen(true)}
-                className="px-4 py-2 bg-amber-100 hover:bg-amber-200 dark:bg-amber-900/30 dark:hover:bg-amber-900/50 text-amber-700 dark:text-amber-300 rounded-lg font-medium transition-all duration-200 flex items-center gap-2"
+                className="hidden sm:flex px-3 py-1.5 bg-amber-100 hover:bg-amber-200 dark:bg-amber-900/30 dark:hover:bg-amber-900/50 text-amber-700 dark:text-amber-300 rounded-lg text-sm font-medium transition-all duration-200 items-center gap-1.5"
+              >
+                <PlusIcon className="w-4 h-4 flex-shrink-0" />
+                <span>Отработка</span>
+              </button>
+              <button
+                onClick={() => setIsMakeUpModalOpen(true)}
+                className="flex sm:hidden p-1.5 bg-amber-100 hover:bg-amber-200 dark:bg-amber-900/30 dark:hover:bg-amber-900/50 text-amber-700 dark:text-amber-300 rounded-lg transition-all duration-200"
+                title="Создать отработку"
               >
                 <PlusIcon className="w-4 h-4" />
-                Создать отработку
               </button>
               <button
                 onClick={() => {
                   setShowArchive(!showArchive);
                   setFilters(prev => ({ ...prev, includeDeleted: !showArchive, pageNumber: 1 }));
                 }}
-                className={`px-4 py-2 rounded-lg font-medium transition-all duration-200 ${
+                className={`px-3 py-1.5 rounded-lg text-sm font-medium transition-all duration-200 ${
                   showArchive
                     ? 'bg-red-500 hover:bg-red-600 text-white shadow-lg'
                     : 'bg-gray-100 hover:bg-gray-200 dark:bg-gray-700 dark:hover:bg-gray-600 text-gray-700 dark:text-gray-300'
                 }`}
               >
-                {showArchive ? 'Показать активные' : 'Архив'}
+                {showArchive ? 'Активные' : 'Архив'}
               </button>
               <ColumnVisibilityControl
                 columns={columns}
@@ -1079,11 +1112,11 @@ export default function SchedulesPage() {
                         </div>
                         <div className="flex items-start text-gray-600 dark:text-gray-400">
                           <span className="font-medium mr-2 mt-1">Дни:</span>
-                          <DaysOfWeekDisplay daysOfWeek={schedule.daysOfWeek} size="sm" />
+                          <DaysOfWeekDisplay daysOfWeek={getSlotDays(schedule.scheduleSlots)} size="sm" />
                         </div>
                         <div className="flex items-center text-gray-600 dark:text-gray-400">
                           <span className="font-medium mr-2">Время:</span>
-                          {formatTimeRange(schedule.startTime, schedule.endTime)}
+                          {formatScheduleSlots(schedule.scheduleSlots)}
                         </div>
                         <div className="flex items-center text-gray-600 dark:text-gray-400">
                           <span className="font-medium mr-2">Окончание:</span>
@@ -1155,7 +1188,7 @@ export default function SchedulesPage() {
                           </th>
                         )}
                         {isColumnVisible('time') && (
-                          <th className="px-3 py-3 text-left text-xs font-semibold text-gray-700 dark:text-gray-200 uppercase tracking-wider" style={{ width: '10%' }}>
+                          <th className="px-3 py-3 text-left text-xs font-semibold text-gray-700 dark:text-gray-200 uppercase tracking-wider" style={{ width: '20%' }}>
                             Время
                           </th>
                         )}
@@ -1218,12 +1251,36 @@ export default function SchedulesPage() {
                           )}
                           {isColumnVisible('days') && (
                             <td className="px-3 py-3 text-sm text-gray-900 dark:text-white">
-                              <DaysOfWeekDisplay daysOfWeek={schedule.daysOfWeek} size="sm" />
+                              <DaysOfWeekDisplay daysOfWeek={getSlotDays(schedule.scheduleSlots)} size="sm" />
                             </td>
                           )}
                           {isColumnVisible('time') && (
-                            <td className="px-3 py-3 whitespace-nowrap text-sm text-gray-900 dark:text-white">
-                              {formatTimeRange(schedule.startTime, schedule.endTime)}
+                            <td className="px-3 py-3 text-sm text-gray-900 dark:text-white">
+                              {(() => {
+                                const slots = schedule.scheduleSlots;
+                                if (!slots || slots.length === 0) return <span>—</span>;
+                                const allSame = slots.every(
+                                  s => s.startTime === slots[0].startTime && s.endTime === slots[0].endTime
+                                );
+                                if (allSame) {
+                                  return (
+                                    <span className="whitespace-nowrap">
+                                      {slots.map(s => getDayShortName(s.weekDay)).join(', ')}{' '}
+                                      {formatTime(slots[0].startTime)}–{formatTime(slots[0].endTime)}
+                                    </span>
+                                  );
+                                }
+                                return (
+                                  <div className="flex flex-col gap-0.5">
+                                    {slots.map(s => (
+                                      <span key={s.weekDay} className="whitespace-nowrap">
+                                        <span className="font-medium text-gray-500 dark:text-gray-400 w-6 inline-block">{getDayShortName(s.weekDay)}</span>
+                                        {' '}{formatTime(s.startTime)}–{formatTime(s.endTime)}
+                                      </span>
+                                    ))}
+                                  </div>
+                                );
+                              })()}
                             </td>
                           )}
                           {isColumnVisible('period') && (

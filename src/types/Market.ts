@@ -10,6 +10,7 @@ export enum RewardEventType {
   ScoreReceived = 2,
   SubmissionCompleted = 3,
   BonusManual = 4,
+  Late = 5,
 }
 
 export enum MarketItemType {

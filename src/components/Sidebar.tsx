@@ -133,6 +133,7 @@ const Sidebar: React.FC = () => {
   const allNavigation = [
     { name: getDashboardName(), href: '/', icon: HomeIcon, activeIcon: HomeIconSolid, requireAuth: false, requireOwner: false, requireAdmin: false, requireStudent: false, hideForStudentTeacher: false },
     { name: 'Организации', href: '/organizations', icon: BuildingOfficeIcon, activeIcon: BuildingOfficeIconSolid, requireAuth: true, requireOwner: true, requireAdmin: false, requireStudent: false, hideForStudentTeacher: false },
+    { name: 'Вл. филиалов', href: '/branch-owners', icon: UserGroupIcon, activeIcon: UserGroupIconSolid, requireAuth: true, requireOwner: true, requireAdmin: false, requireStudent: false, hideForStudentTeacher: false },
     { name: 'Документы', href: '/documents', icon: DocumentTextIcon, activeIcon: DocumentTextIconSolid, requireAuth: true, requireOwner: true, requireAdmin: false, requireStudent: false, hideForStudentTeacher: false },
     { name: 'Воронка продаж', href: '/funnel', icon: FunnelIcon, activeIcon: FunnelIconSolid, requireAuth: true, requireOwner: false, requireAdmin: false, requireStudent: false, hideForStudentTeacher: false, hideForStudent: true, hideForTeacher: true },
     { name: 'Пользователи', href: '/students', icon: AcademicCapIcon, activeIcon: AcademicCapIconSolid, requireAuth: true, requireOwner: false, requireAdmin: false, requireStudent: false, hideForStudentTeacher: true },

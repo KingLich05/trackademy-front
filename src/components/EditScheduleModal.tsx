@@ -2,7 +2,7 @@
 
 import React, { useState, useEffect } from 'react';
 import { XMarkIcon, CalendarDaysIcon } from '@heroicons/react/24/outline';
-import { Schedule, ScheduleFormData } from '../types/Schedule';
+import { Schedule } from '../types/Schedule';
 import { Group } from '../types/Group';
 import { Subject } from '../types/Subject';
 import { User } from '../types/User';
@@ -10,10 +10,23 @@ import { Room } from '../types/Room';
 import { AuthenticatedApiService } from '../services/AuthenticatedApiService';
 import { MultiSelect } from './ui/MultiSelect';
 
+// Legacy flat form data shape (this component is not currently in use)
+interface LegacyScheduleFormData {
+  daysOfWeek: number[];
+  startTime: string | null;
+  endTime: string | null;
+  effectiveFrom: string | null;
+  effectiveTo?: string | null;
+  groupId: string | null;
+  teacherId: string | null;
+  roomId: string | null;
+  organizationId: string;
+}
+
 interface EditScheduleModalProps {
   isOpen: boolean;
   onClose: () => void;
-  onSave: (id: string, formData: ScheduleFormData) => Promise<void>;
+  onSave: (id: string, formData: LegacyScheduleFormData) => Promise<void>;
   schedule: Schedule | null;
   organizationId: string;
 }
@@ -25,7 +38,7 @@ const EditScheduleModal: React.FC<EditScheduleModalProps> = ({
   schedule,
   organizationId
 }) => {
-  const [formData, setFormData] = useState<ScheduleFormData>({
+  const [formData, setFormData] = useState<LegacyScheduleFormData>({
     daysOfWeek: [],
     startTime: null,
     endTime: null,
@@ -62,9 +75,9 @@ const EditScheduleModal: React.FC<EditScheduleModalProps> = ({
       };
 
       setFormData({
-        daysOfWeek: schedule.daysOfWeek,
-        startTime: schedule.startTime.substring(0, 5), // "09:00:00" -> "09:00"
-        endTime: schedule.endTime.substring(0, 5),     // "10:30:00" -> "10:30"
+        daysOfWeek: schedule.scheduleSlots.map(s => s.weekDay),
+        startTime: (schedule.scheduleSlots[0]?.startTime ?? '').substring(0, 5), // "09:00:00" -> "09:00"
+        endTime: (schedule.scheduleSlots[0]?.endTime ?? '').substring(0, 5),     // "10:30:00" -> "10:30"
         effectiveFrom: formatDateForInput(schedule.effectiveFrom),
         effectiveTo: schedule.effectiveTo ? formatDateForInput(schedule.effectiveTo) : '',
         groupId: schedule.group.id,
@@ -183,7 +196,7 @@ const EditScheduleModal: React.FC<EditScheduleModalProps> = ({
     }
   };
 
-  const handleInputChange = (field: keyof ScheduleFormData, value: string | string[]) => {
+  const handleInputChange = (field: keyof LegacyScheduleFormData, value: string | string[]) => {
     // Convert empty strings to null for nullable fields
     const processedValue = typeof value === 'string' && value === '' ? null : value;
     

@@ -305,6 +305,7 @@ export default function SettingsPage() {
       case RewardEventType.ScoreReceived: return 'Получение оценки';
       case RewardEventType.SubmissionCompleted: return 'Сдача задания';
       case RewardEventType.BonusManual: return 'Ручное начисление';
+      case RewardEventType.Late: return 'Опоздание';
       default: return 'Неизвестно';
     }
   }
@@ -1163,6 +1164,7 @@ export default function SettingsPage() {
               <option value={RewardEventType.ScoreReceived}>Получение оценки</option>
               <option value={RewardEventType.SubmissionCompleted}>Сдача задания</option>
               <option value={RewardEventType.BonusManual}>Ручное начисление</option>
+              <option value={RewardEventType.Late}>Опоздание</option>
             </select>
           </div>
           <div>
