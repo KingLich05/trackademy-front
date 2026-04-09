@@ -2,8 +2,8 @@
 export interface MakeUpLessonCreateModel {
   groupId: string;
   date: string;         // "2025-04-09"
-  startTime: string;    // "14:00"
-  endTime: string;      // "15:00"
+  startTime: string;    // "14:00:00" — System.TimeOnly requires HH:mm:ss
+  endTime: string;      // "15:00:00" — System.TimeOnly requires HH:mm:ss
   teacherId: string;
   roomId: string;
   note?: string;

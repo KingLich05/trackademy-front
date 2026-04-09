@@ -2,14 +2,16 @@ export enum RoleEnum {
   Student = 1,
   Administrator = 2,
   Teacher = 3,
-  Owner = 4
+  Owner = 4,
+  BranchOwner = 5
 }
 
 export const RoleNames: Record<number, string> = {
   [RoleEnum.Student]: 'Студент',
   [RoleEnum.Administrator]: 'Администратор',
   [RoleEnum.Teacher]: 'Преподаватель',
-  [RoleEnum.Owner]: 'Владелец системы'
+  [RoleEnum.Owner]: 'Владелец системы',
+  [RoleEnum.BranchOwner]: 'Владелец филиалов'
 };
 
 export const getRoleName = (roleId: number | string): string => {
@@ -25,6 +27,7 @@ export const getRoleName = (roleId: number | string): string => {
       case 'administrator': return 'Администратор';
       case 'teacher': return 'Преподаватель';
       case 'owner': return 'Владелец системы';
+      case 'branchowner': return 'Владелец филиалов';
       default: return roleId; // Return as is if we don't recognize it
     }
   }
@@ -65,4 +68,15 @@ export const isOwner = (userRole: number | string): boolean => {
   }
   // If it's already a number
   return userRole === RoleEnum.Owner;
+};
+
+export const isBranchOwner = (userRole: number | string): boolean => {
+  if (typeof userRole === 'string') {
+    const numericRole = parseInt(userRole, 10);
+    if (!isNaN(numericRole)) {
+      return numericRole === RoleEnum.BranchOwner;
+    }
+    return userRole.toLowerCase() === 'branchowner';
+  }
+  return userRole === RoleEnum.BranchOwner;
 };

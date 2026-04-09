@@ -7,7 +7,7 @@ import { BuildingOfficeIcon as BuildingOfficeIconSolid, HomeModernIcon as HomeMo
 import { useAuth } from '../contexts/AuthContext';
 import { useState } from 'react';
 import RegisterModal from './RegisterModal';
-import { isOwner, canManageUsers } from '../types/Role';
+import { isOwner, canManageUsers, isBranchOwner } from '../types/Role';
 
 const Sidebar: React.FC = () => {
   const pathname = usePathname();
@@ -33,6 +33,8 @@ const Sidebar: React.FC = () => {
         return 'Преподаватель';
       case 'Student':
         return 'Студент';
+      case 'BranchOwner':
+        return 'Владелец филиалов';
       default:
         return role;
     }
@@ -41,6 +43,84 @@ const Sidebar: React.FC = () => {
   const isStudent = user?.role === 'Student';
   const isTeacher = user?.role === 'Teacher';
   const isStudentOrTeacher = isStudent || isTeacher;
+  const isBranchOwnerUser = isBranchOwner(user?.role ?? '');
+
+  // BranchOwner gets a minimal sidebar with only their dashboard link
+  if (isBranchOwnerUser) {
+    return (
+      <>
+        {/* Desktop Sidebar for BranchOwner */}
+        <div className="hidden lg:flex lg:fixed lg:left-0 lg:top-0 lg:h-screen lg:w-64 lg:flex-col transition-all duration-300 
+                        bg-white dark:bg-gray-800 border-r border-gray-200 dark:border-gray-700 shadow-lg z-30">
+          {/* Logo */}
+          <div className="flex items-center justify-between h-16 px-6 border-b border-gray-200 dark:border-gray-700">
+            <div className="flex items-center space-x-3">
+              <div className="w-8 h-8 rounded-lg bg-white shadow-sm p-1">
+                <img src="/logo-trackademy.png" alt="Trackademy" className="w-full h-full object-contain rounded-md"
+                  onError={(e) => { const t = e.target as HTMLImageElement; t.style.display='none'; t.nextElementSibling?.classList.remove('hidden'); }}
+                />
+                <div className="w-full h-full bg-gradient-to-br from-blue-500 to-purple-600 rounded-md flex items-center justify-center hidden">
+                  <AcademicCapIcon className="w-4 h-4 text-white" />
+                </div>
+              </div>
+              <span className="text-xl font-bold bg-gradient-to-r from-blue-600 to-purple-600 bg-clip-text text-transparent">Trackademy</span>
+            </div>
+          </div>
+          {/* User Info */}
+          <div className="px-6 py-4 border-b border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-700/50">
+            <div className="flex items-center space-x-3">
+              <div className="w-10 h-10 rounded-full flex items-center justify-center bg-gradient-to-br from-blue-500 to-purple-600 shadow-sm">
+                <span className="text-white font-medium">{user?.fullName?.charAt(0)?.toUpperCase() || 'U'}</span>
+              </div>
+              <div className="flex-1 min-w-0">
+                <p className="text-sm font-medium text-gray-900 dark:text-white truncate">{user?.fullName}</p>
+                <p className="text-xs text-gray-500 dark:text-gray-400 truncate">{getRoleLabel(user?.role)}</p>
+              </div>
+            </div>
+          </div>
+          {/* Nav */}
+          <div className="flex-1 px-4 py-6 overflow-y-auto">
+            <nav className="space-y-2">
+              <Link href="/branch-owner"
+                className={`group flex items-center px-4 py-3 text-sm font-medium rounded-xl transition-all duration-200 transform hover:scale-105 hover:shadow-sm ${
+                  pathname === '/branch-owner' || pathname.startsWith('/branch-owner/')
+                    ? 'bg-gradient-to-r from-blue-500 to-purple-600 text-white shadow-lg'
+                    : 'text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700'
+                }`}>
+                <BuildingOfficeIcon className={`mr-3 flex-shrink-0 h-5 w-5 ${
+                  pathname === '/branch-owner' || pathname.startsWith('/branch-owner/') ? 'text-white' : 'text-gray-500 dark:text-gray-400'
+                }`} />
+                Мои организации
+              </Link>
+            </nav>
+          </div>
+          {/* Logout placeholder via profile link */}
+          <div className="px-4 py-4 border-t border-gray-200 dark:border-gray-700">
+            <Link href="/profile"
+              className="flex items-center gap-2 px-4 py-3 rounded-xl text-sm font-medium text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 transition-all duration-200">
+              Профиль
+            </Link>
+          </div>
+        </div>
+        {/* Mobile bottom nav for BranchOwner */}
+        <div className="lg:hidden fixed bottom-0 left-0 right-0 z-30 bg-white/90 dark:bg-gray-900/90 backdrop-blur-lg border-t border-gray-200/50 dark:border-gray-700/50 shadow-2xl">
+          <div className="flex items-center justify-around py-2">
+            <Link href="/branch-owner" className="flex flex-col items-center py-2 px-2 transition-all duration-300 hover:scale-105">
+              <div className={`p-2 rounded-xl transition-all duration-300 ${
+                pathname === '/branch-owner' || pathname.startsWith('/branch-owner/')
+                  ? 'bg-gradient-to-r from-blue-500 to-purple-600 text-white shadow-lg scale-110'
+                  : 'text-gray-500 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-800'
+              }`}>
+                <BuildingOfficeIcon className="h-5 w-5" />
+              </div>
+              <span className="text-[10px] mt-1 text-gray-500 dark:text-gray-400 truncate max-w-[60px]">Организации</span>
+            </Link>
+          </div>
+        </div>
+        <RegisterModal isOpen={showRegisterModal} onClose={() => setShowRegisterModal(false)} />
+      </>
+    );
+  }
 
   // Определяем название первого пункта меню в зависимости от роли
   const getDashboardName = () => {

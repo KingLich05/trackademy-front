@@ -3,12 +3,13 @@
 import { useState, useEffect } from 'react';
 import { useAuth } from '@/contexts/AuthContext';
 import { useRouter } from 'next/navigation';
-import { ClipboardDocumentCheckIcon, DocumentArrowDownIcon, UserGroupIcon, CalendarDaysIcon, UserIcon } from '@heroicons/react/24/outline';
+import { ClipboardDocumentCheckIcon, DocumentArrowDownIcon, UserGroupIcon, CalendarDaysIcon, UserIcon, PlusIcon } from '@heroicons/react/24/outline';
 import { PageHeaderWithStats } from '@/components/ui/PageHeaderWithStats';
 import { DateRangePicker } from '@/components/ui/DateRangePicker';
 import { ExportAttendanceModal } from '@/components/ExportAttendanceModal';
 import { LessonDetailsModal } from '@/components/attendance/LessonDetailsModal';
 import { GroupDetailsModal } from '@/components/attendance/GroupDetailsModal';
+import CreateMakeUpLessonModal from '@/components/CreateMakeUpLessonModal';
 import { attendanceApi } from '@/services/AttendanceApiService';
 import { AttendanceRecord, AttendanceFilters, AttendanceStatus, getAttendanceStatusText, getAttendanceStatusColor, getAttendanceStatusIcon } from '@/types/Attendance';
 import { useApiToast } from '@/hooks/useApiToast';
@@ -129,6 +130,9 @@ export default function AttendancePage() {
   
   // Export modal state
   const [showExportModal, setShowExportModal] = useState(false);
+
+  // Makeup lesson modal state
+  const [showMakeUpModal, setShowMakeUpModal] = useState(false);
   
   // Lesson details modal state
   const [lessonDetailsModalOpen, setLessonDetailsModalOpen] = useState(false);
@@ -475,6 +479,15 @@ export default function AttendancePage() {
                   >
                     <DocumentArrowDownIcon className="w-4 h-4" />
                     Экспорт Excel
+                  </button>
+                )}
+                {(user?.role === 'Administrator' || user?.role === 'Owner') && (
+                  <button
+                    onClick={() => setShowMakeUpModal(true)}
+                    className="px-4 py-2 bg-gradient-to-r from-emerald-500 to-teal-600 hover:from-emerald-600 hover:to-teal-700 text-white rounded-lg font-medium transition-all duration-200 text-sm flex items-center gap-2 shadow-md hover:shadow-lg"
+                  >
+                    <PlusIcon className="w-4 h-4" />
+                    Создать отработку
                   </button>
                 )}
                 <button
@@ -1230,6 +1243,13 @@ export default function AttendancePage() {
           groupName={selectedGroupForDetails.groupName}
         />
       )}
+
+      {/* Makeup Lesson Modal */}
+      <CreateMakeUpLessonModal
+        isOpen={showMakeUpModal}
+        onClose={() => setShowMakeUpModal(false)}
+        onCreated={() => setShowMakeUpModal(false)}
+      />
     </div>
   );
 }

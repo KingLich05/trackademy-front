@@ -21,6 +21,8 @@ import {
 } from '@heroicons/react/24/outline';
 import { useAuth } from '../contexts/AuthContext';
 import { useApiToast } from '../hooks/useApiToast';
+import { useRouter } from 'next/navigation';
+import { isBranchOwner } from '../types/Role';
 import { DashboardApiService } from '../services/DashboardApiService';
 import { DashboardSummary, DashboardStats, TeacherDashboardSummary, StudentDashboardSummary, UpcomingBirthday } from '../types/Dashboard';
 import { StatsCard } from '../components/dashboard/StatsCard';
@@ -332,6 +334,7 @@ function LandingPage() {
 export default function Dashboard() {
   const { isAuthenticated, user } = useAuth();
   const { } = useApiToast();
+  const router = useRouter();
   
   const [summary, setSummary] = useState<DashboardSummary | null>(null);
   const [teacherSummary, setTeacherSummary] = useState<TeacherDashboardSummary | null>(null);
@@ -385,9 +388,13 @@ export default function Dashboard() {
 
   useEffect(() => {
     if (isAuthenticated && user) {
+      if (isBranchOwner(user.role)) {
+        router.push('/branch-owner');
+        return;
+      }
       loadDashboardData();
     }
-  }, [isAuthenticated, user, loadDashboardData]);
+  }, [isAuthenticated, user, loadDashboardData, router]);
 
   // Показываем сайт-визитку для неавторизованных пользователей
   if (!isAuthenticated) {

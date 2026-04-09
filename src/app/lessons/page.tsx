@@ -17,6 +17,7 @@ import MonthView from '@/components/calendar/MonthView';
 import ListView from '@/components/calendar/ListView';
 import RangeCalendarView from '@/components/calendar/RangeCalendarView';
 import TeacherWorkHoursModal from '@/components/TeacherWorkHoursModal';
+import CreateMakeUpLessonModal from '@/components/CreateMakeUpLessonModal';
 import { BaseModal } from '@/components/ui/BaseModal';
 import { TimeInput } from '@/components/ui/TimeInput';
 import { PageHeaderWithStats } from '@/components/ui/PageHeaderWithStats';
@@ -42,6 +43,7 @@ export default function LessonsPage() {
   const [view, setView] = useState<CalendarView>('week');
   const [showCreateLessonModal, setShowCreateLessonModal] = useState(false);
   const [showTeacherWorkHoursModal, setShowTeacherWorkHoursModal] = useState(false);
+  const [showMakeUpModal, setShowMakeUpModal] = useState(false);
   const [dateFrom, setDateFrom] = useState<string | undefined>(undefined);
   const [dateTo, setDateTo] = useState<string | undefined>(undefined);
   const [rangeViewMode, setRangeViewMode] = useState<'list' | 'calendar'>('list');
@@ -573,7 +575,7 @@ export default function LessonsPage() {
 
             {/* Clear filters button and Teacher Work Hours button */}
             <div className="mt-4 flex justify-between items-center">
-              <div>
+              <div className="flex items-center gap-3">
                 {isAdminOrOwner && user?.organizationId && (
                   <button
                     onClick={() => setShowTeacherWorkHoursModal(true)}
@@ -581,6 +583,15 @@ export default function LessonsPage() {
                   >
                     <AcademicCapIcon className="h-5 w-5" />
                     Учет занятий преподавателей
+                  </button>
+                )}
+                {isAdminOrOwner && (
+                  <button
+                    onClick={() => setShowMakeUpModal(true)}
+                    className="px-4 py-2 bg-gradient-to-r from-emerald-500 to-teal-600 hover:from-emerald-600 hover:to-teal-700 text-white rounded-lg text-sm font-medium transition-all duration-200 flex items-center gap-2 shadow-md hover:shadow-lg"
+                  >
+                    <CalendarIcon className="h-5 w-5" />
+                    Создать отработку
                   </button>
                 )}
               </div>
@@ -764,6 +775,15 @@ export default function LessonsPage() {
           isOpen={showTeacherWorkHoursModal}
           onClose={() => setShowTeacherWorkHoursModal(false)}
           organizationId={user.organizationId}
+        />
+      )}
+
+      {/* Makeup Lesson Modal */}
+      {isAdminOrOwner && (
+        <CreateMakeUpLessonModal
+          isOpen={showMakeUpModal}
+          onClose={() => setShowMakeUpModal(false)}
+          onCreated={(lessonId) => { setShowMakeUpModal(false); loadLessons(); }}
         />
       )}
 

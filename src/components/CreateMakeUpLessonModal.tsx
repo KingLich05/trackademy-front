@@ -115,8 +115,8 @@ export default function CreateMakeUpLessonModal({ isOpen, onClose, onCreated }: 
       const res = await AuthenticatedApiService.createMakeUpLesson({
         groupId,
         date,
-        startTime,
-        endTime,
+        startTime: startTime.length === 5 ? `${startTime}:00` : startTime,
+        endTime: endTime.length === 5 ? `${endTime}:00` : endTime,
         teacherId,
         roomId,
         note: note.trim() || undefined,
