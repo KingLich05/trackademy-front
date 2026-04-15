@@ -264,9 +264,9 @@ export default function MaterialsPage() {
           actionLabel={canUploadMaterial ? "Загрузить материал" : undefined}
           onAction={canUploadMaterial ? () => setIsUploadModalOpen(true) : undefined}
           stats={[
-            { label: "Всего материалов", value: totalCount, color: "purple" },
+            { label: "Всего материалов", value: materials.length, total: totalCount, color: "purple" },
             { label: "На странице", value: materials.length, color: "pink" },
-            { label: "Страниц", value: totalPages, color: "violet" }
+            { label: "Страниц", value: currentPage, total: totalPages, color: "violet" }
           ]}
         />
 

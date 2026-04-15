@@ -366,9 +366,9 @@ export default function RoomsPage() {
           actionLabel="Добавить кабинет"
           onAction={handleCreate}
           stats={[
-            { label: "Всего кабинетов", value: totalCount, color: "emerald" },
-            { label: "Текущая страница", value: currentPage, color: "green" },
-            { label: "Всего страниц", value: totalPages, color: "teal" }
+            { label: "Всего кабинетов", value: rooms.length, total: totalCount, color: "emerald" },
+            { label: "На странице", value: rooms.length, color: "green" },
+            { label: "Страниц", value: currentPage, total: totalPages, color: "teal" }
           ]}
         />
 

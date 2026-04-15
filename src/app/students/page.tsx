@@ -809,9 +809,9 @@ export default function StudentsPage() {
             </div>
           }
           stats={[
-            { label: "Всего пользователей", value: totalCount, color: "emerald" },
+            { label: "Всего пользователей", value: students.length, total: totalCount, color: "emerald" },
             { label: "На странице", value: students.length, color: "lime" },
-            { label: "Страниц", value: totalPages, color: "green" }
+            { label: "Страниц", value: currentPage, total: totalPages, color: "green" }
           ]}
         />
 

@@ -3,6 +3,7 @@ import React from 'react';
 interface StatItem {
   label: string;
   value: number | string;
+  total?: number | string; // if set, renders "value/total" with total in muted colour
   color: 'blue' | 'purple' | 'indigo' | 'teal' | 'cyan' | 'green' | 'red' | 'yellow' | 'pink' | 'emerald' | 'lime' | 'orange' | 'violet' | 'rose';
 }
 
@@ -104,7 +105,12 @@ export const PageHeaderWithStats: React.FC<PageHeaderWithStatsProps> = ({
         }`}>
           {stats.map((stat, index) => (
             <div key={index} className="text-center">
-              <div className={`text-lg sm:text-xl md:text-2xl font-bold ${getColorClasses(stat.color)}`}>{stat.value}</div>
+              <div className={`text-lg sm:text-xl md:text-2xl font-bold ${getColorClasses(stat.color)}`}>
+                {stat.value}
+                {stat.total !== undefined && (
+                  <span className="text-gray-400 dark:text-gray-500 font-semibold">/{stat.total}</span>
+                )}
+              </div>
               <div className="text-xs sm:text-sm text-gray-600 dark:text-gray-400">{stat.label}</div>
             </div>
           ))}

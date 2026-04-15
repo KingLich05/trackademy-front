@@ -907,8 +907,9 @@ export default function SchedulesPage() {
             </div>
           }
           stats={[
-            { label: "Всего шаблонов", value: totalCount, color: "violet" },
-            { label: "Страниц", value: totalPages, color: "indigo" }
+            { label: "Всего шаблонов", value: schedules.length, total: totalCount, color: "violet" },
+            { label: "На странице", value: schedules.length, color: "purple" },
+            { label: "Страниц", value: currentPage, total: totalPages, color: "indigo" }
           ]}
         />
 

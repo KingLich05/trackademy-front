@@ -718,9 +718,9 @@ const [teachers, setTeachers] = useState<Array<{id: string, name: string}>>([]);
             </div>
           }
           stats={[
-            { label: "Всего групп", value: totalCount, color: "teal" },
-            { label: "Текущая страница", value: currentPage, color: "cyan" },
-            { label: "Всего страниц", value: totalPages, color: "blue" }
+            { label: "Всего групп", value: groups.length, total: totalCount, color: "teal" },
+            { label: "На странице", value: groups.length, color: "cyan" },
+            { label: "Страниц", value: currentPage, total: totalPages, color: "blue" }
           ]}
         />
 

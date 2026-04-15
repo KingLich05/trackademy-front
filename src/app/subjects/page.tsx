@@ -396,9 +396,9 @@ export default function SubjectsPage() {
             />
           }
           stats={[
-            { label: "Всего предметов", value: totalCount, color: "violet" },
-            { label: "Текущая страница", value: currentPage, color: "purple" },
-            { label: "Всего страниц", value: totalPages, color: "indigo" }
+            { label: "Всего предметов", value: subjects.length, total: totalCount, color: "violet" },
+            { label: "На странице", value: subjects.length, color: "purple" },
+            { label: "Страниц", value: currentPage, total: totalPages, color: "indigo" }
           ]}
         />
 

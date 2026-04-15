@@ -704,9 +704,9 @@ export default function HomeworkPage() {
           actionLabel="Добавить задание"
           onAction={handleCreate}
           stats={[
-            { label: "Всего заданий", value: totalCount, color: "purple" },
-            { label: "Текущая страница", value: currentPage, color: "indigo" },
-            { label: "Всего страниц", value: totalPages, color: "blue" }
+            { label: "Всего заданий", value: assignments.length, total: totalCount, color: "purple" },
+            { label: "На странице", value: assignments.length, color: "indigo" },
+            { label: "Страниц", value: currentPage, total: totalPages, color: "blue" }
           ]}
         />
 
