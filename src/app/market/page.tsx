@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { useRouter } from 'next/navigation';
 import { useAuth } from '../../contexts/AuthContext';
 import { useToast } from '../../contexts/ToastContext';
@@ -8,6 +8,7 @@ import { AuthenticatedApiService } from '../../services/AuthenticatedApiService'
 import { ExportApiService } from '../../services/ExportApiService';
 import { ExportMarketModal, ExportMarketParams } from '../../components/ExportMarketModal';
 import { Group, GroupsResponse } from '../../types/Group';
+import { User } from '../../types/User';
 import {
   CoinAccountDetailedDto,
   CoinAccountDto,
@@ -126,9 +127,17 @@ export default function MarketPage() {
 
   // adjust modal
   const [adjustAccount, setAdjustAccount] = useState<CoinAccountDto | null>(null);
+  const [adjustModalOpen, setAdjustModalOpen] = useState(false);
   const [adjustAmount, setAdjustAmount] = useState(0);
   const [adjustDesc, setAdjustDesc] = useState('');
   const [isAdjusting, setIsAdjusting] = useState(false);
+  // student search inside adjust modal
+  const [adjustQuery, setAdjustQuery] = useState('');
+  const [adjustResults, setAdjustResults] = useState<User[]>([]);
+  const [adjustSearching, setAdjustSearching] = useState(false);
+  const [adjustStudentId, setAdjustStudentId] = useState('');
+  const [adjustStudentName, setAdjustStudentName] = useState('');
+  const adjustSearchRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   // rule modal
   const [showRuleModal, setShowRuleModal] = useState(false);
@@ -259,28 +268,71 @@ export default function MarketPage() {
   }
 
   async function handleAdjust() {
-    if (!adjustAccount || !adjustDesc.trim()) { showError('Заполните все поля'); return; }
+    const targetId = adjustAccount?.studentId ?? adjustStudentId;
+    const targetName = adjustAccount?.studentName ?? adjustStudentName;
+    if (!targetId || !adjustDesc.trim()) { showError('Заполните все поля'); return; }
     try {
       setIsAdjusting(true);
       await AuthenticatedApiService.adminAdjustCoins(orgId, {
-        studentId: adjustAccount.studentId,
+        studentId: targetId,
         amount: adjustAmount,
         description: adjustDesc.trim(),
       });
-      showSuccess('Баланс успешно скорректирован');
-      setAdjustAccount(null);
-      setAdjustAmount(0);
-      setAdjustDesc('');
+      showSuccess(`Баланс «${targetName}» успешно скорректирован`);
+      closeAdjustModal();
       await loadAllBalances();
     } catch { showError('Ошибка при корректировке баланса'); }
     finally { setIsAdjusting(false); }
+  }
+
+  function openAdjustModal(acc?: CoinAccountDto) {
+    setAdjustAccount(acc ?? null);
+    setAdjustAmount(0);
+    setAdjustDesc('');
+    setAdjustQuery('');
+    setAdjustResults([]);
+    setAdjustStudentId('');
+    setAdjustStudentName('');
+    setAdjustModalOpen(true);
+  }
+
+  function closeAdjustModal() {
+    setAdjustModalOpen(false);
+    setAdjustAccount(null);
+    setAdjustAmount(0);
+    setAdjustDesc('');
+    setAdjustQuery('');
+    setAdjustResults([]);
+    setAdjustStudentId('');
+    setAdjustStudentName('');
+  }
+
+  function handleAdjustQueryChange(q: string) {
+    setAdjustQuery(q);
+    setAdjustStudentId('');
+    setAdjustStudentName('');
+    if (adjustSearchRef.current) clearTimeout(adjustSearchRef.current);
+    if (!q.trim()) { setAdjustResults([]); return; }
+    adjustSearchRef.current = setTimeout(async () => {
+      try {
+        setAdjustSearching(true);
+        const res = await AuthenticatedApiService.getUsers({
+          organizationId: orgId,
+          search: q.trim(),
+          roleIds: [3], // Student role
+          pageSize: 20,
+        });
+        setAdjustResults(res.items);
+      } catch { setAdjustResults([]); }
+      finally { setAdjustSearching(false); }
+    }, 300);
   }
 
   async function handleFulfill(p: PurchaseDto) {
     try {
       await AuthenticatedApiService.fulfillPurchase(p.id, orgId);
       showSuccess('Покупка выдана');
-      await loadAllPurchases();
+      await Promise.all([loadAllPurchases(), loadItems()]);
     } catch { showError('Ошибка при выдаче покупки'); }
   }
 
@@ -289,7 +341,7 @@ export default function MarketPage() {
     try {
       await AuthenticatedApiService.cancelPurchase(p.id, orgId);
       showSuccess('Покупка отменена');
-      await loadAllPurchases();
+      await Promise.all([loadAllPurchases(), loadItems()]);
     } catch { showError('Ошибка при отмене покупки'); }
   }
 
@@ -633,8 +685,15 @@ export default function MarketPage() {
   function renderAllBalances() {
     return (
       <div className="bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700">
-        <div className="p-4 border-b border-gray-200 dark:border-gray-700">
+        <div className="p-4 border-b border-gray-200 dark:border-gray-700 flex items-center justify-between">
           <h3 className="font-semibold text-gray-900 dark:text-white">Балансы студентов ({allBalances.length})</h3>
+          <button
+            onClick={() => openAdjustModal()}
+            className="flex items-center gap-2 px-3 py-1.5 bg-amber-500 hover:bg-amber-600 text-white rounded-lg transition-colors text-sm font-medium"
+          >
+            <PlusIcon className="h-3.5 w-3.5" />
+            Начислить баллы
+          </button>
         </div>
         {loadingBalances ? (
           <div className="flex justify-center py-16">
@@ -660,7 +719,7 @@ export default function MarketPage() {
                     <SparklesIcon className="h-4 w-4" />{acc.balance}
                   </span>
                   <button
-                    onClick={() => { setAdjustAccount(acc); setAdjustAmount(0); setAdjustDesc(''); }}
+                    onClick={() => openAdjustModal(acc)}
                     className="p-1.5 text-gray-400 hover:text-blue-500 transition-colors"
                     title="Скорректировать баланс"
                   >
@@ -946,8 +1005,61 @@ export default function MarketPage() {
       </BaseModal>
 
       {/* Adjust balance modal */}
-      <BaseModal isOpen={!!adjustAccount} onClose={() => setAdjustAccount(null)} title={`Корректировка баланса — ${adjustAccount?.studentName}`}>
+      <BaseModal isOpen={adjustModalOpen} onClose={closeAdjustModal} title={adjustAccount ? `Корректировка — ${adjustAccount.studentName}` : 'Начислить / списать баллы'}>
         <div className="space-y-4">
+          {/* Student search — only shown when not pre-selected from balance row */}
+          {!adjustAccount && (
+            <div className="relative">
+              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                Студент <span className="text-red-500">*</span>
+              </label>
+              {adjustStudentId ? (
+                <div className="flex items-center justify-between px-3 py-2 bg-amber-50 dark:bg-amber-900/20 border border-amber-300 dark:border-amber-700 rounded-lg">
+                  <span className="text-sm font-medium text-gray-900 dark:text-white">{adjustStudentName}</span>
+                  <button
+                    onClick={() => { setAdjustStudentId(''); setAdjustStudentName(''); setAdjustQuery(''); setAdjustResults([]); }}
+                    className="text-gray-400 hover:text-red-500 transition-colors text-xs ml-2"
+                  >✕</button>
+                </div>
+              ) : (
+                <>
+                  <input
+                    type="text"
+                    value={adjustQuery}
+                    onChange={e => handleAdjustQueryChange(e.target.value)}
+                    placeholder="Начните вводить имя или логин..."
+                    className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-amber-500 focus:border-amber-500 text-sm"
+                    autoFocus
+                  />
+                  {(adjustSearching || adjustResults.length > 0) && (
+                    <div className="absolute z-50 w-full mt-1 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg shadow-lg max-h-52 overflow-y-auto">
+                      {adjustSearching ? (
+                        <div className="flex items-center justify-center py-4">
+                          <div className="w-5 h-5 border-2 border-amber-500 border-t-transparent rounded-full animate-spin" />
+                        </div>
+                      ) : adjustResults.length === 0 ? (
+                        <p className="px-3 py-3 text-sm text-gray-500 dark:text-gray-400">Студенты не найдены</p>
+                      ) : (
+                        adjustResults.map(s => (
+                          <button
+                            key={s.id}
+                            type="button"
+                            onClick={() => { setAdjustStudentId(s.id); setAdjustStudentName(s.name || s.login); setAdjustQuery(''); setAdjustResults([]); }}
+                            className="w-full text-left px-3 py-2.5 hover:bg-amber-50 dark:hover:bg-amber-900/20 transition-colors text-sm"
+                          >
+                            <span className="font-medium text-gray-900 dark:text-white">{s.name || s.login}</span>
+                            {s.name && s.login !== s.name && (
+                              <span className="text-gray-500 dark:text-gray-400 text-xs ml-2">{s.login}</span>
+                            )}
+                          </button>
+                        ))
+                      )}
+                    </div>
+                  )}
+                </>
+              )}
+            </div>
+          )}
           <div>
             <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
               Сумма (+ начислить / − списать)
@@ -972,12 +1084,12 @@ export default function MarketPage() {
             />
           </div>
           <div className="flex justify-end gap-3 pt-2">
-            <button onClick={() => setAdjustAccount(null)} className="px-4 py-2 text-gray-700 dark:text-gray-300 border border-gray-300 dark:border-gray-600 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors">
+            <button onClick={closeAdjustModal} className="px-4 py-2 text-gray-700 dark:text-gray-300 border border-gray-300 dark:border-gray-600 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors">
               Отмена
             </button>
             <button
               onClick={handleAdjust}
-              disabled={isAdjusting || !adjustDesc.trim()}
+              disabled={isAdjusting || !adjustDesc.trim() || (!adjustAccount && !adjustStudentId)}
               className="px-4 py-2 bg-amber-500 hover:bg-amber-600 disabled:opacity-50 disabled:cursor-not-allowed text-white rounded-lg transition-colors font-medium"
             >
               {isAdjusting ? 'Сохранение...' : 'Применить'}

@@ -701,11 +701,20 @@ export default function AttendancePage() {
           </div>
 
           {/* Pagination */}
-          {totalCount > filters.pageSize! && (
+          {totalCount > 0 && (
             <div className="px-6 py-4 border-t border-gray-200 dark:border-gray-700">
-              <div className="flex items-center justify-between">
-                <div className="text-sm text-gray-500 dark:text-gray-400">
-                  Показано {Math.min(filters.pageSize!, totalCount)} из {totalCount} записей
+              <div className="flex flex-wrap items-center justify-between gap-3">
+                <div className="flex items-center gap-3">
+                  <span className="text-sm text-gray-500 dark:text-gray-400">
+                    {(filters.pageNumber! - 1) * filters.pageSize! + 1}–{Math.min(filters.pageNumber! * filters.pageSize!, totalCount)} из {totalCount} записей
+                  </span>
+                  <select
+                    value={filters.pageSize}
+                    onChange={e => setFilters(prev => ({ ...prev, pageSize: Number(e.target.value), pageNumber: 1 }))}
+                    className="text-sm border border-gray-300 dark:border-gray-600 rounded-md px-2 py-1 bg-white dark:bg-gray-700 text-gray-700 dark:text-gray-300 focus:ring-2 focus:ring-emerald-500"
+                  >
+                    {[10, 20, 50, 100].map(n => <option key={n} value={n}>{n} / стр.</option>)}
+                  </select>
                 </div>
                 <div className="flex gap-2">
                   <button
@@ -716,7 +725,7 @@ export default function AttendancePage() {
                     Назад
                   </button>
                   <span className="px-3 py-1 text-sm text-gray-700 dark:text-gray-300">
-                    Страница {filters.pageNumber}
+                    {filters.pageNumber} / {Math.ceil(totalCount / filters.pageSize!)}
                   </span>
                   <button
                     onClick={() => setFilters(prev => ({ ...prev, pageNumber: prev.pageNumber! + 1 }))}
@@ -936,11 +945,20 @@ export default function AttendancePage() {
           </div>
 
           {/* Pagination */}
-          {groupStatsTotal > groupStatsFilters.pageSize && (
+          {groupStatsTotal > 0 && (
             <div className="px-6 py-4 border-t border-gray-200 dark:border-gray-700">
-              <div className="flex items-center justify-between">
-                <div className="text-sm text-gray-500 dark:text-gray-400">
-                  Показано {Math.min(groupStatsFilters.pageSize, groupStatsTotal)} из {groupStatsTotal} групп
+              <div className="flex flex-wrap items-center justify-between gap-3">
+                <div className="flex items-center gap-3">
+                  <span className="text-sm text-gray-500 dark:text-gray-400">
+                    {(groupStatsFilters.pageNumber - 1) * groupStatsFilters.pageSize + 1}–{Math.min(groupStatsFilters.pageNumber * groupStatsFilters.pageSize, groupStatsTotal)} из {groupStatsTotal} групп
+                  </span>
+                  <select
+                    value={groupStatsFilters.pageSize}
+                    onChange={e => setGroupStatsFilters(prev => ({ ...prev, pageSize: Number(e.target.value), pageNumber: 1 }))}
+                    className="text-sm border border-gray-300 dark:border-gray-600 rounded-md px-2 py-1 bg-white dark:bg-gray-700 text-gray-700 dark:text-gray-300 focus:ring-2 focus:ring-emerald-500"
+                  >
+                    {[10, 20, 50, 100].map(n => <option key={n} value={n}>{n} / стр.</option>)}
+                  </select>
                 </div>
                 <div className="flex gap-2">
                   <button
@@ -951,7 +969,7 @@ export default function AttendancePage() {
                     Назад
                   </button>
                   <span className="px-3 py-1 text-sm text-gray-700 dark:text-gray-300">
-                    Страница {groupStatsFilters.pageNumber}
+                    {groupStatsFilters.pageNumber} / {Math.ceil(groupStatsTotal / groupStatsFilters.pageSize)}
                   </span>
                   <button
                     onClick={() => setGroupStatsFilters(prev => ({ ...prev, pageNumber: prev.pageNumber + 1 }))}
@@ -1186,11 +1204,20 @@ export default function AttendancePage() {
           </div>
 
           {/* Pagination */}
-          {lessonMonitoringTotal > lessonFilters.pageSize && (
+          {lessonMonitoringTotal > 0 && (
             <div className="px-6 py-4 border-t border-gray-200 dark:border-gray-700">
-              <div className="flex items-center justify-between">
-                <div className="text-sm text-gray-500 dark:text-gray-400">
-                  Показано {Math.min(lessonFilters.pageSize, lessonMonitoringTotal)} из {lessonMonitoringTotal} уроков
+              <div className="flex flex-wrap items-center justify-between gap-3">
+                <div className="flex items-center gap-3">
+                  <span className="text-sm text-gray-500 dark:text-gray-400">
+                    {(lessonFilters.pageNumber - 1) * lessonFilters.pageSize + 1}–{Math.min(lessonFilters.pageNumber * lessonFilters.pageSize, lessonMonitoringTotal)} из {lessonMonitoringTotal} уроков
+                  </span>
+                  <select
+                    value={lessonFilters.pageSize}
+                    onChange={e => setLessonFilters(prev => ({ ...prev, pageSize: Number(e.target.value), pageNumber: 1 }))}
+                    className="text-sm border border-gray-300 dark:border-gray-600 rounded-md px-2 py-1 bg-white dark:bg-gray-700 text-gray-700 dark:text-gray-300 focus:ring-2 focus:ring-emerald-500"
+                  >
+                    {[10, 20, 50, 100].map(n => <option key={n} value={n}>{n} / стр.</option>)}
+                  </select>
                 </div>
                 <div className="flex gap-2">
                   <button
@@ -1201,7 +1228,7 @@ export default function AttendancePage() {
                     Назад
                   </button>
                   <span className="px-3 py-1 text-sm text-gray-700 dark:text-gray-300">
-                    Страница {lessonFilters.pageNumber}
+                    {lessonFilters.pageNumber} / {Math.ceil(lessonMonitoringTotal / lessonFilters.pageSize)}
                   </span>
                   <button
                     onClick={() => setLessonFilters(prev => ({ ...prev, pageNumber: prev.pageNumber + 1 }))}
