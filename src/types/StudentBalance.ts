@@ -117,7 +117,7 @@ export interface StudentGroupBalanceDetail {
   createdAt: string;
   updatedAt: string;
   recentAttendances: RecentAttendance[];
-  transactionHistory: TransactionHistory[];
+  transactionHistory: PaginatedTransactionHistory;
 }
 
 export interface RecentAttendance {
@@ -162,4 +162,14 @@ export interface TransactionHistory {
   processedBy: string | null;
   processedByName: string | null;
   metadata: unknown;
+}
+
+export interface PaginatedTransactionHistory {
+  items: TransactionHistory[];
+  totalCount: number;
+  pageNumber: number;
+  pageSize: number;
+  totalPages: number;
+  hasNextPage: boolean;
+  hasPreviousPage: boolean;
 }

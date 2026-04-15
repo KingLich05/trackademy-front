@@ -68,6 +68,10 @@ export default function ReportsPage() {
   // Состояние для экспорта маркета
   const [isMarketExportModalOpen, setIsMarketExportModalOpen] = useState(false);
   const [isExportingMarket, setIsExportingMarket] = useState(false);
+
+  // Состояние для экспорта пользователей
+  const [isUsersExportModalOpen, setIsUsersExportModalOpen] = useState(false);
+  const [usersExportIsArchived, setUsersExportIsArchived] = useState<boolean | null>(null);
   const [scheduleFilters, setScheduleFilters] = useState({
     organizationId: user?.organizationId || '',
     groupId: '',
@@ -166,7 +170,7 @@ export default function ReportsPage() {
           return;
         
         case 'users':
-          await handleExportUsers();
+          setIsUsersExportModalOpen(true);
           return;
         case 'attendance':
           // Открываем модальное окно для настройки экспорта посещаемости
@@ -259,7 +263,7 @@ export default function ReportsPage() {
     }
   };
 
-  const handleExportUsers = async () => {
+  const handleExportUsers = async (isArchived?: boolean | null) => {
     if (!user?.organizationId) {
       showError('Организация не найдена');
       return;
@@ -272,13 +276,20 @@ export default function ReportsPage() {
         throw new Error('Токен авторизации не найден');
       }
 
+      const requestBody: { organizationId: string; isArchived?: boolean } = {
+        organizationId: user.organizationId,
+      };
+      if (isArchived !== null && isArchived !== undefined) {
+        requestBody.isArchived = isArchived;
+      }
+
       const response = await fetch(`${API_BASE_URL}/Export/users`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
           'Authorization': `Bearer ${token}`,
         },
-        body: JSON.stringify({ organizationId: user.organizationId }),
+        body: JSON.stringify(requestBody),
       });
 
       if (!response.ok) {
@@ -1270,6 +1281,57 @@ export default function ReportsPage() {
         groups={groups}
         isExporting={isExportingMarket}
       />
+
+      {/* Модальное окно экспорта пользователей */}
+      {isUsersExportModalOpen && (
+        <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-50">
+          <div className="bg-white dark:bg-gray-800 rounded-xl shadow-xl max-w-sm w-full mx-4">
+            <div className="p-6 border-b border-gray-200 dark:border-gray-700">
+              <h3 className="text-lg font-semibold text-gray-900 dark:text-white">Экспорт пользователей</h3>
+              <p className="text-sm text-gray-600 dark:text-gray-400 mt-1">Выберите категорию пользователей</p>
+            </div>
+            <div className="p-6">
+              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                Фильтр по статусу
+              </label>
+              <select
+                value={usersExportIsArchived === null ? '' : String(usersExportIsArchived)}
+                onChange={e => {
+                  const v = e.target.value;
+                  setUsersExportIsArchived(v === '' ? null : v === 'true');
+                }}
+                className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+              >
+                <option value="">Все пользователи</option>
+                <option value="false">Только активные</option>
+                <option value="true">Только архивные</option>
+              </select>
+            </div>
+            <div className="flex items-center justify-end gap-3 p-6 border-t border-gray-200 dark:border-gray-700">
+              <button
+                onClick={() => { setIsUsersExportModalOpen(false); setUsersExportIsArchived(null); }}
+                className="px-4 py-2 text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg transition-colors"
+              >
+                Отмена
+              </button>
+              <button
+                onClick={async () => {
+                  await handleExportUsers(usersExportIsArchived);
+                  setIsUsersExportModalOpen(false);
+                  setUsersExportIsArchived(null);
+                }}
+                disabled={isExporting === 'users'}
+                className="px-4 py-2 bg-gradient-to-r from-blue-500 to-cyan-600 hover:from-blue-600 hover:to-cyan-700 disabled:opacity-50 disabled:cursor-not-allowed text-white rounded-lg transition-all flex items-center gap-2"
+              >
+                {isExporting === 'users' && (
+                  <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white"></div>
+                )}
+                Экспортировать
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </>
   );
 }

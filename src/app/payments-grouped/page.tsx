@@ -111,6 +111,11 @@ export default function PaymentsGroupedPage() {
   const [showStudentDetailsModal, setShowStudentDetailsModal] = useState(false);
   const [selectedStudentDetails, setSelectedStudentDetails] = useState<StudentGroupBalanceDetail | null>(null);
   const [detailsLoading, setDetailsLoading] = useState(false);
+  const [transactionPage, setTransactionPage] = useState(1);
+  const [transactionPageLoading, setTransactionPageLoading] = useState(false);
+  // keep studentId+groupId to reload on page change
+  const [detailStudentId, setDetailStudentId] = useState('');
+  const [detailGroupId, setDetailGroupId] = useState('');
   
   // Refund modal state
   const [showRefundModal, setShowRefundModal] = useState(false);
@@ -299,17 +304,32 @@ export default function PaymentsGroupedPage() {
     setExpandedGroups(new Set());
   };
 
-  const fetchStudentDetails = async (studentId: string, groupId: string) => {
+  const fetchStudentDetails = async (studentId: string, groupId: string, page = 1, isPageChange = false) => {
     try {
-      setDetailsLoading(true);
-      const details = await StudentBalanceApiService.getStudentGroupBalanceDetails(studentId, groupId);
+      if (isPageChange) {
+        setTransactionPageLoading(true);
+      } else {
+        setDetailsLoading(true);
+      }
+      const details = await StudentBalanceApiService.getStudentGroupBalanceDetails(studentId, groupId, page);
       setSelectedStudentDetails(details);
-      setShowStudentDetailsModal(true);
+      if (!isPageChange) {
+        setDetailStudentId(studentId);
+        setDetailGroupId(groupId);
+        setTransactionPage(1);
+        setShowStudentDetailsModal(true);
+      }
     } catch (error) {
       showError('Не удалось загрузить детали студента');
     } finally {
       setDetailsLoading(false);
+      setTransactionPageLoading(false);
     }
+  };
+
+  const handleTransactionPageChange = (newPage: number) => {
+    setTransactionPage(newPage);
+    fetchStudentDetails(detailStudentId, detailGroupId, newPage, true);
   };
 
   const handleStudentClick = (student: StudentPayment, groupId: string) => () => {
@@ -1079,59 +1099,97 @@ export default function PaymentsGroupedPage() {
                   )}
 
                   {/* Transaction History */}
-                  {selectedStudentDetails.transactionHistory && selectedStudentDetails.transactionHistory.length > 0 && (
+                  {selectedStudentDetails.transactionHistory && selectedStudentDetails.transactionHistory.items.length > 0 && (
                     <div>
-                      <h3 className="font-semibold text-gray-900 dark:text-white mb-3">
-                        История транзакций
-                      </h3>
-                      <div className="space-y-2">
-                        {selectedStudentDetails.transactionHistory.map((transaction) => (
-                          <div
-                            key={transaction.id}
-                            className="flex items-center justify-between p-3 bg-gray-50 dark:bg-gray-700 rounded-lg"
-                          >
-                            <div className="flex-1">
-                              <div className="flex items-center gap-2">
-                                <span className={`px-2 py-1 text-xs font-semibold rounded ${
-                                  transaction.typeDisplayName.toLowerCase().includes('возврат')
-                                    ? 'bg-red-100 text-red-800 dark:bg-red-900/30 dark:text-red-400'
-                                    : transaction.type === 1 
-                                    ? 'bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-400'
-                                    : 'bg-red-100 text-red-800 dark:bg-red-900/30 dark:text-red-400'
-                                }`}>
-                                  {transaction.typeDisplayName}
-                                </span>
-                                <span className="text-sm text-gray-600 dark:text-gray-400">
-                                  {new Date(transaction.operationDate).toLocaleDateString('ru-RU')}
-                                </span>
-                              </div>
-                              <div className="text-sm text-gray-600 dark:text-gray-400 mt-1">
-                                {transaction.description}
-                              </div>
-                              {transaction.processedByName && (
-                                <div className="text-xs text-gray-500 dark:text-gray-400 mt-1">
-                                  Обработал: {transaction.processedByName}
-                                </div>
-                              )}
-                            </div>
-                            <div className="text-right ml-4">
-                              <div className={`text-lg font-bold ${
-                                transaction.typeDisplayName.toLowerCase().includes('возврат') || transaction.amount < 0
-                                  ? 'text-red-600 dark:text-red-400'
-                                  : 'text-green-600 dark:text-green-400'
-                              }`}>
-                                {transaction.typeDisplayName.toLowerCase().includes('возврат')
-                                  ? '-' + formatBalance(Math.abs(transaction.amount))
-                                  : (transaction.amount > 0 ? '+' : '') + formatBalance(transaction.amount)
-                                }
-                              </div>
-                              <div className="text-xs text-gray-500 dark:text-gray-400">
-                                Баланс: {formatBalance(transaction.balanceAfter)}
-                              </div>
-                            </div>
-                          </div>
-                        ))}
+                      <div className="flex items-center justify-between mb-3">
+                        <h3 className="font-semibold text-gray-900 dark:text-white">
+                          История транзакций
+                        </h3>
+                        <span className="text-xs text-gray-500 dark:text-gray-400">
+                          Всего: {selectedStudentDetails.transactionHistory.totalCount}
+                        </span>
                       </div>
+                      {transactionPageLoading ? (
+                        <div className="flex justify-center items-center h-16">
+                          <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-blue-600"></div>
+                        </div>
+                      ) : (
+                        <div className="space-y-2">
+                          {selectedStudentDetails.transactionHistory.items.map((transaction) => (
+                            <div
+                              key={transaction.id}
+                              className="flex items-center justify-between p-3 bg-gray-50 dark:bg-gray-700 rounded-lg"
+                            >
+                              <div className="flex-1">
+                                <div className="flex items-center gap-2">
+                                  <span className={`px-2 py-1 text-xs font-semibold rounded ${
+                                    transaction.typeDisplayName.toLowerCase().includes('возврат')
+                                      ? 'bg-red-100 text-red-800 dark:bg-red-900/30 dark:text-red-400'
+                                      : transaction.type === 1 
+                                      ? 'bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-400'
+                                      : 'bg-red-100 text-red-800 dark:bg-red-900/30 dark:text-red-400'
+                                  }`}>
+                                    {transaction.typeDisplayName}
+                                  </span>
+                                  <span className="text-sm text-gray-600 dark:text-gray-400">
+                                    {new Date(transaction.operationDate).toLocaleDateString('ru-RU')}
+                                  </span>
+                                </div>
+                                <div className="text-sm text-gray-600 dark:text-gray-400 mt-1">
+                                  {transaction.description}
+                                </div>
+                                {transaction.processedByName && (
+                                  <div className="text-xs text-gray-500 dark:text-gray-400 mt-1">
+                                    Обработал: {transaction.processedByName}
+                                  </div>
+                                )}
+                              </div>
+                              <div className="text-right ml-4">
+                                <div className={`text-lg font-bold ${
+                                  transaction.typeDisplayName.toLowerCase().includes('возврат') || transaction.amount < 0
+                                    ? 'text-red-600 dark:text-red-400'
+                                    : 'text-green-600 dark:text-green-400'
+                                }`}>
+                                  {transaction.typeDisplayName.toLowerCase().includes('возврат')
+                                    ? '-' + formatBalance(Math.abs(transaction.amount))
+                                    : (transaction.amount > 0 ? '+' : '') + formatBalance(transaction.amount)
+                                  }
+                                </div>
+                                <div className="text-xs text-gray-500 dark:text-gray-400">
+                                  Баланс: {formatBalance(transaction.balanceAfter)}
+                                </div>
+                              </div>
+                            </div>
+                          ))}
+                        </div>
+                      )}
+                      {/* Pagination */}
+                      {selectedStudentDetails.transactionHistory.totalPages > 1 && (
+                        <div className="flex items-center justify-between mt-4 pt-3 border-t border-gray-200 dark:border-gray-600">
+                          <span className="text-sm text-gray-500 dark:text-gray-400">
+                            {(transactionPage - 1) * 10 + 1}–{Math.min(transactionPage * 10, selectedStudentDetails.transactionHistory.totalCount)} из {selectedStudentDetails.transactionHistory.totalCount}
+                          </span>
+                          <div className="flex gap-2">
+                            <button
+                              onClick={() => handleTransactionPageChange(transactionPage - 1)}
+                              disabled={!selectedStudentDetails.transactionHistory.hasPreviousPage || transactionPageLoading}
+                              className="px-3 py-1 text-sm border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-600 disabled:opacity-50 disabled:cursor-not-allowed"
+                            >
+                              Назад
+                            </button>
+                            <span className="px-3 py-1 text-sm text-gray-700 dark:text-gray-300">
+                              {transactionPage} / {selectedStudentDetails.transactionHistory.totalPages}
+                            </span>
+                            <button
+                              onClick={() => handleTransactionPageChange(transactionPage + 1)}
+                              disabled={!selectedStudentDetails.transactionHistory.hasNextPage || transactionPageLoading}
+                              className="px-3 py-1 text-sm border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-600 disabled:opacity-50 disabled:cursor-not-allowed"
+                            >
+                              Вперёд
+                            </button>
+                          </div>
+                        </div>
+                      )}
                     </div>
                   )}
                 </div>

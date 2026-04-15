@@ -591,16 +591,16 @@ function LessonDetailContent({ lessonId }: { lessonId: string }) {
           {!isStudent && !isCancelled && (
             <>
               <TabButton
+                label={`Посещаемость (${lesson.students.length})`}
+                icon={<PencilSquareIcon className="w-4 h-4" />}
+                active={activeTab === 'attendance'}
+                onClick={() => setActiveTab('attendance')}
+              />
+              <TabButton
                 label={`Студенты (${lesson.students.length})`}
                 icon={<UserGroupIcon className="w-4 h-4" />}
                 active={activeTab === 'students'}
                 onClick={() => setActiveTab('students')}
-              />
-              <TabButton
-                label="Посещаемость"
-                icon={<PencilSquareIcon className="w-4 h-4" />}
-                active={activeTab === 'attendance'}
-                onClick={() => setActiveTab('attendance')}
               />
             </>
           )}
@@ -750,107 +750,99 @@ function LessonDetailContent({ lessonId }: { lessonId: string }) {
                 <StatCard label="Не отмечены" value={unmarkedStudents.length} color="gray" />
               </div>
 
-              {lesson.lessonStatus === 'Planned' ? (
-                <>
-                  <div className="text-center py-12 text-gray-400 dark:text-gray-500">
-                    <span className="text-4xl">📅</span>
-                    <p className="mt-3 font-medium text-gray-600 dark:text-gray-400">Занятие ещё не проведено</p>
-                    <p className="text-sm mt-1">Посещаемость будет доступна после проведения</p>
-                  </div>
-                  {/* Make-up section even for planned lessons */}
-                  {(isAdministrator || isOwner) && (
-                    <MakeUpSection
-                      makeUpStudents={makeUpStudents}
-                      makeUpLoading={makeUpLoading}
-                      onAdd={handleOpenAddMakeUp}
-                      onDelete={handleDeleteMakeUp}
-                    />
-                  )}
-                </>
+              {lesson.lessonStatus !== 'Planned' && (
+                <div className="bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-700 rounded-lg p-3 text-sm text-blue-700 dark:text-blue-300">
+                  Нажмите на студента для редактирования статуса, оценки и комментария
+                </div>
+              )}
+
+              {lesson.students.length === 0 ? (
+                <div className="text-center py-12 text-gray-400 dark:text-gray-500">
+                  <span className="text-4xl">👥</span>
+                  <p className="mt-3 font-medium">Студенты не найдены</p>
+                </div>
               ) : (
-                <>
-                  <div className="bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-700 rounded-lg p-3 text-sm text-blue-700 dark:text-blue-300">
-                    Нажмите на студента для редактирования статуса, оценки и комментария
-                  </div>
-                  <div className="space-y-2">
-                    {lesson.students.map((student) => {
-                      const makeUpEntry = makeUpStudents.find(m => m.userId === student.id);
-                      const isMakeUp = !!makeUpEntry;
-                      return (
-                        <div
-                          key={student.id}
-                          className={`flex items-center justify-between p-4 rounded-xl border transition-all ${
-                            isMakeUp
-                              ? 'bg-amber-50 dark:bg-amber-900/10 border-amber-200 dark:border-amber-700/50'
-                              : 'bg-gray-50 dark:bg-gray-700/50 border-transparent hover:border-violet-200 dark:hover:border-violet-700 hover:bg-white dark:hover:bg-gray-700 cursor-pointer'
-                          }`}
-                          onClick={isMakeUp ? undefined : () => { setSelectedStudent(student); setIsGradeModalOpen(true); }}
-                        >
-                          <div className="flex items-center gap-3 min-w-0">
-                            {student.photoPath ? (
-                              <img src={student.photoPath} alt={student.fullName} className="w-10 h-10 rounded-full object-cover flex-shrink-0" />
-                            ) : (
-                              <div className={`w-10 h-10 rounded-full flex items-center justify-center flex-shrink-0 ${isMakeUp ? 'bg-amber-100 dark:bg-amber-900/30' : 'bg-violet-100 dark:bg-violet-900/30'}`}>
-                                <span className={`font-semibold text-sm ${isMakeUp ? 'text-amber-600 dark:text-amber-300' : 'text-violet-600 dark:text-violet-300'}`}>{student.fullName.charAt(0)}</span>
-                              </div>
-                            )}
-                            <div className="min-w-0">
-                              <div className="flex items-center gap-2 flex-wrap">
-                                <p className="font-medium text-gray-900 dark:text-white truncate">{student.fullName}</p>
-                                {isMakeUp && (
-                                  <span className="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-semibold bg-amber-100 dark:bg-amber-900/40 text-amber-700 dark:text-amber-300 flex-shrink-0">
-                                    🔄 Отработка
-                                  </span>
-                                )}
-                              </div>
-                              <p className={`text-xs mt-0.5 ${student.remainingLessons === 0 && !isMakeUp ? 'text-red-500' : student.remainingLessons <= 2 && !isMakeUp ? 'text-amber-500' : 'text-gray-400'}`}>
-                                {isMakeUp ? 'Замещающий урок' : `Ост. занятий: ${student.remainingLessons}`}
-                              </p>
+                <div className="space-y-2">
+                  {lesson.students.map((student) => {
+                    const makeUpEntry = makeUpStudents.find(m => m.userId === student.id);
+                    const isMakeUp = !!makeUpEntry;
+                    const isClickable = lesson.lessonStatus !== 'Planned' && !isMakeUp;
+                    return (
+                      <div
+                        key={student.id}
+                        className={`flex items-center justify-between p-4 rounded-xl border transition-all ${
+                          isMakeUp
+                            ? 'bg-amber-50 dark:bg-amber-900/10 border-amber-200 dark:border-amber-700/50'
+                            : isClickable
+                            ? 'bg-gray-50 dark:bg-gray-700/50 border-transparent hover:border-violet-200 dark:hover:border-violet-700 hover:bg-white dark:hover:bg-gray-700 cursor-pointer'
+                            : 'bg-gray-50 dark:bg-gray-700/50 border-transparent'
+                        }`}
+                        onClick={isClickable ? () => { setSelectedStudent(student); setIsGradeModalOpen(true); } : undefined}
+                      >
+                        <div className="flex items-center gap-3 min-w-0">
+                          {student.photoPath ? (
+                            <img src={student.photoPath} alt={student.fullName} className="w-10 h-10 rounded-full object-cover flex-shrink-0" />
+                          ) : (
+                            <div className={`w-10 h-10 rounded-full flex items-center justify-center flex-shrink-0 ${isMakeUp ? 'bg-amber-100 dark:bg-amber-900/30' : 'bg-violet-100 dark:bg-violet-900/30'}`}>
+                              <span className={`font-semibold text-sm ${isMakeUp ? 'text-amber-600 dark:text-amber-300' : 'text-violet-600 dark:text-violet-300'}`}>{student.fullName.charAt(0)}</span>
                             </div>
-                          </div>
-                          <div className="flex items-center gap-2 flex-shrink-0">
-                            <span
-                              className="px-3 py-1 rounded-full text-xs font-medium"
-                              style={{ backgroundColor: getAttendanceStatusColor(student.attendanceStatus) + '20', color: getAttendanceStatusColor(student.attendanceStatus) }}
-                            >
-                              {getAttendanceStatusText(student.attendanceStatus)}
-                            </span>
-                            {(student.grade || student.comment) && (
-                              <span className="text-xs text-gray-400">
-                                {student.grade ? `${student.grade}б` : ''}
-                                {student.grade && student.comment ? ' · ' : ''}
-                                {student.comment ? '📝' : ''}
-                              </span>
-                            )}
-                            {isMakeUp && (isAdministrator || isOwner) ? (
-                              <button
-                                onClick={(e) => { e.stopPropagation(); handleDeleteMakeUp(makeUpEntry!); }}
-                                className="p-1.5 text-red-400 hover:text-red-600 dark:hover:text-red-400 hover:bg-red-50 dark:hover:bg-red-900/20 rounded-lg transition-colors"
-                                title="Удалить отработку"
-                              >
-                                <TrashIcon className="w-4 h-4" />
-                              </button>
-                            ) : !isMakeUp ? (
-                              <svg className="w-4 h-4 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
-                              </svg>
-                            ) : null}
+                          )}
+                          <div className="min-w-0">
+                            <div className="flex items-center gap-2 flex-wrap">
+                              <p className="font-medium text-gray-900 dark:text-white truncate">{student.fullName}</p>
+                              {isMakeUp && (
+                                <span className="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-semibold bg-amber-100 dark:bg-amber-900/40 text-amber-700 dark:text-amber-300 flex-shrink-0">
+                                  🔄 Отработка
+                                </span>
+                              )}
+                            </div>
+                            <p className={`text-xs mt-0.5 ${student.remainingLessons === 0 && !isMakeUp ? 'text-red-500' : student.remainingLessons <= 2 && !isMakeUp ? 'text-amber-500' : 'text-gray-400'}`}>
+                              {isMakeUp ? 'Замещающий урок' : `Ост. занятий: ${student.remainingLessons}`}
+                            </p>
                           </div>
                         </div>
-                      );
-                    })}
-                  </div>
+                        <div className="flex items-center gap-2 flex-shrink-0">
+                          <span
+                            className="px-3 py-1 rounded-full text-xs font-medium"
+                            style={{ backgroundColor: getAttendanceStatusColor(student.attendanceStatus) + '20', color: getAttendanceStatusColor(student.attendanceStatus) }}
+                          >
+                            {getAttendanceStatusText(student.attendanceStatus)}
+                          </span>
+                          {(student.grade || student.comment) && (
+                            <span className="text-xs text-gray-400">
+                              {student.grade ? `${student.grade}б` : ''}
+                              {student.grade && student.comment ? ' · ' : ''}
+                              {student.comment ? '📝' : ''}
+                            </span>
+                          )}
+                          {isMakeUp && (isAdministrator || isOwner) ? (
+                            <button
+                              onClick={(e) => { e.stopPropagation(); handleDeleteMakeUp(makeUpEntry!); }}
+                              className="p-1.5 text-red-400 hover:text-red-600 dark:hover:text-red-400 hover:bg-red-50 dark:hover:bg-red-900/20 rounded-lg transition-colors"
+                              title="Удалить отработку"
+                            >
+                              <TrashIcon className="w-4 h-4" />
+                            </button>
+                          ) : isClickable ? (
+                            <svg className="w-4 h-4 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
+                            </svg>
+                          ) : null}
+                        </div>
+                      </div>
+                    );
+                  })}
+                </div>
+              )}
 
-                  {/* Make-up section */}
-                  {(isAdministrator || isOwner) && (
-                    <MakeUpSection
-                      makeUpStudents={makeUpStudents}
-                      makeUpLoading={makeUpLoading}
-                      onAdd={handleOpenAddMakeUp}
-                      onDelete={handleDeleteMakeUp}
-                    />
-                  )}
-                </>
+              {/* Make-up section */}
+              {(isAdministrator || isOwner) && (
+                <MakeUpSection
+                  makeUpStudents={makeUpStudents}
+                  makeUpLoading={makeUpLoading}
+                  onAdd={handleOpenAddMakeUp}
+                  onDelete={handleDeleteMakeUp}
+                />
               )}
             </div>
           )}

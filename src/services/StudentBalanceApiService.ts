@@ -159,9 +159,14 @@ export class StudentBalanceApiService {
   /**
    * Получить детальную информацию о балансе студента в конкретной группе
    */
-  static async getStudentGroupBalanceDetails(studentId: string, groupId: string): Promise<StudentGroupBalanceDetail> {
+  static async getStudentGroupBalanceDetails(
+    studentId: string,
+    groupId: string,
+    transactionPage = 1,
+    transactionPageSize = 10
+  ): Promise<StudentGroupBalanceDetail> {
     return AuthenticatedApiService.get(
-      `/StudentBalance/${studentId}/group/${groupId}`
+      `/StudentBalance/${studentId}/group/${groupId}?transactionPageNumber=${transactionPage}&transactionPageSize=${transactionPageSize}`
     );
   }
 }

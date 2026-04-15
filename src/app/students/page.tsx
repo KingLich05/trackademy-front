@@ -48,6 +48,17 @@ export default function StudentsPage() {
   // Archive state
   const [showArchive, setShowArchive] = useState(false);
 
+  // Detailed user export
+  const [detailedExportUser, setDetailedExportUser] = useState<User | null>(null);
+  const [detailedExportFilters, setDetailedExportFilters] = useState({
+    dateFrom: '',
+    dateTo: '',
+    includeMarket: false,
+    marketTransactionsLimit: '',
+    marketPurchasesLimit: '',
+  });
+  const [isExportingDetailed, setIsExportingDetailed] = useState(false);
+
   // Sorting state
   const [sortBy, setSortBy] = useState<string>('createddate');
   const [sortOrder, setSortOrder] = useState<'asc' | 'desc'>('desc');
@@ -627,7 +638,7 @@ export default function StudentsPage() {
           'Content-Type': 'application/json',
           'Authorization': `Bearer ${token}`,
         },
-        body: JSON.stringify({ organizationId: user.organizationId }),
+        body: JSON.stringify({ organizationId: user.organizationId, isArchived: showArchive }),
       });
 
       if (!response.ok) {
@@ -646,6 +657,51 @@ export default function StudentsPage() {
       document.body.removeChild(a);
     } catch (error) {
       console.error('Ошибка при экспорте пользователей:', error);
+    }
+  };
+
+  const handleExportDetailed = async () => {
+    if (!detailedExportUser) return;
+    setIsExportingDetailed(true);
+    try {
+      const token = localStorage.getItem('authToken');
+      if (!token) throw new Error('Токен не найден');
+
+      const body: Record<string, unknown> = { userId: detailedExportUser.id };
+      if (detailedExportFilters.dateFrom) body.dateFrom = new Date(detailedExportFilters.dateFrom).toISOString();
+      if (detailedExportFilters.dateTo) body.dateTo = new Date(detailedExportFilters.dateTo).toISOString();
+      if (detailedExportFilters.includeMarket) {
+        body.includeMarket = true;
+        if (detailedExportFilters.marketTransactionsLimit !== '') body.marketTransactionsLimit = Number(detailedExportFilters.marketTransactionsLimit);
+        if (detailedExportFilters.marketPurchasesLimit !== '') body.marketPurchasesLimit = Number(detailedExportFilters.marketPurchasesLimit);
+      }
+
+      const response = await fetch(`${API_BASE_URL}/Export/user-detailed`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
+        body: JSON.stringify(body),
+      });
+
+      if (!response.ok) throw new Error('Ошибка экспорта');
+
+      const blob = await response.blob();
+      const url = window.URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = `user_${detailedExportUser.name}_${new Date().toISOString().split('T')[0]}.xlsx`;
+      document.body.appendChild(a);
+      a.click();
+      window.URL.revokeObjectURL(url);
+      document.body.removeChild(a);
+
+      showSuccess('Файл успешно загружен');
+      setDetailedExportUser(null);
+      setDetailedExportFilters({ dateFrom: '', dateTo: '', includeMarket: false, marketTransactionsLimit: '', marketPurchasesLimit: '' });
+    } catch (error) {
+      console.error('Ошибка детального экспорта:', error);
+      showError('Ошибка при экспорте пользователя');
+    } finally {
+      setIsExportingDetailed(false);
     }
   };
 
@@ -895,6 +951,10 @@ export default function StudentsPage() {
               sortBy={sortBy}
               sortOrder={sortOrder}
               onSort={handleSort}
+              onExportDetailed={(u) => {
+                setDetailedExportUser(u);
+                setDetailedExportFilters({ dateFrom: '', dateTo: '', includeMarket: false, marketTransactionsLimit: '', marketPurchasesLimit: '' });
+              }}
             />
           </div>
 
@@ -1256,6 +1316,97 @@ export default function StudentsPage() {
         isLoading={isBulkAdding}
         onRemoveStudent={handleRemoveStudentFromBulk}
       />
+
+      {/* Детальный экспорт пользователя */}
+      {detailedExportUser && (
+        <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-50">
+          <div className="bg-white dark:bg-gray-800 rounded-xl shadow-xl max-w-md w-full mx-4">
+            <div className="p-6 border-b border-gray-200 dark:border-gray-700">
+              <h3 className="text-lg font-semibold text-gray-900 dark:text-white">Детальный экспорт</h3>
+              <p className="text-sm text-gray-500 dark:text-gray-400 mt-1">{detailedExportUser.name}</p>
+            </div>
+            <div className="p-6 space-y-4">
+              {/* Period */}
+              <div className="grid grid-cols-2 gap-3">
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">От</label>
+                  <input
+                    type="date"
+                    value={detailedExportFilters.dateFrom}
+                    onChange={e => setDetailedExportFilters(prev => ({ ...prev, dateFrom: e.target.value }))}
+                    className="w-full px-3 py-2 text-sm border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-emerald-500 focus:border-transparent"
+                  />
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">До</label>
+                  <input
+                    type="date"
+                    value={detailedExportFilters.dateTo}
+                    onChange={e => setDetailedExportFilters(prev => ({ ...prev, dateTo: e.target.value }))}
+                    className="w-full px-3 py-2 text-sm border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-emerald-500 focus:border-transparent"
+                  />
+                </div>
+              </div>
+
+              {/* Include Market */}
+              <div className="flex items-center gap-3">
+                <input
+                  type="checkbox"
+                  id="includeMarket"
+                  checked={detailedExportFilters.includeMarket}
+                  onChange={e => setDetailedExportFilters(prev => ({ ...prev, includeMarket: e.target.checked }))}
+                  className="w-4 h-4 text-emerald-600 bg-gray-100 border-gray-300 rounded focus:ring-emerald-500 dark:bg-gray-700 dark:border-gray-600"
+                />
+                <label htmlFor="includeMarket" className="text-sm font-medium text-gray-700 dark:text-gray-300">Включить маркет</label>
+              </div>
+
+              {/* Market limits — only when includeMarket */}
+              {detailedExportFilters.includeMarket && (
+                <div className="grid grid-cols-2 gap-3 pl-7">
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Лимит транзакций</label>
+                    <input
+                      type="number"
+                      min="0"
+                      placeholder="Без лимита"
+                      value={detailedExportFilters.marketTransactionsLimit}
+                      onChange={e => setDetailedExportFilters(prev => ({ ...prev, marketTransactionsLimit: e.target.value }))}
+                      className="w-full px-3 py-2 text-sm border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-emerald-500 focus:border-transparent"
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Лимит покупок</label>
+                    <input
+                      type="number"
+                      min="0"
+                      placeholder="Без лимита"
+                      value={detailedExportFilters.marketPurchasesLimit}
+                      onChange={e => setDetailedExportFilters(prev => ({ ...prev, marketPurchasesLimit: e.target.value }))}
+                      className="w-full px-3 py-2 text-sm border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-emerald-500 focus:border-transparent"
+                    />
+                  </div>
+                </div>
+              )}
+            </div>
+            <div className="flex items-center justify-end gap-3 p-6 border-t border-gray-200 dark:border-gray-700">
+              <button
+                onClick={() => setDetailedExportUser(null)}
+                className="px-4 py-2 text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg transition-colors"
+              >
+                Отмена
+              </button>
+              <button
+                onClick={handleExportDetailed}
+                disabled={isExportingDetailed}
+                className="px-4 py-2 bg-gradient-to-r from-emerald-500 to-lime-600 hover:from-emerald-600 hover:to-lime-700 disabled:opacity-50 disabled:cursor-not-allowed text-white rounded-lg transition-all flex items-center gap-2"
+              >
+                {isExportingDetailed && <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white" />}
+                Экспортировать
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

@@ -1,7 +1,7 @@
 'use client';
 
 import React from 'react';
-import { UserIcon, PencilIcon, TrashIcon, EyeIcon, ArrowUturnLeftIcon, ChevronUpIcon, ChevronDownIcon } from '@heroicons/react/24/outline';
+import { UserIcon, PencilIcon, TrashIcon, EyeIcon, ArrowUturnLeftIcon, ChevronUpIcon, ChevronDownIcon, DocumentArrowDownIcon } from '@heroicons/react/24/outline';
 import { User } from '../../types/User';
 import { canManageUsers } from '../../types/Role';
 import { useColumnVisibility, ColumnVisibilityControl } from './ColumnVisibilityControl';
@@ -14,6 +14,7 @@ interface UsersTableProps {
   onEdit: (user: User) => void;
   onDelete: (user: User) => void;
   onRestore?: (userId: string) => void;
+  onExportDetailed?: (user: User) => void;
   showArchive?: boolean;
   showColumnControls?: boolean;
   columnVisibility?: (columnKey: string) => boolean;
@@ -35,6 +36,7 @@ export const UsersTable: React.FC<UsersTableProps> = ({
   onEdit,
   onDelete,
   onRestore,
+  onExportDetailed,
   showArchive = false,
   showColumnControls = true,
   columnVisibility,
@@ -349,6 +351,16 @@ export const UsersTable: React.FC<UsersTableProps> = ({
                         >
                           <EyeIcon className="h-4 w-4" />
                         </Link>
+                      )}
+                      {onExportDetailed && (
+                        <button
+                          onClick={() => onExportDetailed(user)}
+                          className="p-2 text-emerald-600 hover:text-emerald-800 dark:text-emerald-400 dark:hover:text-emerald-300
+                                   hover:bg-emerald-50 dark:hover:bg-emerald-900/20 rounded-lg transition-all"
+                          title="Детальный экспорт"
+                        >
+                          <DocumentArrowDownIcon className="h-4 w-4" />
+                        </button>
                       )}
                       <button
                         onClick={() => onEdit(user)}
