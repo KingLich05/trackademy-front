@@ -155,7 +155,7 @@ export default function WeekView({ date, lessons, onLessonClick }: WeekViewProps
       {/* Single scrollable container — scrolls both X and Y together */}
       <div className="flex-1 overflow-auto">
         {/* Min-width wrapper: 64px time col + 7 × 110px day cols = 834px */}
-        <div style={{ minWidth: '834px' }}>
+        <div style={{ minWidth: '834px', width: '100%' }}>
 
           {/* Header — sticky to top of scroll container */}
           <div className="sticky top-0 z-20 bg-white dark:bg-gray-800 border-b border-gray-200 dark:border-gray-700">
@@ -165,7 +165,7 @@ export default function WeekView({ date, lessons, onLessonClick }: WeekViewProps
                 <div className="text-xs text-gray-500 dark:text-gray-400">Время</div>
               </div>
 
-              {/* Day headers — fixed 110px each */}
+              {/* Day headers — grow to fill available width */}
               {weekDays.map((day, index) => {
                 const dayLessons = getLessonsForDay(lessons, day);
                 const isToday = day.toDateString() === new Date().toDateString();
@@ -173,7 +173,7 @@ export default function WeekView({ date, lessons, onLessonClick }: WeekViewProps
                 return (
                   <div
                     key={day.toISOString()}
-                    className="flex-shrink-0 w-[110px] p-2 border-r border-gray-200 dark:border-gray-700 last:border-r-0"
+                    className="flex-1 min-w-[110px] p-2 border-r border-gray-200 dark:border-gray-700 last:border-r-0"
                   >
                     <div className={`text-center ${isToday ? 'text-violet-600 dark:text-violet-400 font-semibold' : 'text-gray-900 dark:text-white'}`}>
                       <div className="text-sm font-medium">{dayNames[index]}</div>
@@ -203,11 +203,11 @@ export default function WeekView({ date, lessons, onLessonClick }: WeekViewProps
                   {timeSlot}
                 </div>
 
-                {/* Day cells — fixed 110px each */}
+                {/* Day cells — grow to fill available width */}
                 {weekDays.map((day) => (
                   <div
                     key={`${day.toISOString()}-${timeSlot}`}
-                    className="flex-shrink-0 w-[110px] border-r border-gray-100 dark:border-gray-700 last:border-r-0"
+                    className="flex-1 min-w-[110px] border-r border-gray-100 dark:border-gray-700 last:border-r-0"
                   />
                 ))}
               </div>
@@ -223,8 +223,8 @@ export default function WeekView({ date, lessons, onLessonClick }: WeekViewProps
                   key={`lessons-${day.toISOString()}`}
                   className="absolute top-0 pointer-events-none"
                   style={{
-                    left: `${64 + dayIndex * 110}px`,
-                    width: '108px',
+                    left: `calc(64px + ${dayIndex} * ((100% - 64px) / 7))`,
+                    width: `calc((100% - 64px) / 7 - 2px)`,
                     height: '100%',
                     zIndex: 10
                   }}

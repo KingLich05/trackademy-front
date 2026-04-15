@@ -166,7 +166,7 @@ export class StudentBalanceApiService {
     transactionPageSize = 10
   ): Promise<StudentGroupBalanceDetail> {
     return AuthenticatedApiService.get(
-      `/StudentBalance/${studentId}/group/${groupId}?transactionPageNumber=${transactionPage}&transactionPageSize=${transactionPageSize}`
+      `/StudentBalance/${studentId}/group/${groupId}?PageNumber=${transactionPage}&PageSize=${transactionPageSize}`
     );
   }
 }

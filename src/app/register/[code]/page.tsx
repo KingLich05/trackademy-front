@@ -166,18 +166,21 @@ export default function RegisterPage({ params }: { params: Promise<{ code: strin
             {context.teacherName && (
               <InfoRow label="Преподаватель" value={context.teacherName} />
             )}
-            {context.lessonDate && (
-              <InfoRow
-                label="Дата"
-                value={new Date(
-                  context.lessonDate.includes('T') ? context.lessonDate : context.lessonDate + 'T00:00:00'
-                ).toLocaleDateString('ru-RU', {
-                  weekday: 'long',
-                  day: 'numeric',
-                  month: 'long',
-                })}
-              />
-            )}
+            {context.lessonDate && (() => {
+              // Parse manually to avoid Safari UTC-vs-local ambiguity with ISO date strings
+              const parts = context.lessonDate.split(/[-T]/);
+              const d = new Date(+parts[0], +parts[1] - 1, +parts[2]);
+              return (
+                <InfoRow
+                  label="Дата"
+                  value={isNaN(d.getTime()) ? context.lessonDate : d.toLocaleDateString('ru-RU', {
+                    weekday: 'long',
+                    day: 'numeric',
+                    month: 'long',
+                  })}
+                />
+              );
+            })()}
             {context.lessonTime && (
               <InfoRow label="Время" value={context.lessonTime} />
             )}
