@@ -819,7 +819,7 @@ export default function StudentsPage() {
           actionLabel={user && canManageUsers(user.role) ? "Добавить пользователя" : undefined}
           onAction={user && canManageUsers(user.role) ? () => userModal.openCreateModal() : undefined}
           extraActions={
-            <div className="flex items-center gap-2">
+            <div className="flex flex-wrap items-center gap-2">
               {user && canManageUsers(user.role) && (
                 <>
                   <button

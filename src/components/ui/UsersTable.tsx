@@ -218,12 +218,12 @@ export const UsersTable: React.FC<UsersTableProps> = ({
                 </th>
               )}
               {isColumnVisible('createdDate') && (
-                <th className="px-3 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider" style={{ width: '12%' }}>
+                <th className="hidden xl:table-cell px-3 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider" style={{ width: '12%' }}>
                   <SortableHeader column="createddate" label="Дата создания" />
                 </th>
               )}
               {isColumnVisible('actions') && currentUser && canManageUsers(currentUser.role) && (
-                <th className="px-3 py-3 text-right text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider" style={{ width: '100px' }}>
+                <th className="px-3 py-3 text-right text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider" style={{ width: '130px' }}>
                   Действия
                 </th>
               )}
@@ -324,7 +324,7 @@ export const UsersTable: React.FC<UsersTableProps> = ({
                   </td>
                 )}
                 {isColumnVisible('createdDate') && (
-                  <td className="px-3 py-3 whitespace-nowrap">
+                  <td className="hidden xl:table-cell px-3 py-3 whitespace-nowrap">
                     <div className="text-sm text-gray-500 dark:text-gray-400">
                       {new Date(user.createdDate).toLocaleDateString('ru-RU')}
                     </div>
