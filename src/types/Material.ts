@@ -31,4 +31,5 @@ export interface MaterialFormData {
 export interface MaterialEditData {
   title: string;
   description?: string;
+  isPrivate?: boolean;
 }

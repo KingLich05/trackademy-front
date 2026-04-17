@@ -172,7 +172,7 @@ export default function RegisterPage() {
       
       // Проверка на полноту даты
       if (birthdayValue.length !== 10 || birthdayValue.split('-').length !== 3) {
-        setError('Укажите полную дату рождения (год, месяц и день)');
+        setError('Укажите полную дату рождения (день, месяц и год)');
         setLoading(false);
         return;
       }
@@ -467,7 +467,7 @@ export default function RegisterPage() {
                   className="w-full px-4 py-3 bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-xl shadow-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 dark:focus:ring-blue-400 dark:focus:border-blue-400 text-gray-900 dark:text-white placeholder-gray-500 dark:placeholder-gray-400 transition-all duration-200"
                 />
                 <p className="mt-2 text-xs text-gray-500 dark:text-gray-400">
-                  Укажите полную дату (год, месяц, день).
+                  Укажите полную дату (день, месяц, год).
                 </p>
               </div>
 

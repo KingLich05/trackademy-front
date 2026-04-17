@@ -43,7 +43,7 @@ export default function LibraryPage() {
   const [previewMaterial, setPreviewMaterial] = useState<LibraryMaterial | null>(null);
 
   const [uploadData, setUploadData] = useState({ title: '', description: '', isPrivate: false, file: null as File | null });
-  const [editData, setEditData] = useState({ title: '', description: '' });
+  const [editData, setEditData] = useState({ title: '', description: '', isPrivate: false });
   const [uploading, setUploading] = useState(false);
   const [deleting, setDeleting] = useState(false);
   const [fileInputKey, setFileInputKey] = useState(0);
@@ -132,7 +132,7 @@ export default function LibraryPage() {
 
   const handleEdit = (material: LibraryMaterial) => {
     setSelectedMaterial(material);
-    setEditData({ title: material.title, description: material.description || '' });
+    setEditData({ title: material.title, description: material.description || '', isPrivate: material.isPrivate ?? false });
     setIsEditModalOpen(true);
   };
 
@@ -144,7 +144,8 @@ export default function LibraryPage() {
     try {
       await AuthenticatedApiService.updateLibraryMaterial(selectedMaterial.id, {
         title: editData.title.trim(),
-        description: editData.description.trim() || undefined
+        description: editData.description.trim() || undefined,
+        isPrivate: editData.isPrivate
       });
       showSuccess('Материал обновлён');
       setIsEditModalOpen(false);
@@ -491,6 +492,19 @@ export default function LibraryPage() {
               rows={3}
               className="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-amber-500"
             />
+          </div>
+          <div className="flex items-center gap-2">
+            <input
+              type="checkbox"
+              id="editLibIsPrivate"
+              checked={editData.isPrivate}
+              onChange={(e) => setEditData({ ...editData, isPrivate: e.target.checked })}
+              className="w-4 h-4 rounded border-gray-300 dark:border-gray-600 text-amber-500 focus:ring-amber-500"
+            />
+            <label htmlFor="editLibIsPrivate" className="text-sm text-gray-700 dark:text-gray-300 flex items-center gap-1">
+              <LockClosedIcon className="w-4 h-4 text-gray-400" />
+              Скачивание запрещено (приватный)
+            </label>
           </div>
           <div className="flex justify-end gap-3 pt-2">
             <button

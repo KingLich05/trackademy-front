@@ -22,4 +22,5 @@ export interface LibraryMaterialsResponse {
 export interface LibraryMaterialEditData {
   title: string;
   description?: string;
+  isPrivate?: boolean;
 }

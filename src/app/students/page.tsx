@@ -1004,7 +1004,7 @@ export default function StudentsPage() {
             
             // Проверка на полноту даты (должна быть в формате YYYY-MM-DD)
             if (birthdayValue.length !== 10 || birthdayValue.split('-').length !== 3) {
-              errors.birthday = 'Укажите полную дату рождения (год, месяц и день)';
+              errors.birthday = 'Укажите полную дату рождения (день, месяц и год)';
             } else {
               const selectedDate = new Date(birthdayValue);
               const today = new Date();
@@ -1181,7 +1181,7 @@ export default function StudentsPage() {
                 )}
                 {!_errors.birthday && (
                   <p className="mt-2 text-xs text-gray-500 dark:text-gray-400">
-                    Укажите полную дату (год, месяц, день).
+                    Укажите полную дату (день, месяц, год).
                   </p>
                 )}
               </div>

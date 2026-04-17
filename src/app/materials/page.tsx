@@ -55,7 +55,8 @@ export default function MaterialsPage() {
   
   const [editData, setEditData] = useState({
     title: '',
-    description: ''
+    description: '',
+    isPrivate: false
   });
   
   const [uploading, setUploading] = useState(false);
@@ -162,7 +163,8 @@ export default function MaterialsPage() {
     setSelectedMaterial(material);
     setEditData({
       title: material.title,
-      description: material.description || ''
+      description: material.description || '',
+      isPrivate: material.isPrivate ?? false
     });
     setIsEditModalOpen(true);
   };
@@ -186,7 +188,8 @@ export default function MaterialsPage() {
     try {
       await AuthenticatedApiService.updateMaterial(selectedMaterial.id, {
         title: editData.title,
-        description: editData.description || undefined
+        description: editData.description || undefined,
+        isPrivate: editData.isPrivate
       });
       showSuccess('Материал обновлен');
       setIsEditModalOpen(false);
@@ -702,6 +705,20 @@ export default function MaterialsPage() {
               rows={3}
               className="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
             />
+          </div>
+
+          <div className="flex items-center gap-2">
+            <input
+              type="checkbox"
+              id="editMatIsPrivate"
+              checked={editData.isPrivate}
+              onChange={(e) => setEditData({ ...editData, isPrivate: e.target.checked })}
+              className="w-4 h-4 rounded border-gray-300 dark:border-gray-600 text-purple-500 focus:ring-purple-500"
+            />
+            <label htmlFor="editMatIsPrivate" className="text-sm text-gray-700 dark:text-gray-300 flex items-center gap-1">
+              <LockClosedIcon className="w-4 h-4 text-gray-400" />
+              Скачивание запрещено (приватный)
+            </label>
           </div>
 
           <div className="flex justify-end gap-3 pt-4">
