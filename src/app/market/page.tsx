@@ -319,7 +319,7 @@ export default function MarketPage() {
         const res = await AuthenticatedApiService.getUsers({
           organizationId: orgId,
           search: q.trim(),
-          roleIds: [3], // Student role
+          roleIds: [1], // Student role
           pageSize: 20,
         });
         setAdjustResults(res.items);

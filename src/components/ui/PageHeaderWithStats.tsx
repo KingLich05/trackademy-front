@@ -67,7 +67,7 @@ export const PageHeaderWithStats: React.FC<PageHeaderWithStatsProps> = ({
   return (
     <div className="bg-white/80 dark:bg-gray-800/80 backdrop-blur-sm shadow-lg rounded-lg md:rounded-xl border border-gray-200/50 dark:border-gray-700/50 overflow-hidden">
       <div className={`${getGradientClasses(gradientFrom, gradientTo)} px-3 sm:px-4 md:px-6 py-3 md:py-4`}>
-        <div className="flex justify-between items-start md:items-center gap-2">
+        <div className="flex flex-wrap justify-between items-center gap-2">
           <div className="flex items-center space-x-2 md:space-x-3 flex-1 min-w-0">
             <div className="p-1.5 md:p-2 bg-white/20 rounded-lg flex-shrink-0">
               <Icon className="h-5 w-5 md:h-6 md:w-6 text-white" />

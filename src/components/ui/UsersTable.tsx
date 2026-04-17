@@ -478,7 +478,7 @@ export const UsersTable: React.FC<UsersTableProps> = ({
                 </div>
 
                 {isColumnVisible('actions') && currentUser && canManageUsers(currentUser.role) && (
-                  <div className="mt-3 flex space-x-2">
+                  <div className="mt-3 flex flex-wrap gap-2">
                     <Link
                       href={`/students/${user.id}`}
                       className="flex-1 px-3 py-2 bg-gray-50 dark:bg-gray-900/20 text-gray-600 dark:text-gray-400 
