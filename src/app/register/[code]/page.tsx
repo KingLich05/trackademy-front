@@ -93,10 +93,12 @@ export default function RegisterPage({ params }: { params: Promise<{ code: strin
 
   // --- Render states ---
 
+  const pageBg = 'min-h-screen flex items-center justify-center p-4 bg-gray-100 dark:bg-[#0f1117]';
+
   if (pageState === 'loading') {
     return (
-      <div className="min-h-screen flex items-center justify-center bg-gray-50">
-        <div className="flex flex-col items-center gap-3 text-gray-500">
+      <div className={pageBg}>
+        <div className="flex flex-col items-center gap-3 text-gray-500 dark:text-gray-400">
           <svg className="animate-spin h-8 w-8" fill="none" viewBox="0 0 24 24">
             <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
             <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z" />
@@ -109,15 +111,15 @@ export default function RegisterPage({ params }: { params: Promise<{ code: strin
 
   if (pageState === 'invalid') {
     return (
-      <div className="min-h-screen flex items-center justify-center bg-gray-50 p-4">
-        <div className="bg-white rounded-2xl shadow-lg max-w-sm w-full p-8 text-center">
-          <div className="w-16 h-16 rounded-full bg-red-100 flex items-center justify-center mx-auto mb-4">
-            <svg className="w-8 h-8 text-red-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+      <div className={pageBg}>
+        <div className="bg-white dark:bg-[#1a1f2e] border border-gray-200 dark:border-gray-700/50 rounded-2xl shadow-2xl max-w-sm w-full p-8 text-center">
+          <div className="w-16 h-16 rounded-full bg-red-100 dark:bg-red-500/20 flex items-center justify-center mx-auto mb-4">
+            <svg className="w-8 h-8 text-red-500 dark:text-red-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
             </svg>
           </div>
-          <h1 className="text-xl font-bold text-gray-900 mb-2">Ссылка недействительна</h1>
-          <p className="text-gray-500 text-sm">
+          <h1 className="text-xl font-bold text-gray-900 dark:text-white mb-2">Ссылка недействительна</h1>
+          <p className="text-gray-500 dark:text-gray-400 text-sm">
             QR-код больше не активен или срок его действия истёк.
             Обратитесь к преподавателю за новым кодом.
           </p>
@@ -128,15 +130,15 @@ export default function RegisterPage({ params }: { params: Promise<{ code: strin
 
   if (pageState === 'success') {
     return (
-      <div className="min-h-screen flex items-center justify-center bg-gray-50 p-4">
-        <div className="bg-white rounded-2xl shadow-lg max-w-sm w-full p-8 text-center">
-          <div className="w-16 h-16 rounded-full bg-green-100 flex items-center justify-center mx-auto mb-4">
-            <svg className="w-8 h-8 text-green-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+      <div className={pageBg}>
+        <div className="bg-white dark:bg-[#1a1f2e] border border-gray-200 dark:border-gray-700/50 rounded-2xl shadow-2xl max-w-sm w-full p-8 text-center">
+          <div className="w-16 h-16 rounded-full bg-green-100 dark:bg-green-500/20 flex items-center justify-center mx-auto mb-4">
+            <svg className="w-8 h-8 text-green-500 dark:text-green-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
             </svg>
           </div>
-          <h1 className="text-xl font-bold text-gray-900 mb-2">Заявка принята!</h1>
-          <p className="text-gray-500 text-sm">
+          <h1 className="text-xl font-bold text-gray-900 dark:text-white mb-2">Заявка принята!</h1>
+          <p className="text-gray-500 dark:text-gray-400 text-sm">
             Спасибо! Мы свяжемся с вами в ближайшее время.
           </p>
         </div>
@@ -146,17 +148,17 @@ export default function RegisterPage({ params }: { params: Promise<{ code: strin
 
   // pageState === 'form'
   return (
-    <div className="min-h-screen flex items-center justify-center bg-gray-50 p-4">
-      <div className="bg-white rounded-2xl shadow-lg max-w-sm w-full">
+    <div className={pageBg}>
+      <div className="bg-white dark:bg-[#1a1f2e] border border-gray-200 dark:border-gray-700/50 rounded-2xl shadow-2xl max-w-sm w-full overflow-hidden">
         {/* School header */}
-        <div className="bg-indigo-600 rounded-t-2xl px-6 py-5 text-white">
-          <p className="text-indigo-200 text-xs uppercase tracking-wider mb-0.5">Запись на урок</p>
+        <div className="bg-gradient-to-r from-violet-600 to-indigo-600 px-6 py-5 text-white">
+          <p className="text-violet-200 text-xs uppercase tracking-wider mb-0.5">Запись на урок</p>
           <h1 className="text-xl font-bold">{context?.organizationName ?? 'Школа'}</h1>
         </div>
 
         {/* Lesson info */}
         {context && (
-          <div className="px-6 pt-5 pb-4 border-b border-gray-100 space-y-1.5">
+          <div className="px-6 pt-5 pb-4 border-b border-gray-200 dark:border-gray-700/50 space-y-1.5">
             {context.groupName && (
               <InfoRow label="Группа" value={context.groupName} />
             )}
@@ -189,8 +191,8 @@ export default function RegisterPage({ params }: { params: Promise<{ code: strin
 
         <form onSubmit={handleSubmit} noValidate className="px-6 py-5 space-y-4">
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">
-              Полное имя <span className="text-red-500">*</span>
+            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+              Полное имя <span className="text-red-500 dark:text-red-400">*</span>
             </label>
             <input
               type="text"
@@ -198,12 +200,13 @@ export default function RegisterPage({ params }: { params: Promise<{ code: strin
               onChange={(e) => setFullName(e.target.value)}
               placeholder="Иванов Иван Иванович"
               className={`w-full px-3 py-2.5 rounded-lg border text-sm outline-none transition-colors
+                bg-white dark:bg-[#0f1117] text-gray-900 dark:text-white placeholder-gray-400 dark:placeholder-gray-500
                 ${nameError
-                  ? 'border-red-400 focus:ring-2 focus:ring-red-200'
-                  : 'border-gray-300 focus:border-indigo-500 focus:ring-2 focus:ring-indigo-200'
+                  ? 'border-red-400 dark:border-red-500 focus:ring-2 focus:ring-red-200 dark:focus:ring-red-500/30'
+                  : 'border-gray-300 dark:border-gray-600 focus:border-violet-500 focus:ring-2 focus:ring-violet-200 dark:focus:ring-violet-500/30'
                 }`}
             />
-            {nameError && <p className="text-xs text-red-500 mt-1">{nameError}</p>}
+            {nameError && <p className="text-xs text-red-500 dark:text-red-400 mt-1">{nameError}</p>}
           </div>
 
           <div>
@@ -217,7 +220,7 @@ export default function RegisterPage({ params }: { params: Promise<{ code: strin
           </div>
 
           {submitError && (
-            <div className="rounded-lg bg-red-50 border border-red-200 px-3 py-2 text-sm text-red-600">
+            <div className="rounded-lg bg-red-50 dark:bg-red-500/10 border border-red-200 dark:border-red-500/30 px-3 py-2 text-sm text-red-600 dark:text-red-400">
               {submitError}
             </div>
           )}
@@ -225,7 +228,7 @@ export default function RegisterPage({ params }: { params: Promise<{ code: strin
           <button
             type="submit"
             disabled={isSubmitting}
-            className="w-full py-2.5 bg-indigo-600 hover:bg-indigo-700 disabled:opacity-60 text-white font-medium rounded-lg transition-colors text-sm flex items-center justify-center gap-2"
+            className="w-full py-2.5 bg-gradient-to-r from-violet-600 to-indigo-600 hover:from-violet-700 hover:to-indigo-700 disabled:opacity-60 text-white font-medium rounded-lg transition-all text-sm flex items-center justify-center gap-2 shadow-lg"
           >
             {isSubmitting ? (
               <>
@@ -248,8 +251,8 @@ export default function RegisterPage({ params }: { params: Promise<{ code: strin
 function InfoRow({ label, value }: { label: string; value: string }) {
   return (
     <div className="flex gap-2 text-sm">
-      <span className="text-gray-400 shrink-0">{label}:</span>
-      <span className="font-medium text-gray-700 capitalize">{value}</span>
+      <span className="text-gray-400 dark:text-gray-500 shrink-0">{label}:</span>
+      <span className="font-medium text-gray-800 dark:text-gray-200 capitalize">{value}</span>
     </div>
   );
 }
