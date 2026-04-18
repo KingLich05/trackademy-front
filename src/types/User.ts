@@ -19,6 +19,11 @@ export interface User {
   createdDate: string;
 }
 
+export interface GroupToAdd {
+  groupId: string;
+  packageId?: string | null;
+}
+
 export interface UserFormData {
   id?: string;
   login: string;
@@ -31,6 +36,7 @@ export interface UserFormData {
   organizationId?: string;
   isTrial: boolean;
   groupIds?: string[];
+  groupsToAdd?: GroupToAdd[];
   comment?: string;
 }
 

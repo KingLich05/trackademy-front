@@ -17,12 +17,13 @@ import { Subject } from '../../types/Subject';
 import { BaseModal } from '../../components/ui/BaseModal';
 import { PhoneInput } from '../../components/ui/PhoneInput';
 import { PasswordInput } from '../../components/ui/PasswordInput';
+import { API_BASE_URL } from '../../lib/api-config';
 import { DateRangePicker } from '../../components/ui/DateRangePicker';
 import {
   FunnelIcon, PlusIcon, PencilIcon, TrashIcon,
   UserIcon, PhoneIcon, ChartBarIcon, ClipboardDocumentListIcon,
   CogIcon, CheckCircleIcon, XCircleIcon, CalendarIcon,
-  ArrowPathIcon, MagnifyingGlassIcon, SparklesIcon,
+  ArrowPathIcon, MagnifyingGlassIcon, SparklesIcon, DocumentArrowDownIcon,
 } from '@heroicons/react/24/outline';
 
 // ─── helpers ─────────────────────────────────────────────────────────────────
@@ -492,9 +493,47 @@ export default function FunnelPage() {
 
   // ─────────────────────────────────────────────────────────────────────────────
   // Render
-  // ─────────────────────────────────────────────────────────────────────────────
+  // ── funnel export ──
+  const [showFunnelExport, setShowFunnelExport] = useState(false);
+  const [funnelExportLoading, setFunnelExportLoading] = useState(false);
+  const [funnelExportFilters, setFunnelExportFilters] = useState({
+    dateFrom: '', dateTo: '', stageId: '', sourceId: '', assignedToId: '', includeAnalytics: true,
+  });
 
-  const tabs = [
+  const handleExportFunnel = async () => {
+    if (!orgId) return;
+    setFunnelExportLoading(true);
+    try {
+      const token = localStorage.getItem('authToken');
+      const body: Record<string, unknown> = { organizationId: orgId, includeAnalytics: funnelExportFilters.includeAnalytics };
+      if (funnelExportFilters.dateFrom) body.dateFrom = new Date(funnelExportFilters.dateFrom).toISOString();
+      if (funnelExportFilters.dateTo) body.dateTo = new Date(funnelExportFilters.dateTo).toISOString();
+      if (funnelExportFilters.stageId) body.stageId = funnelExportFilters.stageId;
+      if (funnelExportFilters.sourceId) body.sourceId = funnelExportFilters.sourceId;
+      if (funnelExportFilters.assignedToId) body.assignedToId = funnelExportFilters.assignedToId;
+      const res = await fetch(`${API_BASE_URL}/Export/funnel`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
+        body: JSON.stringify(body),
+      });
+      if (!res.ok) throw new Error('Ошибка экспорта');
+      const blob = await res.blob();
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = `funnel_export_${new Date().toISOString().split('T')[0]}.xlsx`;
+      a.click();
+      URL.revokeObjectURL(url);
+      showSuccess('Экспорт воронки скачан');
+      setShowFunnelExport(false);
+    } catch {
+      showError('Ошибка при экспорте воронки');
+    } finally {
+      setFunnelExportLoading(false);
+    }
+  };
+
+  // ─────────────────────────────────────────────────────────────────────────────
     { id: 'kanban', label: 'Канбан', icon: FunnelIcon },
     { id: 'analytics', label: 'Аналитика', icon: ChartBarIcon },
     { id: 'tasks', label: 'Задачи', icon: ClipboardDocumentListIcon },
@@ -567,6 +606,13 @@ export default function FunnelPage() {
               </select>
               <button onClick={loadKanban} className="p-2 border border-gray-300 dark:border-gray-600 rounded-lg text-gray-500 hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors">
                 <ArrowPathIcon className="h-4 w-4" />
+              </button>
+              <button
+                onClick={() => setShowFunnelExport(true)}
+                className="flex items-center gap-2 px-4 py-2 bg-emerald-600 hover:bg-emerald-700 text-white rounded-lg transition-colors font-medium text-sm shadow-sm"
+              >
+                <DocumentArrowDownIcon className="h-4 w-4" />
+                Экспорт
               </button>
               <button
                 onClick={() => { setLeadForm(defaultLeadForm()); setShowCreateLead(true); }}
@@ -1026,6 +1072,76 @@ export default function FunnelPage() {
             </button>
             <button onClick={confirmMove} className="px-4 py-2 bg-violet-600 hover:bg-violet-700 text-white rounded-lg text-sm font-medium transition-colors">
               Переместить
+            </button>
+          </div>
+        </div>
+      </BaseModal>
+
+      {/* ── Funnel Export Modal ── */}
+      <BaseModal isOpen={showFunnelExport} onClose={() => setShowFunnelExport(false)} title="Экспорт воронки продаж">
+        <div className="space-y-4">
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+            <div>
+              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Дата от</label>
+              <input type="date" value={funnelExportFilters.dateFrom}
+                onChange={e => setFunnelExportFilters(p => ({ ...p, dateFrom: e.target.value }))}
+                className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white text-sm focus:ring-2 focus:ring-violet-500"
+              />
+            </div>
+            <div>
+              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Дата до</label>
+              <input type="date" value={funnelExportFilters.dateTo}
+                onChange={e => setFunnelExportFilters(p => ({ ...p, dateTo: e.target.value }))}
+                className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white text-sm focus:ring-2 focus:ring-violet-500"
+              />
+            </div>
+          </div>
+          <div>
+            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Этап</label>
+            <select value={funnelExportFilters.stageId}
+              onChange={e => setFunnelExportFilters(p => ({ ...p, stageId: e.target.value }))}
+              className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white text-sm focus:ring-2 focus:ring-violet-500"
+            >
+              <option value="">Все этапы</option>
+              {stages.map(s => <option key={s.id} value={s.id}>{s.name}</option>)}
+            </select>
+          </div>
+          <div>
+            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Источник</label>
+            <select value={funnelExportFilters.sourceId}
+              onChange={e => setFunnelExportFilters(p => ({ ...p, sourceId: e.target.value }))}
+              className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white text-sm focus:ring-2 focus:ring-violet-500"
+            >
+              <option value="">Все источники</option>
+              {sources.map(s => <option key={s.id} value={s.id}>{s.name}</option>)}
+            </select>
+          </div>
+          <div>
+            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Ответственный</label>
+            <select value={funnelExportFilters.assignedToId}
+              onChange={e => setFunnelExportFilters(p => ({ ...p, assignedToId: e.target.value }))}
+              className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white text-sm focus:ring-2 focus:ring-violet-500"
+            >
+              <option value="">Все</option>
+              {staff.map(s => <option key={s.id} value={s.id}>{s.fullName}</option>)}
+            </select>
+          </div>
+          <div className="flex items-center gap-2">
+            <input type="checkbox" id="funnelIncludeAnalytics" checked={funnelExportFilters.includeAnalytics}
+              onChange={e => setFunnelExportFilters(p => ({ ...p, includeAnalytics: e.target.checked }))}
+              className="w-4 h-4 rounded border-gray-300 text-violet-600 focus:ring-violet-500"
+            />
+            <label htmlFor="funnelIncludeAnalytics" className="text-sm text-gray-700 dark:text-gray-300">Включить аналитику</label>
+          </div>
+          <div className="flex justify-end gap-3 pt-2">
+            <button onClick={() => setShowFunnelExport(false)}
+              className="px-4 py-2 text-gray-700 dark:text-gray-300 border border-gray-300 dark:border-gray-600 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700 text-sm transition-colors">
+              Отмена
+            </button>
+            <button onClick={handleExportFunnel} disabled={funnelExportLoading}
+              className="flex items-center gap-2 px-4 py-2 bg-emerald-600 hover:bg-emerald-700 disabled:opacity-60 text-white rounded-lg text-sm font-medium transition-colors">
+              {funnelExportLoading ? <span className="animate-spin h-4 w-4 border-b-2 border-white rounded-full inline-block" /> : <DocumentArrowDownIcon className="h-4 w-4" />}
+              Экспортировать
             </button>
           </div>
         </div>

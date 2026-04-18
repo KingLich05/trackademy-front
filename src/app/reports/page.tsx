@@ -20,7 +20,8 @@ import {
   ClipboardDocumentCheckIcon,
   CalendarDaysIcon,
   CurrencyDollarIcon,
-  SparklesIcon
+  SparklesIcon,
+  FunnelIcon
 } from '@heroicons/react/24/outline';
 import { canManageUsers } from '../../types/Role';
 
@@ -72,6 +73,13 @@ export default function ReportsPage() {
   // Состояние для экспорта пользователей
   const [isUsersExportModalOpen, setIsUsersExportModalOpen] = useState(false);
   const [usersExportIsArchived, setUsersExportIsArchived] = useState<boolean | null>(null);
+
+  // Состояние для экспорта воронки продаж
+  const [isFunnelExportModalOpen, setIsFunnelExportModalOpen] = useState(false);
+  const [isFunnelExporting, setIsFunnelExporting] = useState(false);
+  const [funnelExportFilters, setFunnelExportFilters] = useState({
+    dateFrom: '', dateTo: '', includeAnalytics: true,
+  });
   const [scheduleFilters, setScheduleFilters] = useState({
     organizationId: user?.organizationId || '',
     groupId: '',
@@ -140,6 +148,13 @@ export default function ReportsPage() {
       icon: SparklesIcon,
       exportType: 'market',
       color: 'amber'
+    },
+    {
+      title: 'Воронка продаж',
+      description: 'Лиды, этапы и аналитика CRM-воронки с фильтрацией по датам',
+      icon: FunnelIcon,
+      exportType: 'funnel',
+      color: 'violet'
     }
   ];
 
@@ -153,6 +168,7 @@ export default function ReportsPage() {
       red: 'border-red-200 dark:border-red-800 bg-red-50 dark:bg-red-900/20 text-red-600 dark:text-red-400 hover:bg-red-100 dark:hover:bg-red-900/30',
       orange: 'border-orange-200 dark:border-orange-800 bg-orange-50 dark:bg-orange-900/20 text-orange-600 dark:text-orange-400 hover:bg-orange-100 dark:hover:bg-orange-900/30',
       teal: 'border-teal-200 dark:border-teal-800 bg-teal-50 dark:bg-teal-900/20 text-teal-600 dark:text-teal-400 hover:bg-teal-100 dark:hover:bg-teal-900/30',
+      violet: 'border-violet-200 dark:border-violet-800 bg-violet-50 dark:bg-violet-900/20 text-violet-600 dark:text-violet-400 hover:bg-violet-100 dark:hover:bg-violet-900/30',
       amber: 'border-amber-200 dark:border-amber-800 bg-amber-50 dark:bg-amber-900/20 text-amber-600 dark:text-amber-400 hover:bg-amber-100 dark:hover:bg-amber-900/30'
     };
     return colors[color as keyof typeof colors] || colors.blue;
@@ -195,6 +211,9 @@ export default function ReportsPage() {
           await loadGroups();
           setIsPaymentsExportModalOpen(true);
           return;
+        case 'funnel':
+          setIsFunnelExportModalOpen(true);
+          return;
         case 'market':
           await loadGroups();
           setIsMarketExportModalOpen(true);
@@ -212,6 +231,36 @@ export default function ReportsPage() {
       showError(`Ошибка при экспорте: ${title}`);
     } finally {
       setIsExporting(null);
+    }
+  };
+
+  const handleExportFunnel = async () => {
+    if (!user?.organizationId) return;
+    setIsFunnelExporting(true);
+    try {
+      const token = localStorage.getItem('authToken');
+      const body: Record<string, unknown> = { organizationId: user.organizationId, includeAnalytics: funnelExportFilters.includeAnalytics };
+      if (funnelExportFilters.dateFrom) body.dateFrom = new Date(funnelExportFilters.dateFrom).toISOString();
+      if (funnelExportFilters.dateTo) body.dateTo = new Date(funnelExportFilters.dateTo).toISOString();
+      const res = await fetch(`${API_BASE_URL}/Export/funnel`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
+        body: JSON.stringify(body),
+      });
+      if (!res.ok) throw new Error('Ошибка экспорта');
+      const blob = await res.blob();
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = `funnel_export_${new Date().toISOString().split('T')[0]}.xlsx`;
+      a.click();
+      URL.revokeObjectURL(url);
+      showSuccess('Экспорт воронки скачан');
+      setIsFunnelExportModalOpen(false);
+    } catch {
+      showError('Ошибка при экспорте воронки');
+    } finally {
+      setIsFunnelExporting(false);
     }
   };
 
@@ -1281,6 +1330,54 @@ export default function ReportsPage() {
         groups={groups}
         isExporting={isExportingMarket}
       />
+
+      {/* Модальное окно экспорта воронки */}
+      {isFunnelExportModalOpen && (
+        <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-50">
+          <div className="bg-white dark:bg-gray-800 rounded-xl shadow-xl max-w-sm w-full mx-4">
+            <div className="p-6 border-b border-gray-200 dark:border-gray-700">
+              <h3 className="text-lg font-semibold text-gray-900 dark:text-white">Экспорт воронки продаж</h3>
+              <p className="text-sm text-gray-600 dark:text-gray-400 mt-1">Фильтры необязательны</p>
+            </div>
+            <div className="p-6 space-y-4">
+              <div className="grid grid-cols-2 gap-3">
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Дата от</label>
+                  <input type="date" value={funnelExportFilters.dateFrom}
+                    onChange={e => setFunnelExportFilters(p => ({ ...p, dateFrom: e.target.value }))}
+                    className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white text-sm"
+                  />
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Дата до</label>
+                  <input type="date" value={funnelExportFilters.dateTo}
+                    onChange={e => setFunnelExportFilters(p => ({ ...p, dateTo: e.target.value }))}
+                    className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white text-sm"
+                  />
+                </div>
+              </div>
+              <div className="flex items-center gap-2">
+                <input type="checkbox" id="rptFunnelAnalytics" checked={funnelExportFilters.includeAnalytics}
+                  onChange={e => setFunnelExportFilters(p => ({ ...p, includeAnalytics: e.target.checked }))}
+                  className="w-4 h-4 rounded border-gray-300 text-violet-600 focus:ring-violet-500"
+                />
+                <label htmlFor="rptFunnelAnalytics" className="text-sm text-gray-700 dark:text-gray-300">Включить аналитику</label>
+              </div>
+            </div>
+            <div className="flex items-center justify-end gap-3 p-6 border-t border-gray-200 dark:border-gray-700">
+              <button onClick={() => setIsFunnelExportModalOpen(false)}
+                className="px-4 py-2 text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg transition-colors">
+                Отмена
+              </button>
+              <button onClick={handleExportFunnel} disabled={isFunnelExporting}
+                className="flex items-center gap-2 px-4 py-2 bg-gradient-to-r from-violet-500 to-purple-600 hover:from-violet-600 hover:to-purple-700 disabled:opacity-50 text-white rounded-lg transition-all">
+                {isFunnelExporting && <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white" />}
+                Экспортировать
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* Модальное окно экспорта пользователей */}
       {isUsersExportModalOpen && (

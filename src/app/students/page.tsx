@@ -5,7 +5,7 @@ import { useAuth } from '../../contexts/AuthContext';
 import { useToast } from '../../contexts/ToastContext';
 import { AuthenticatedApiService } from '../../services/AuthenticatedApiService';
 import { AcademicCapIcon, ArrowUpTrayIcon, DocumentArrowDownIcon } from '@heroicons/react/24/outline';
-import { User, UserFormData, ImportResult } from '../../types/User';
+import { User, UserFormData, GroupToAdd, ImportResult } from '../../types/User';
 import UniversalModal from '../../components/ui/UniversalModal';
 import { useUniversalModal } from '../../hooks/useUniversalModal';
 import { DeleteConfirmationModal } from '../../components/ui/DeleteConfirmationModal';
@@ -89,11 +89,38 @@ export default function StudentsPage() {
     role: 1 as number,
     organizationId: user?.organizationId || '',
     isTrial: false,
-    groupIds: [] as string[]
+    groupIds: [] as string[],
+    groupsToAdd: [] as GroupToAdd[]
   }), [user?.organizationId]);
 
-  // Toast уведомления для API операций
-  const { updateOperation, deleteOperation } = useApiToast();
+  // Packages per group cache: { [groupId]: [{packageId, packageName}] }
+  const [groupPackages, setGroupPackages] = useState<Record<string, {packageId: string; packageName: string}[]>>({});
+
+ const fetchPackagesForGroup = useCallback(async (groupId: string) => {
+  if (!groupId || groupPackages[groupId]) return;
+
+  try {
+    const token = localStorage.getItem('authToken');
+
+    const res = await fetch(
+      `${API_BASE_URL}/Subject/get-packages-by-group?groupId=${groupId}`,
+      {
+        method: 'POST', // 👈 ключевое изменение
+        headers: {
+          'Authorization': `Bearer ${token}`,
+        },
+      }
+    );
+
+    if (!res.ok) return;
+
+    const data = await res.json();
+    setGroupPackages(prev => ({ ...prev, [groupId]: data }));
+  } catch {
+    /* ignore */
+  }
+}, [groupPackages]);
+
 
   const [filters, setFilters] = useState<UserFiltersType>({
     search: '',
@@ -127,6 +154,9 @@ export default function StudentsPage() {
   // Serialize isDeleted to string
   const isDeletedStr = filters.isDeleted === undefined ? 'all' : filters.isDeleted === true ? 'deleted' : 'active';
   
+  // Toast уведомления для API операций
+  const { updateOperation, deleteOperation } = useApiToast();
+
   // Use ref to store current filters to avoid recreating callbacks
   const filtersRef = useRef(filters);
   filtersRef.current = filters;
@@ -585,13 +615,24 @@ export default function StudentsPage() {
   const handleCreateUser = async (userData: UserFormData) => {
     const cleanUserData = cleanUserFormData(userData);
 
+    // Build groupsToAdd: filter out empty rows, omit packageId if not set
+    const groupsToAdd = ((userData.groupsToAdd || []) as GroupToAdd[])
+      .filter(g => g.groupId)
+      .map(g => ({ groupId: g.groupId, ...(g.packageId ? { packageId: g.packageId } : {}) }));
+
+    const payload = {
+      ...cleanUserData,
+      groupIds: undefined,
+      groupsToAdd: groupsToAdd.length > 0 ? groupsToAdd : undefined,
+    };
+
     const response = await fetch(`${API_BASE_URL}/User/create`, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
         'Authorization': `Bearer ${localStorage.getItem('authToken')}`,
       },
-      body: JSON.stringify(cleanUserData),
+      body: JSON.stringify(payload),
     });
 
     if (!response.ok) {
@@ -1191,20 +1232,73 @@ export default function StudentsPage() {
                 <>
                   {/* Password field removed — backend auto-generates password */}
 
-                  {/* Group Selection для студентов */}
+                  {/* Group + Package Selection для студентов */}
                   <div>
                     <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
                       Группы <span className="text-gray-500 text-sm">(необязательно)</span>
                     </label>
-                    <MultiSelect
-                      options={groups.map(g => ({ id: g.id, name: g.name }))}
-                      selectedValues={(formData.groupIds as string[]) || []}
-                      onChange={(values: string[]) => setFormData((prev: Record<string, unknown>) => ({ 
-                        ...prev, 
-                        groupIds: values
-                      }))}
-                      placeholder="Выберите группы..."
-                    />
+
+                    {/* Existing group rows */}
+                    {((formData.groupsToAdd as GroupToAdd[]) || []).map((entry, idx) => {
+                      const pkgs = groupPackages[entry.groupId] || [];
+                      return (
+                        <div key={idx} className="flex gap-2 mb-2 items-center">
+                          <select
+                            value={entry.groupId}
+                            onChange={(e) => {
+                              const newGroupId = e.target.value;
+                              const updated = [...((formData.groupsToAdd as GroupToAdd[]) || [])];
+                              updated[idx] = { groupId: newGroupId, packageId: null };
+                              setFormData((prev: Record<string, unknown>) => ({ ...prev, groupsToAdd: updated }));
+                              fetchPackagesForGroup(newGroupId);
+                            }}
+                            className="flex-1 px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500"
+                          >
+                            <option value="">Выберите группу...</option>
+                            {groups.map(g => (
+                              <option key={g.id} value={g.id}>{g.name}</option>
+                            ))}
+                          </select>
+                          <select
+                            value={entry.packageId || ''}
+                            onChange={(e) => {
+                              const updated = [...((formData.groupsToAdd as GroupToAdd[]) || [])];
+                              updated[idx] = { ...updated[idx], packageId: e.target.value || null };
+                              setFormData((prev: Record<string, unknown>) => ({ ...prev, groupsToAdd: updated }));
+                            }}
+                            disabled={!entry.groupId || pkgs.length === 0}
+                            className="flex-1 px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500 disabled:opacity-50"
+                          >
+                            <option value="">{pkgs.length === 0 && entry.groupId ? 'Нет абонементов' : 'Абонемент...'}</option>
+                            {pkgs.map(p => (
+                              <option key={p.packageId} value={p.packageId}>{p.packageName}</option>
+                            ))}
+                          </select>
+                          <button
+                            type="button"
+                            onClick={() => {
+                              const updated = ((formData.groupsToAdd as GroupToAdd[]) || []).filter((_, i) => i !== idx);
+                              setFormData((prev: Record<string, unknown>) => ({ ...prev, groupsToAdd: updated }));
+                            }}
+                            className="p-2 text-red-500 hover:text-red-700 hover:bg-red-50 dark:hover:bg-red-900/20 rounded-lg transition-colors"
+                          >
+                            ✕
+                          </button>
+                        </div>
+                      );
+                    })}
+
+                    {/* Add group button */}
+                    <button
+                      type="button"
+                      onClick={() => {
+                        const updated = [...((formData.groupsToAdd as GroupToAdd[]) || []), { groupId: '', packageId: null }];
+                        setFormData((prev: Record<string, unknown>) => ({ ...prev, groupsToAdd: updated }));
+                      }}
+                      className="mt-1 w-full px-3 py-2 border-2 border-dashed border-gray-300 dark:border-gray-600 text-gray-500 dark:text-gray-400 hover:border-emerald-400 hover:text-emerald-600 dark:hover:text-emerald-400 rounded-lg text-sm transition-colors"
+                    >
+                      + Добавить группу
+                    </button>
                   </div>
                   
                   {/* Trial Student Toggle - отдельно с отступом */}
