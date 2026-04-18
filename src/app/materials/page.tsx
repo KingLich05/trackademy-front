@@ -767,6 +767,7 @@ export default function MaterialsPage() {
           material={selectedMaterial}
           onDownload={() => handleDownload(selectedMaterial)}
           fetchBlob={(materialId) => AuthenticatedApiService.getMaterialBlob(materialId)}
+          canDownload={canDownloadMaterial(selectedMaterial)}
         />
       )}
     </div>

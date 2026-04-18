@@ -548,6 +548,7 @@ export default function LibraryPage() {
           material={previewMaterial}
           onDownload={() => handleDownload(previewMaterial)}
           fetchBlob={(materialId) => AuthenticatedApiService.getLibraryMaterialBlob(materialId)}
+          canDownload={canDownloadMaterial(previewMaterial)}
         />
       )}
     </div>

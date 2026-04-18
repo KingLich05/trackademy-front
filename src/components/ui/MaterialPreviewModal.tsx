@@ -18,9 +18,10 @@ interface MaterialPreviewModalProps {
   material: PreviewableFile;
   onDownload: () => void;
   fetchBlob: (materialId: string) => Promise<Blob>;
+  canDownload?: boolean;
 }
 
-export function MaterialPreviewModal({ isOpen, onClose, material, onDownload, fetchBlob }: MaterialPreviewModalProps) {
+export function MaterialPreviewModal({ isOpen, onClose, material, onDownload, fetchBlob, canDownload = true }: MaterialPreviewModalProps) {
   const [previewUrl, setPreviewUrl] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -127,12 +128,14 @@ export function MaterialPreviewModal({ isOpen, onClose, material, onDownload, fe
         <div className="flex items-center justify-center h-96">
           <div className="text-center">
             <p className="text-red-600 dark:text-red-400 mb-4">{error}</p>
-            <button
-              onClick={onDownload}
-              className="px-4 py-2 bg-purple-600 text-white rounded-lg hover:bg-purple-700"
-            >
-              Скачать файл
-            </button>
+            {canDownload && (
+              <button
+                onClick={onDownload}
+                className="px-4 py-2 bg-purple-600 text-white rounded-lg hover:bg-purple-700"
+              >
+                Скачать файл
+              </button>
+            )}
           </div>
         </div>
       );
@@ -148,9 +151,10 @@ export function MaterialPreviewModal({ isOpen, onClose, material, onDownload, fe
 
     // PDF Preview
     if (isPDF(material.contentType, material.originalFileName)) {
+      const pdfSrc = canDownload ? previewUrl : `${previewUrl}#toolbar=0&navpanes=0`;
       return (
         <iframe
-          src={previewUrl}
+          src={pdfSrc}
           className="w-full h-[600px] border-0 rounded-lg"
           title={material.title}
         />
@@ -233,13 +237,15 @@ export function MaterialPreviewModal({ isOpen, onClose, material, onDownload, fe
                     🔒 Превью Word документов временно отключено по соображениям безопасности
                   </p>
                 </div>
-                <button
-                  onClick={onDownload}
-                  className="px-6 py-3 bg-gradient-to-r from-purple-500 to-pink-600 text-white rounded-lg hover:shadow-lg transition-all flex items-center gap-2"
-                >
-                  <ArrowDownTrayIcon className="w-5 h-5" />
-                  Скачать для просмотра
-                </button>
+                {canDownload && (
+                  <button
+                    onClick={onDownload}
+                    className="px-6 py-3 bg-gradient-to-r from-purple-500 to-pink-600 text-white rounded-lg hover:shadow-lg transition-all flex items-center gap-2"
+                  >
+                    <ArrowDownTrayIcon className="w-5 h-5" />
+                    Скачать для просмотра
+                  </button>
+                )}
               </div>
             </div>
           </div>
@@ -260,13 +266,15 @@ export function MaterialPreviewModal({ isOpen, onClose, material, onDownload, fe
               Превью для этого файла временно недоступно.<br />
               Скачайте файл для просмотра в Microsoft Word.
             </p>
-            <button
-              onClick={onDownload}
-              className="px-6 py-3 bg-gradient-to-r from-purple-500 to-pink-600 text-white rounded-lg hover:shadow-lg transition-all flex items-center gap-2 mx-auto"
-            >
-              <ArrowDownTrayIcon className="w-5 h-5" />
-              Скачать {material.originalFileName}
-            </button>
+            {canDownload && (
+              <button
+                onClick={onDownload}
+                className="px-6 py-3 bg-gradient-to-r from-purple-500 to-pink-600 text-white rounded-lg hover:shadow-lg transition-all flex items-center gap-2 mx-auto"
+              >
+                <ArrowDownTrayIcon className="w-5 h-5" />
+                Скачать {material.originalFileName}
+              </button>
+            )}
           </div>
         </div>
       );
@@ -295,13 +303,15 @@ export function MaterialPreviewModal({ isOpen, onClose, material, onDownload, fe
               Превью для этого типа файла недоступно в браузере.<br />
               Скачайте файл для просмотра в соответствующей программе.
             </p>
-            <button
-              onClick={onDownload}
-              className="px-6 py-3 bg-gradient-to-r from-purple-500 to-pink-600 text-white rounded-lg hover:shadow-lg transition-all flex items-center gap-2 mx-auto"
-            >
-              <ArrowDownTrayIcon className="w-5 h-5" />
-              Скачать {material.originalFileName}
-            </button>
+            {canDownload && (
+              <button
+                onClick={onDownload}
+                className="px-6 py-3 bg-gradient-to-r from-purple-500 to-pink-600 text-white rounded-lg hover:shadow-lg transition-all flex items-center gap-2 mx-auto"
+              >
+                <ArrowDownTrayIcon className="w-5 h-5" />
+                Скачать {material.originalFileName}
+              </button>
+            )}
           </div>
         </div>
       );
@@ -325,13 +335,15 @@ export function MaterialPreviewModal({ isOpen, onClose, material, onDownload, fe
           <p className="text-gray-500 dark:text-gray-400 mb-4">
             Превью для этого типа файла недоступно
           </p>
-          <button
-            onClick={onDownload}
-            className="px-4 py-2 bg-purple-600 text-white rounded-lg hover:bg-purple-700 flex items-center gap-2 mx-auto"
-          >
-            <ArrowDownTrayIcon className="w-5 h-5" />
-            Скачать файл
-          </button>
+          {canDownload && (
+            <button
+              onClick={onDownload}
+              className="px-4 py-2 bg-purple-600 text-white rounded-lg hover:bg-purple-700 flex items-center gap-2 mx-auto"
+            >
+              <ArrowDownTrayIcon className="w-5 h-5" />
+              Скачать файл
+            </button>
+          )}
         </div>
       </div>
     );
@@ -356,13 +368,15 @@ export function MaterialPreviewModal({ isOpen, onClose, material, onDownload, fe
             )}
           </div>
           <div className="flex items-center gap-2 ml-4">
-            <button
-              onClick={onDownload}
-              className="p-2 text-purple-600 hover:bg-purple-50 dark:hover:bg-purple-900/20 rounded-lg transition-colors"
-              title="Скачать"
-            >
-              <ArrowDownTrayIcon className="w-6 h-6" />
-            </button>
+            {canDownload && (
+              <button
+                onClick={onDownload}
+                className="p-2 text-purple-600 hover:bg-purple-50 dark:hover:bg-purple-900/20 rounded-lg transition-colors"
+                title="Скачать"
+              >
+                <ArrowDownTrayIcon className="w-6 h-6" />
+              </button>
+            )}
             <button
               onClick={onClose}
               className="p-2 text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg transition-colors"
