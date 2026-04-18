@@ -189,6 +189,11 @@ export default function LibraryPage() {
     }
   };
 
+  const canDownloadMaterial = (material: LibraryMaterial): boolean => {
+    if (!material.isPrivate) return true;
+    return user?.role !== 'Student';
+  };
+
   const formatFileSize = (bytes: number): string => {
     if (bytes === 0) return '0 Bytes';
     const k = 1024;
@@ -315,10 +320,10 @@ export default function LibraryPage() {
                             <EyeIcon className="h-4 w-4" />
                           </button>
                           <button
-                            onClick={() => !material.isPrivate && handleDownload(material)}
-                            disabled={material.isPrivate}
-                            className={material.isPrivate ? "p-2 text-gray-400 dark:text-gray-600 rounded-lg cursor-not-allowed" : "p-2 text-blue-600 hover:text-blue-800 dark:text-blue-400 dark:hover:text-blue-300 hover:bg-blue-50 dark:hover:bg-blue-900/20 rounded-lg transition-all"}
-                            title={material.isPrivate ? "Скачивание запрещено" : "Скачать"}
+                            onClick={() => canDownloadMaterial(material) && handleDownload(material)}
+                            disabled={!canDownloadMaterial(material)}
+                            className={!canDownloadMaterial(material) ? "p-2 text-gray-400 dark:text-gray-600 rounded-lg cursor-not-allowed" : "p-2 text-blue-600 hover:text-blue-800 dark:text-blue-400 dark:hover:text-blue-300 hover:bg-blue-50 dark:hover:bg-blue-900/20 rounded-lg transition-all"}
+                            title={!canDownloadMaterial(material) ? "Скачивание запрещено (приватный материал)" : "Скачать"}
                           >
                             <ArrowDownTrayIcon className="h-4 w-4" />
                           </button>

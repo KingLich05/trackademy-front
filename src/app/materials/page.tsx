@@ -232,6 +232,11 @@ export default function MaterialsPage() {
     }
   };
 
+  const canDownloadMaterial = (material: Material): boolean => {
+    if (!material.isPrivate) return true;
+    return user?.role !== 'Student';
+  };
+
   const formatFileSize = (bytes: number): string => {
     if (bytes === 0) return '0 Bytes';
     const k = 1024;
@@ -397,10 +402,10 @@ export default function MaterialsPage() {
                               <EyeIcon className="w-5 h-5" />
                             </button>
                             <button
-                              onClick={() => !material.isPrivate && handleDownload(material)}
-                              disabled={material.isPrivate}
-                              className={material.isPrivate ? "text-gray-400 dark:text-gray-600 p-1.5 cursor-not-allowed" : "text-blue-600 hover:text-blue-900 dark:text-blue-400 dark:hover:text-blue-300 p-1.5"}
-                              title={material.isPrivate ? "Скачивание запрещено" : "Скачать"}
+                              onClick={() => canDownloadMaterial(material) && handleDownload(material)}
+                              disabled={!canDownloadMaterial(material)}
+                              className={!canDownloadMaterial(material) ? "text-gray-400 dark:text-gray-600 p-1.5 cursor-not-allowed" : "text-blue-600 hover:text-blue-900 dark:text-blue-400 dark:hover:text-blue-300 p-1.5"}
+                              title={!canDownloadMaterial(material) ? "Скачивание запрещено (приватный материал)" : "Скачать"}
                             >
                               <ArrowDownTrayIcon className="w-5 h-5" />
                             </button>
@@ -466,10 +471,10 @@ export default function MaterialsPage() {
                           <EyeIcon className="w-5 h-5" />
                         </button>
                         <button
-                          onClick={() => !material.isPrivate && handleDownload(material)}
-                          disabled={material.isPrivate}
-                          className={material.isPrivate ? "text-gray-400 dark:text-gray-600 p-2 cursor-not-allowed" : "text-blue-600 hover:text-blue-900 dark:text-blue-400 dark:hover:text-blue-300 p-2"}
-                          title={material.isPrivate ? "Скачивание запрещено" : "Скачать"}
+                          onClick={() => canDownloadMaterial(material) && handleDownload(material)}
+                          disabled={!canDownloadMaterial(material)}
+                          className={!canDownloadMaterial(material) ? "text-gray-400 dark:text-gray-600 p-2 cursor-not-allowed" : "text-blue-600 hover:text-blue-900 dark:text-blue-400 dark:hover:text-blue-300 p-2"}
+                          title={!canDownloadMaterial(material) ? "Скачивание запрещено (приватный материал)" : "Скачать"}
                         >
                           <ArrowDownTrayIcon className="w-5 h-5" />
                         </button>

@@ -877,7 +877,7 @@ export class AuthenticatedApiService {
       throw new Error('No authentication token found');
     }
 
-    const response = await fetch(`${API_BASE_URL}/Material/${materialId}/download`, {
+    const response = await fetch(`${API_BASE_URL}/Material/${materialId}/preview`, {
       method: 'GET',
       headers: {
         'Authorization': `Bearer ${token}`,
@@ -885,7 +885,7 @@ export class AuthenticatedApiService {
     });
 
     if (!response.ok) {
-      throw new Error('Failed to load material');
+      throw new Error('Failed to load material preview');
     }
 
     return response.blob();
@@ -952,11 +952,11 @@ export class AuthenticatedApiService {
   static async getLibraryMaterialBlob(materialId: string): Promise<Blob> {
     const token = this.getAuthToken();
     if (!token) throw new Error('No authentication token found');
-    const response = await fetch(`${API_BASE_URL}/library-materials/${materialId}/download`, {
+    const response = await fetch(`${API_BASE_URL}/library-materials/${materialId}/preview`, {
       method: 'GET',
       headers: { 'Authorization': `Bearer ${token}` },
     });
-    if (!response.ok) throw new Error('Failed to load library material');
+    if (!response.ok) throw new Error('Failed to load library material preview');
     return response.blob();
   }
 
