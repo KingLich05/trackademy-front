@@ -242,9 +242,12 @@ function MonthLessonBlock({ lesson, onClick }: MonthLessonBlockProps) {
         borderLeft: `3px solid ${subjectColor}`,
         paddingLeft: '6px'
       }}
-      title={`${lesson.subject.subjectName} - ${lesson.group.name} (${formatTime(lesson.startTime)}-${formatTime(lesson.endTime)})${lesson.note ? ' • Есть комментарий' : ''}`}
+      title={`${lesson.subject.subjectName} - ${lesson.group.name} (${formatTime(lesson.startTime)}-${formatTime(lesson.endTime)})${lesson.isMakeUp ? ' • Отработка' : ''}${lesson.note ? ' • Есть комментарий' : ''}`}
     >
       <div className="flex items-center gap-1 font-medium text-gray-900 dark:text-white">
+        {lesson.isMakeUp && (
+          <span className="text-orange-500 dark:text-orange-400 flex-shrink-0" title="Отработка">↩</span>
+        )}
         <span className="line-clamp-1 flex-1 min-w-0">
           {formatTime(lesson.startTime)} {lesson.subject.subjectName}
         </span>

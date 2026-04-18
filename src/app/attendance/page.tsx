@@ -1,10 +1,9 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { useAuth } from '@/contexts/AuthContext';
 import { useRouter } from 'next/navigation';
-import { ClipboardDocumentCheckIcon, DocumentArrowDownIcon, UserGroupIcon, CalendarDaysIcon, UserIcon, PlusIcon } from '@heroicons/react/24/outline';
-import { PageHeaderWithStats } from '@/components/ui/PageHeaderWithStats';
+import { ClipboardDocumentCheckIcon, DocumentArrowDownIcon, UserGroupIcon, CalendarDaysIcon, UserIcon, PlusIcon, ArrowTrendingUpIcon, ArrowTrendingDownIcon, CheckCircleIcon } from '@heroicons/react/24/outline';
 import { DateRangePicker } from '@/components/ui/DateRangePicker';
 import { ExportAttendanceModal } from '@/components/ExportAttendanceModal';
 import { LessonDetailsModal } from '@/components/attendance/LessonDetailsModal';
@@ -142,6 +141,33 @@ export default function AttendancePage() {
   const [groupDetailsModalOpen, setGroupDetailsModalOpen] = useState(false);
   const [selectedGroupForDetails, setSelectedGroupForDetails] = useState<GroupStatsItem | null>(null);
 
+  // ── Attendance summary (header) ──
+  type AttendanceSummary = {
+    attendanceRateThisMonth: number;
+    attendanceRatePreviousMonth: number;
+    attendanceRateTrend: number;
+    totalLessonsThisMonth: number;
+    lessonsWithoutAttendanceThisMonth: number;
+    attendCountThisMonth: number;
+    absentCountThisMonth: number;
+    lateCountThisMonth: number;
+    specialReasonCountThisMonth: number;
+    groupsCount: number;
+    activeStudentsCount: number;
+    averageGradeThisMonth: number;
+    todayTotalLessons: number;
+    todayCompletedLessons: number;
+  };
+  const [summary, setSummary] = useState<AttendanceSummary | null>(null);
+
+  const loadSummary = useCallback(async () => {
+    if (!user?.organizationId) return;
+    try {
+      const data = await attendanceApi.getAttendanceSummary(user.organizationId);
+      setSummary(data);
+    } catch { /* non-critical */ }
+  }, [user?.organizationId]);
+
   // Check authorization
   useEffect(() => {
     if (isLoading) return;
@@ -150,6 +176,10 @@ export default function AttendancePage() {
       return;
     }
   }, [isLoading, user, router]);
+
+  useEffect(() => {
+    if (user?.organizationId) loadSummary();
+  }, [loadSummary]);
 
   // Load groups
   useEffect(() => {
@@ -349,59 +379,134 @@ export default function AttendancePage() {
   return (
     <div className="min-h-screen bg-gray-50 dark:bg-gray-900 page-container pt-16 md:pt-20 max-w-full overflow-x-hidden">
       <div className="w-full space-y-6">
-        {/* Page Header */}
-        <PageHeaderWithStats
-        title="Посещаемость"
-        subtitle="Отслеживание и анализ посещаемости студентов"
-        icon={ClipboardDocumentCheckIcon}
-        gradientFrom="emerald-500"
-        gradientTo="teal-600"
-        stats={activeTab === 'students' ? [
-          { 
-            label: "Общая посещаемость", 
-            value: `${stats.attendancePercentage}%`, 
-            color: "emerald" as const
-          },
-          { 
-            label: "Присутствовали", 
-            value: stats.attended, 
-            color: "green" as const
-          },
-          { 
-            label: "Пропустили", 
-            value: stats.absent, 
-            color: "red" as const
-          },
-          { 
-            label: "Всего записей", 
-            value: stats.total, 
-            color: "blue" as const
-          }
-        ] : []}
-      />
 
-      {/* Tabs */}
-      <div className="bg-white dark:bg-gray-800 rounded-xl shadow-md border border-gray-200 dark:border-gray-700">
-        <div className="flex space-x-1 p-1">
-          {tabs.map((tab) => {
-            const Icon = tab.icon;
-            return (
-              <button
-                key={tab.id}
-                onClick={() => setActiveTab(tab.id)}
-                className={`flex-1 flex items-center justify-center gap-2 px-4 py-3 rounded-lg text-sm font-medium transition-all ${
-                  activeTab === tab.id
-                    ? 'bg-emerald-500 text-white shadow-md'
-                    : 'text-gray-600 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-700'
-                }`}
-              >
-                <Icon className="h-5 w-5" />
-                {tab.label}
-              </button>
-            );
-          })}
+        {/* ══ Beautiful Header ══ */}
+        <div className="rounded-2xl overflow-hidden shadow-lg border border-emerald-500/20 dark:border-emerald-500/10">
+
+          {/* Gradient banner */}
+          <div className="relative bg-gradient-to-r from-emerald-500 via-teal-500 to-cyan-600 px-6 pt-5 pb-5 overflow-hidden">
+            <div className="absolute -top-10 -right-10 w-52 h-52 bg-white/5 rounded-full blur-3xl pointer-events-none" />
+            <div className="absolute top-1/2 left-1/3 w-36 h-36 bg-cyan-400/10 rounded-full blur-2xl pointer-events-none" />
+            <div className="absolute -bottom-8 -left-8 w-36 h-36 bg-white/5 rounded-full blur-xl pointer-events-none" />
+
+            {/* Title row */}
+            <div className="relative flex items-center justify-between flex-wrap gap-3">
+              <div className="flex items-center gap-4">
+                <div className="w-12 h-12 bg-white/15 backdrop-blur-sm rounded-2xl flex items-center justify-center border border-white/25 shadow-inner">
+                  <ClipboardDocumentCheckIcon className="h-7 w-7 text-white" />
+                </div>
+                <div>
+                  <h1 className="text-2xl font-bold text-white leading-tight tracking-tight">Посещаемость</h1>
+                  <p className="text-emerald-100 text-sm mt-0.5">Отслеживание и анализ посещаемости студентов</p>
+                </div>
+              </div>
+
+              {/* Action buttons */}
+              <div className="flex items-center gap-2 flex-wrap">
+                {user?.role !== 'Teacher' && (
+                  <button
+                    onClick={() => setShowExportModal(true)}
+                    className="flex items-center gap-2 px-3.5 py-2 bg-white/15 hover:bg-white/25 backdrop-blur-sm border border-white/20 text-white rounded-xl font-medium text-sm transition-all duration-200 hover:scale-105"
+                  >
+                    <DocumentArrowDownIcon className="h-4 w-4" />
+                    Экспорт
+                  </button>
+                )}
+                {(user?.role === 'Administrator' || user?.role === 'Owner') && (
+                  <button
+                    onClick={() => setShowMakeUpModal(true)}
+                    className="flex items-center gap-2 px-4 py-2 bg-white text-emerald-700 hover:bg-emerald-50 rounded-xl font-semibold text-sm transition-all duration-200 hover:scale-105 shadow-md"
+                  >
+                    <PlusIcon className="h-4 w-4" />
+                    Создать отработку
+                  </button>
+                )}
+              </div>
+            </div>
+
+            {/* Stats cards */}
+            {summary && (
+              <div className="relative mt-4 grid grid-cols-2 sm:grid-cols-4 lg:grid-cols-7 gap-2">
+                {/* Rate this month */}
+                <div className="col-span-2 sm:col-span-2 bg-white dark:bg-gray-900/85 rounded-xl px-4 py-3 flex items-center gap-3 shadow-sm">
+                  <div className="w-9 h-9 bg-emerald-100 dark:bg-emerald-900/50 rounded-lg flex items-center justify-center flex-shrink-0">
+                    <ClipboardDocumentCheckIcon className="h-5 w-5 text-emerald-600 dark:text-emerald-400" />
+                  </div>
+                  <div>
+                    <div className="flex items-baseline gap-2">
+                      <span className="text-2xl font-bold text-emerald-700 dark:text-emerald-300">{summary.attendanceRateThisMonth.toFixed(1)}%</span>
+                      <span className={`flex items-center text-xs font-semibold ${summary.attendanceRateTrend >= 0 ? 'text-emerald-600 dark:text-emerald-400' : 'text-red-600 dark:text-red-400'}`}>
+                        {summary.attendanceRateTrend >= 0
+                          ? <ArrowTrendingUpIcon className="h-3 w-3 mr-0.5" />
+                          : <ArrowTrendingDownIcon className="h-3 w-3 mr-0.5" />}
+                        {Math.abs(summary.attendanceRateTrend).toFixed(1)}%
+                      </span>
+                    </div>
+                    <p className="text-gray-500 dark:text-gray-400 text-xs">Посещаемость за месяц</p>
+                  </div>
+                </div>
+
+                {/* Attend count */}
+                <div className="bg-white dark:bg-gray-900/85 rounded-xl px-3 py-3 text-center shadow-sm">
+                  <div className="text-xl font-bold text-emerald-700 dark:text-emerald-300">{summary.attendCountThisMonth}</div>
+                  <div className="text-gray-600 dark:text-gray-300 text-xs mt-0.5 font-medium">Присутствовали</div>
+                  <div className="text-gray-400 dark:text-gray-500 text-[10px] mt-0.5">за месяц</div>
+                </div>
+
+                {/* Absent count */}
+                <div className="bg-white dark:bg-gray-900/85 rounded-xl px-3 py-3 text-center shadow-sm">
+                  <div className="text-xl font-bold text-red-600 dark:text-red-400">{summary.absentCountThisMonth}</div>
+                  <div className="text-gray-600 dark:text-gray-300 text-xs mt-0.5 font-medium">Отсутствовали</div>
+                  <div className="text-gray-400 dark:text-gray-500 text-[10px] mt-0.5">за месяц</div>
+                </div>
+
+                {/* Late */}
+                <div className="bg-white dark:bg-gray-900/85 rounded-xl px-3 py-3 text-center shadow-sm">
+                  <div className="text-xl font-bold text-amber-600 dark:text-amber-400">{summary.lateCountThisMonth}</div>
+                  <div className="text-gray-600 dark:text-gray-300 text-xs mt-0.5 font-medium">Опоздали</div>
+                  <div className="text-gray-400 dark:text-gray-500 text-[10px] mt-0.5">за месяц</div>
+                </div>
+
+                {/* Average grade */}
+                <div className="bg-white dark:bg-gray-900/85 rounded-xl px-3 py-3 text-center shadow-sm">
+                  <div className="text-xl font-bold text-teal-700 dark:text-teal-300">{summary.averageGradeThisMonth ?? '—'}</div>
+                  <div className="text-gray-600 dark:text-gray-300 text-xs mt-0.5 font-medium">Ср. оценка</div>
+                  <div className="text-gray-400 dark:text-gray-500 text-[10px] mt-0.5">за месяц</div>
+                </div>
+
+                {/* Today */}
+                <div className="bg-white dark:bg-gray-900/85 rounded-xl px-3 py-3 text-center shadow-sm">
+                  <div className="text-xl font-bold text-cyan-700 dark:text-cyan-300">{summary.todayCompletedLessons}/{summary.todayTotalLessons}</div>
+                  <div className="text-gray-600 dark:text-gray-300 text-xs mt-0.5 font-medium">Уроков сегодня</div>
+                  <div className="text-gray-400 dark:text-gray-500 text-[10px] mt-0.5">проведено / всего</div>
+                </div>
+              </div>
+            )}
+          </div>
+
+          {/* Tabs strip */}
+          <div className="bg-white dark:bg-gray-800 px-4 pt-1 pb-0">
+            <div className="flex gap-0.5 overflow-x-auto scrollbar-none border-b border-gray-100 dark:border-gray-700">
+              {tabs.map((tab) => {
+                const Icon = tab.icon;
+                return (
+                  <button
+                    key={tab.id}
+                    onClick={() => setActiveTab(tab.id)}
+                    className={`flex items-center gap-2 px-4 py-2.5 text-sm font-medium whitespace-nowrap transition-colors border-b-2 -mb-px ${
+                      activeTab === tab.id
+                        ? 'border-emerald-500 text-emerald-700 dark:text-emerald-400'
+                        : 'border-transparent text-gray-600 dark:text-gray-400 hover:text-emerald-600 dark:hover:text-emerald-400'
+                    }`}
+                  >
+                    <Icon className="h-4 w-4" />
+                    {tab.label}
+                  </button>
+                );
+              })}
+            </div>
+          </div>
         </div>
-      </div>
 
       {/* Tab Content */}
       {activeTab === 'students' && (
@@ -471,32 +576,12 @@ export default function AttendancePage() {
           <div className="p-6 border-b border-gray-200 dark:border-gray-700 bg-gradient-to-r from-gray-50 to-emerald-50 dark:from-gray-800 dark:to-gray-700">
             <div className="flex items-end justify-between mb-4">
               <h3 className="text-lg font-semibold text-gray-900 dark:text-white">Фильтры</h3>
-              <div className="flex gap-3">
-                {user?.role !== 'Teacher' && (
-                  <button
-                    onClick={() => setShowExportModal(true)}
-                    className="px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg font-medium transition-colors text-sm flex items-center gap-2"
-                  >
-                    <DocumentArrowDownIcon className="w-4 h-4" />
-                    Экспорт Excel
-                  </button>
-                )}
-                {(user?.role === 'Administrator' || user?.role === 'Owner') && (
-                  <button
-                    onClick={() => setShowMakeUpModal(true)}
-                    className="px-4 py-2 bg-gradient-to-r from-emerald-500 to-teal-600 hover:from-emerald-600 hover:to-teal-700 text-white rounded-lg font-medium transition-all duration-200 text-sm flex items-center gap-2 shadow-md hover:shadow-lg"
-                  >
-                    <PlusIcon className="w-4 h-4" />
-                    Создать отработку
-                  </button>
-                )}
-                <button
-                  onClick={resetFilters}
-                  className="px-4 py-2 bg-gray-500 hover:bg-gray-600 text-white rounded-lg font-medium transition-colors text-sm"
-                >
-                  Сбросить фильтры
-                </button>
-              </div>
+              <button
+                onClick={resetFilters}
+                className="px-4 py-2 bg-gray-500 hover:bg-gray-600 text-white rounded-lg font-medium transition-colors text-sm"
+              >
+                Сбросить фильтры
+              </button>
             </div>
             <div className="grid grid-cols-1 md:grid-cols-3 lg:grid-cols-4 gap-4">
               {/* Student Search */}

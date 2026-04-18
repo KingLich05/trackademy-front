@@ -332,6 +332,7 @@ function RangeLessonBlock({ lesson, onClick, height }: RangeLessonBlockProps) {
         <div>Группа: {lesson.group.name}</div>
         <div>Время: {formatTime(lesson.startTime)}-{formatTime(lesson.endTime)}</div>
         <div>Кабинет: {lesson.room.name}</div>
+        {lesson.isMakeUp && <div className="mt-1 text-orange-400 font-medium">↩ Отработка</div>}
         {lesson.note && <div className="mt-1 text-gray-300">💬 {lesson.note}</div>}
       </div>
 
@@ -344,6 +345,11 @@ function RangeLessonBlock({ lesson, onClick, height }: RangeLessonBlockProps) {
               </h4>
               <div className="w-2 h-2 rounded-full flex-shrink-0 ml-1" style={{ backgroundColor: statusColor }} />
             </div>
+            {lesson.isMakeUp && (
+              <span className="text-[9px] px-1 py-px bg-orange-100 dark:bg-orange-900/40 text-orange-700 dark:text-orange-400 rounded font-medium w-fit">
+                Отработка
+              </span>
+            )}
             <p className="text-[10px] text-gray-500 dark:text-gray-400">
               {formatTime(lesson.startTime)}-{formatTime(lesson.endTime)}
             </p>

@@ -1068,6 +1068,8 @@ export default function MarketPage() {
               type="number"
               value={adjustAmount}
               onChange={e => setAdjustAmount(Number(e.target.value))}
+              onFocus={e => { if (adjustAmount === 0) { setAdjustAmount('' as unknown as number); } else { e.target.select(); } }}
+              onBlur={() => { if ((adjustAmount as unknown as string) === '') setAdjustAmount(0); }}
               className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-amber-500 focus:border-amber-500"
             />
           </div>

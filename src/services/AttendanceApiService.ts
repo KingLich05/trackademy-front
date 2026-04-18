@@ -146,6 +146,26 @@ class AttendanceApiService {
 
     return response.blob();
   }
+
+  // Сводка посещаемости для хедера
+  async getAttendanceSummary(organizationId: string): Promise<{
+    attendanceRateThisMonth: number;
+    attendanceRatePreviousMonth: number;
+    attendanceRateTrend: number;
+    totalLessonsThisMonth: number;
+    lessonsWithoutAttendanceThisMonth: number;
+    attendCountThisMonth: number;
+    absentCountThisMonth: number;
+    lateCountThisMonth: number;
+    specialReasonCountThisMonth: number;
+    groupsCount: number;
+    activeStudentsCount: number;
+    averageGradeThisMonth: number;
+    todayTotalLessons: number;
+    todayCompletedLessons: number;
+  }> {
+    return this.makeRequest(`/api/Attendance/summary/organization/${organizationId}`);
+  }
 }
 
 export const attendanceApi = new AttendanceApiService();

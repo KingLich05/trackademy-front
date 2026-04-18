@@ -165,7 +165,7 @@ function ListLessonCard({ lesson, onClick }: ListLessonCardProps) {
     >
       <div className="flex items-start justify-between">
         <div className="flex-1 min-w-0">
-          <div className="flex items-center gap-2 mb-2">
+          <div className="flex items-center gap-2 mb-2 flex-wrap">
             <h5 className="font-semibold text-gray-900 dark:text-white">
               {lesson.subject.subjectName}
             </h5>
@@ -181,6 +181,11 @@ function ListLessonCard({ lesson, onClick }: ListLessonCardProps) {
             >
               {getLessonStatusText(lesson.lessonStatus)}
             </div>
+            {lesson.isMakeUp && (
+              <span className="px-2 py-1 rounded-full text-xs font-medium bg-orange-100 dark:bg-orange-900/30 text-orange-700 dark:text-orange-400 border border-orange-200 dark:border-orange-700/50">
+                ↩ Отработка
+              </span>
+            )}
           </div>
 
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 text-sm text-gray-600 dark:text-gray-300">

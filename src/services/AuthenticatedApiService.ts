@@ -1328,4 +1328,17 @@ export class AuthenticatedApiService {
   static async deleteOrganizationSetting(organizationId: string, key: string): Promise<void> {
     return this.delete(`/Setting/organization/${organizationId}/key/${encodeURIComponent(key)}`);
   }
+
+  // ── Lead Import ───────────────────────────────────────────────────────────
+  static async importLeads(organizationId: string, file: File, mode: 0 | 1 | 2): Promise<{
+    totalRows: number;
+    successCount: number;
+    errorCount: number;
+    errors: { rowNumber: number; fullName: string; phone: string; errors: string[] }[];
+  }> {
+    const formData = new FormData();
+    formData.append('File', file);
+    formData.append('Mode', String(mode));
+    return this.postFormData(`/Lead/import/organization/${organizationId}`, formData);
+  }
 }

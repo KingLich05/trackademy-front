@@ -25,7 +25,9 @@ import {
   UserIcon, PhoneIcon, ChartBarIcon, ClipboardDocumentListIcon,
   CogIcon, CheckCircleIcon, XCircleIcon, CalendarIcon,
   ArrowPathIcon, MagnifyingGlassIcon, SparklesIcon, DocumentArrowDownIcon,
+  ArrowUpTrayIcon,
 } from '@heroicons/react/24/outline';
+import { ImportLeadsModal } from '../../components/ImportLeadsModal';
 
 // ─── helpers ─────────────────────────────────────────────────────────────────
 
@@ -573,6 +575,7 @@ export default function FunnelPage() {
   // Render
   // ── funnel export ──
   const [showFunnelExport, setShowFunnelExport] = useState(false);
+  const [showImportLeads, setShowImportLeads] = useState(false);
   const [funnelExportLoading, setFunnelExportLoading] = useState(false);
   const [funnelExportFilters, setFunnelExportFilters] = useState({
     dateFrom: '', dateTo: '', stageId: '', sourceId: '', assignedToId: '', includeAnalytics: true,
@@ -623,87 +626,113 @@ export default function FunnelPage() {
     <div className="min-h-screen bg-gray-50 dark:bg-gray-900 max-w-full">
       <div className="max-w-full mx-auto">
 
-        {/* Header */}
-        <div className="mb-5 flex items-center justify-between gap-4 flex-wrap">
-          <div className="flex items-center gap-3">
-            <div className="w-10 h-10 bg-gradient-to-br from-violet-500 to-purple-600 rounded-xl flex items-center justify-center shadow">
-              <FunnelIcon className="h-6 w-6 text-white" />
-            </div>
-            <div>
-              <h1 className="text-2xl font-bold text-gray-900 dark:text-white">Воронка продаж</h1>
-              <p className="text-sm text-gray-500 dark:text-gray-400">CRM — от лида до студента</p>
-            </div>
-          </div>
-          {activeTab === 'kanban' && (
-            <div className="w-2" />
-          )}
-        </div>
+        {/* ══ Beautiful Header ══ */}
+        <div className="mb-5 rounded-2xl overflow-hidden shadow-lg border border-violet-500/20 dark:border-violet-500/10">
 
-        {/* Tabs */}
-        <div className="flex gap-1 bg-white dark:bg-gray-800 rounded-xl p-1 border border-gray-200 dark:border-gray-700 mb-5 overflow-x-auto">
-          {TABS.map(tab => {
-            const Icon = tab.icon;
-            return (
-              <button
-                key={tab.id}
-                onClick={() => setActiveTab(tab.id as typeof activeTab)}
-                className={`flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-medium whitespace-nowrap transition-colors ${
-                  activeTab === tab.id
-                    ? 'bg-violet-600 text-white shadow-sm'
-                    : 'text-gray-600 dark:text-gray-400 hover:bg-gray-50 dark:hover:bg-gray-700'
-                }`}
-              >
-                <Icon className="h-4 w-4" />
-                {tab.label}
-              </button>
-            );
-          })}
+          {/* Gradient banner */}
+          <div className="relative bg-gradient-to-r from-violet-600 via-purple-600 to-fuchsia-600 px-6 pt-5 pb-5 overflow-hidden">
+            {/* decorative blobs */}
+            <div className="absolute -top-10 -right-10 w-52 h-52 bg-white/5 rounded-full blur-3xl pointer-events-none" />
+            <div className="absolute top-1/2 left-1/3 w-36 h-36 bg-fuchsia-400/10 rounded-full blur-2xl pointer-events-none" />
+            <div className="absolute -bottom-8 -left-8 w-36 h-36 bg-white/5 rounded-full blur-xl pointer-events-none" />
+
+            {/* Title row */}
+            <div className="relative flex items-center justify-between flex-wrap gap-3">
+              <div className="flex items-center gap-4">
+                <div className="w-12 h-12 bg-white/15 backdrop-blur-sm rounded-2xl flex items-center justify-center border border-white/25 shadow-inner">
+                  <FunnelIcon className="h-7 w-7 text-white" />
+                </div>
+                <div>
+                  <h1 className="text-2xl font-bold text-white leading-tight tracking-tight">Воронка продаж</h1>
+                  <p className="text-violet-200 text-sm mt-0.5">CRM — от лида до студента</p>
+                </div>
+              </div>
+
+              {/* Action buttons */}
+              <div className="flex items-center gap-2 flex-wrap">
+                <button
+                  onClick={() => setShowImportLeads(true)}
+                  className="flex items-center gap-2 px-3.5 py-2 bg-white/15 hover:bg-white/25 backdrop-blur-sm border border-white/20 text-white rounded-xl font-medium text-sm transition-all duration-200 hover:scale-105"
+                >
+                  <ArrowUpTrayIcon className="h-4 w-4" />
+                  Импорт
+                </button>
+                <button
+                  onClick={() => setShowFunnelExport(true)}
+                  className="flex items-center gap-2 px-3.5 py-2 bg-white/15 hover:bg-white/25 backdrop-blur-sm border border-white/20 text-white rounded-xl font-medium text-sm transition-all duration-200 hover:scale-105"
+                >
+                  <DocumentArrowDownIcon className="h-4 w-4" />
+                  Экспорт
+                </button>
+                <button
+                  onClick={() => { setLeadForm(defaultLeadForm()); setShowCreateLead(true); }}
+                  className="flex items-center gap-2 px-4 py-2 bg-white text-violet-700 hover:bg-violet-50 rounded-xl font-semibold text-sm transition-all duration-200 hover:scale-105 shadow-md"
+                >
+                  <PlusIcon className="h-4 w-4" />
+                  Добавить лида
+                </button>
+              </div>
+            </div>
+
+          </div>
+
+          {/* Tabs + search strip */}
+          <div className="bg-white dark:bg-gray-800 border-t-0 px-4 pt-2 pb-0">
+            {/* Tab row */}
+            <div className="flex gap-0.5 overflow-x-auto scrollbar-none border-b border-gray-100 dark:border-gray-700">
+              {TABS.map(tab => {
+                const Icon = tab.icon;
+                return (
+                  <button
+                    key={tab.id}
+                    onClick={() => setActiveTab(tab.id as typeof activeTab)}
+                    className={`flex items-center gap-2 px-4 py-2.5 text-sm font-medium whitespace-nowrap transition-colors border-b-2 -mb-px ${
+                      activeTab === tab.id
+                        ? 'border-violet-600 text-violet-700 dark:text-violet-400'
+                        : 'border-transparent text-gray-600 dark:text-gray-400 hover:text-violet-600 dark:hover:text-violet-400'
+                    }`}
+                  >
+                    <Icon className="h-4 w-4" />
+                    {tab.label}
+                  </button>
+                );
+              })}
+            </div>
+
+            {/* Search / filter bar — only on kanban */}
+            {activeTab === 'kanban' && (
+              <div className="flex gap-2 flex-wrap py-3">
+                <div className="relative flex-1 min-w-[200px]">
+                  <MagnifyingGlassIcon className="h-4 w-4 absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" />
+                  <input
+                    type="text"
+                    value={search}
+                    onChange={e => setSearch(e.target.value)}
+                    placeholder="Поиск по имени или телефону..."
+                    className="pl-9 pr-3 py-2 w-full border border-gray-200 dark:border-gray-600 rounded-lg text-sm bg-gray-50 dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-violet-500 focus:border-violet-500"
+                  />
+                </div>
+                <select
+                  value={filterSource}
+                  onChange={e => { setFilterSource(e.target.value); }}
+                  className="px-3 py-2 border border-gray-200 dark:border-gray-600 rounded-lg text-sm bg-gray-50 dark:bg-gray-700 text-gray-700 dark:text-gray-300 focus:ring-violet-500 focus:border-violet-500"
+                >
+                  <option value="">Все источники</option>
+                  {sources.map(s => <option key={s.id} value={s.id}>{s.name}</option>)}
+                </select>
+                <button onClick={loadKanban} className="p-2 border border-gray-200 dark:border-gray-600 rounded-lg bg-gray-50 dark:bg-gray-700 text-gray-500 hover:bg-gray-100 dark:hover:bg-gray-600 transition-colors">
+                  <ArrowPathIcon className="h-4 w-4" />
+                </button>
+              </div>
+            )}
+          </div>
         </div>
 
         {/* ── Kanban ── */}
         {activeTab === 'kanban' && (
           <>
-            {/* Search / filter bar — stays put, never scrolls */}
-            <div className="flex gap-3 flex-wrap mb-4 flex-shrink-0">
-              <div className="relative flex-1 min-w-[200px]">
-                <MagnifyingGlassIcon className="h-4 w-4 absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" />
-                <input
-                  type="text"
-                  value={search}
-                  onChange={e => setSearch(e.target.value)}
-                  placeholder="Поиск по имени или телефону..."
-                  className="pl-9 pr-3 py-2 w-full border border-gray-300 dark:border-gray-600 rounded-lg text-sm bg-white dark:bg-gray-800 text-gray-900 dark:text-white focus:ring-violet-500 focus:border-violet-500"
-                />
-              </div>
-              <select
-                value={filterSource}
-                onChange={e => { setFilterSource(e.target.value); }}
-                className="px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg text-sm bg-white dark:bg-gray-800 text-gray-700 dark:text-gray-300 focus:ring-violet-500 focus:border-violet-500"
-              >
-                <option value="">Все источники</option>
-                {sources.map(s => <option key={s.id} value={s.id}>{s.name}</option>)}
-              </select>
-              <button onClick={loadKanban} className="p-2 border border-gray-300 dark:border-gray-600 rounded-lg text-gray-500 hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors">
-                <ArrowPathIcon className="h-4 w-4" />
-              </button>
-              <button
-                onClick={() => setShowFunnelExport(true)}
-                className="flex items-center gap-2 px-4 py-2 bg-emerald-600 hover:bg-emerald-700 text-white rounded-lg transition-colors font-medium text-sm shadow-sm"
-              >
-                <DocumentArrowDownIcon className="h-4 w-4" />
-                Экспорт
-              </button>
-              <button
-                onClick={() => { setLeadForm(defaultLeadForm()); setShowCreateLead(true); }}
-                className="flex items-center gap-2 px-4 py-2 bg-violet-600 hover:bg-violet-700 text-white rounded-lg transition-colors font-medium text-sm shadow-sm"
-              >
-                <PlusIcon className="h-4 w-4" />
-                Добавить лида
-              </button>
-            </div>
-
             {/* Board area — fills remaining viewport height, only this scrolls horizontally */}
-            <div style={{ height: 'calc(100vh - 290px)', minHeight: '400px', overflow: 'hidden' }}>
+            <div style={{ height: 'calc(100vh - 390px)', minHeight: '400px', overflow: 'hidden' }}>
               {loadingKanban ? (
                 <div className="flex justify-center pt-16">
                   <div className="animate-spin h-10 w-10 border-b-2 border-violet-600 rounded-full" />
@@ -1507,6 +1536,14 @@ export default function FunnelPage() {
           </div>
         </div>
       </BaseModal>
+
+      {/* ── Import Leads Modal ── */}
+      <ImportLeadsModal
+        isOpen={showImportLeads}
+        organizationId={orgId}
+        onClose={() => setShowImportLeads(false)}
+        onSuccess={loadKanban}
+      />
     </div>
   );
 }

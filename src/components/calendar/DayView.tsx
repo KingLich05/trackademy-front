@@ -248,6 +248,9 @@ function LessonBlock({ lesson, onClick, height }: LessonBlockProps) {
           <div>Время: {formatTime(lesson.startTime)} - {formatTime(lesson.endTime)}</div>
           <div>Учитель: {lesson.teacher.name}</div>
           <div>Кабинет: {lesson.room.name}</div>
+          {lesson.isMakeUp && (
+            <div className="mt-1 text-orange-400 font-medium">↩ Отработка</div>
+          )}
           {lesson.note && (
             <div className="mt-2 pt-2 border-t border-gray-700 text-blue-300">
               {lesson.note}
@@ -260,10 +263,15 @@ function LessonBlock({ lesson, onClick, height }: LessonBlockProps) {
         {/* Заголовок с предметом и статусом */}
         <div className="flex items-start justify-between gap-2">
           <div className="flex-1 min-w-0">
-            <div className="flex items-center gap-1.5">
+            <div className="flex items-center gap-1.5 flex-wrap">
               <h4 className="font-semibold text-gray-900 dark:text-white text-[13px] leading-snug break-words">
                 {lesson.subject.subjectName}
               </h4>
+              {lesson.isMakeUp && (
+                <span className="text-[10px] px-1.5 py-0.5 bg-orange-100 dark:bg-orange-900/40 text-orange-700 dark:text-orange-400 rounded font-medium flex-shrink-0">
+                  Отработка
+                </span>
+              )}
               {lesson.note && (
                 <ChatBubbleLeftIcon 
                   className="w-3.5 h-3.5 text-blue-500 dark:text-blue-400 flex-shrink-0" 

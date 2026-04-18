@@ -450,6 +450,14 @@ function LessonDetailContent({ lessonId }: { lessonId: string }) {
                     />
                   </>
                 )}
+                {!isCancelled && !isActionable && (
+                  <ActionButton
+                    label="QR-регистрация"
+                    color="indigo"
+                    onClick={() => setIsQrOpen(true)}
+                    icon={<QrCodeIcon className="w-4 h-4" />}
+                  />
+                )}
                 {isCancelled && (
                   <ActionButton
                     label="Восстановить"
