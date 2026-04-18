@@ -1233,7 +1233,7 @@ export default function StudentsPage() {
                   {/* Password field removed — backend auto-generates password */}
 
                   {/* Group + Package Selection для студентов */}
-                  <div>
+                  <div className="md:col-span-2">
                     <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
                       Группы <span className="text-gray-500 text-sm">(необязательно)</span>
                     </label>
@@ -1242,7 +1242,8 @@ export default function StudentsPage() {
                     {((formData.groupsToAdd as GroupToAdd[]) || []).map((entry, idx) => {
                       const pkgs = groupPackages[entry.groupId] || [];
                       return (
-                        <div key={idx} className="flex gap-2 mb-2 items-center">
+                        <div key={idx} className="flex flex-col gap-1 mb-2">
+                          <div className="flex gap-2 items-center">
                           <select
                             value={entry.groupId}
                             onChange={(e) => {
@@ -1259,21 +1260,6 @@ export default function StudentsPage() {
                               <option key={g.id} value={g.id}>{g.name}</option>
                             ))}
                           </select>
-                          <select
-                            value={entry.packageId || ''}
-                            onChange={(e) => {
-                              const updated = [...((formData.groupsToAdd as GroupToAdd[]) || [])];
-                              updated[idx] = { ...updated[idx], packageId: e.target.value || null };
-                              setFormData((prev: Record<string, unknown>) => ({ ...prev, groupsToAdd: updated }));
-                            }}
-                            disabled={!entry.groupId || pkgs.length === 0}
-                            className="flex-1 px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500 disabled:opacity-50"
-                          >
-                            <option value="">{pkgs.length === 0 && entry.groupId ? 'Нет абонементов' : 'Абонемент...'}</option>
-                            {pkgs.map(p => (
-                              <option key={p.packageId} value={p.packageId}>{p.packageName}</option>
-                            ))}
-                          </select>
                           <button
                             type="button"
                             onClick={() => {
@@ -1284,6 +1270,22 @@ export default function StudentsPage() {
                           >
                             ✕
                           </button>
+                          </div>
+                          <select
+                            value={entry.packageId || ''}
+                            onChange={(e) => {
+                              const updated = [...((formData.groupsToAdd as GroupToAdd[]) || [])];
+                              updated[idx] = { ...updated[idx], packageId: e.target.value || null };
+                              setFormData((prev: Record<string, unknown>) => ({ ...prev, groupsToAdd: updated }));
+                            }}
+                            disabled={!entry.groupId || pkgs.length === 0}
+                            className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500 disabled:opacity-50"
+                          >
+                            <option value="">{pkgs.length === 0 && entry.groupId ? 'Нет абонементов' : 'Абонемент...'}</option>
+                            {pkgs.map(p => (
+                              <option key={p.packageId} value={p.packageId}>{p.packageName}</option>
+                            ))}
+                          </select>
                         </div>
                       );
                     })}

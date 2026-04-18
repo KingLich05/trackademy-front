@@ -534,6 +534,7 @@ export default function FunnelPage() {
   };
 
   // ─────────────────────────────────────────────────────────────────────────────
+  const TABS = [
     { id: 'kanban', label: 'Канбан', icon: FunnelIcon },
     { id: 'analytics', label: 'Аналитика', icon: ChartBarIcon },
     { id: 'tasks', label: 'Задачи', icon: ClipboardDocumentListIcon },
@@ -562,7 +563,7 @@ export default function FunnelPage() {
 
         {/* Tabs */}
         <div className="flex gap-1 bg-white dark:bg-gray-800 rounded-xl p-1 border border-gray-200 dark:border-gray-700 mb-5 overflow-x-auto">
-          {tabs.map(tab => {
+          {TABS.map(tab => {
             const Icon = tab.icon;
             return (
               <button
