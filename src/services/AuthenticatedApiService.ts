@@ -1173,6 +1173,32 @@ export class AuthenticatedApiService {
     return this.get(`/Lead/organization/${organizationId}${qs ? `?${qs}` : ''}`);
   }
 
+  static async getFunnelBoard(
+    organizationId: string,
+    filters?: { take?: number; search?: string; sourceId?: string; assignedToId?: string },
+  ): Promise<import('../types/SalesFunnel').FunnelBoardResponse> {
+    const params = new URLSearchParams();
+    params.set('take', String(filters?.take ?? 20));
+    if (filters?.search) params.set('search', filters.search);
+    if (filters?.sourceId) params.set('sourceId', filters.sourceId);
+    if (filters?.assignedToId) params.set('assignedToId', filters.assignedToId);
+    return this.get(`/Lead/board/organization/${organizationId}?${params.toString()}`);
+  }
+
+  static async getFunnelStageLeads(
+    organizationId: string,
+    stageId: string,
+    filters?: { skip?: number; take?: number; search?: string; sourceId?: string; assignedToId?: string },
+  ): Promise<import('../types/SalesFunnel').StageLeadsResponse> {
+    const params = new URLSearchParams();
+    params.set('skip', String(filters?.skip ?? 0));
+    params.set('take', String(filters?.take ?? 20));
+    if (filters?.search) params.set('search', filters.search);
+    if (filters?.sourceId) params.set('sourceId', filters.sourceId);
+    if (filters?.assignedToId) params.set('assignedToId', filters.assignedToId);
+    return this.get(`/Lead/board/organization/${organizationId}/stage/${stageId}?${params.toString()}`);
+  }
+
   static async getLeadById(leadId: string, organizationId: string): Promise<import('../types/SalesFunnel').LeadDetailDto> {
     return this.get(`/Lead/${leadId}/organization/${organizationId}`);
   }

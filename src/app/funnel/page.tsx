@@ -1,16 +1,17 @@
 'use client';
 
-import { useState, useEffect, useRef, useCallback } from 'react';
+import { useState, useEffect, useRef, useCallback, useMemo } from 'react';
 import { useRouter } from 'next/navigation';
 import { useAuth } from '../../contexts/AuthContext';
 import { useToast } from '../../contexts/ToastContext';
 import { AuthenticatedApiService } from '../../services/AuthenticatedApiService';
 import {
-  FunnelStageDto, LeadDto, LeadSourceDto,
+  FunnelStageDto, LeadDto, LeadSourceDto, FunnelStageWithLeads,
   CreateLeadRequest, CreateFunnelStageRequest, UpdateFunnelStageRequest,
   CreateLeadSourceRequest, UpdateLeadSourceRequest,
   FunnelAnalyticsDto, LeadActivityDto, LeadActivityType, ConvertLeadRequest,
 } from '../../types/SalesFunnel';
+import { useDebounce } from '../../hooks/useDebounce';
 import { StudentStatus, getStudentStatusName } from '../../types/StudentCrm';
 import { StudentFlag } from '../../types/StudentFlag';
 import { Subject } from '../../types/Subject';
@@ -71,7 +72,7 @@ export default function FunnelPage() {
 
   // ── data ──
   const [stages, setStages] = useState<FunnelStageDto[]>([]);
-  const [leads, setLeads] = useState<LeadDto[]>([]);
+  const [kanbanStages, setKanbanStages] = useState<FunnelStageWithLeads[]>([]);
   const [sources, setSources] = useState<LeadSourceDto[]>([]);
   const [analytics, setAnalytics] = useState<FunnelAnalyticsDto | null>(null);
   const [tasks, setTasks] = useState<LeadActivityDto[]>([]);
@@ -89,9 +90,13 @@ export default function FunnelPage() {
   const dragLeadId = useRef<string | null>(null);
   const dragOverStageId = useRef<string | null>(null);
 
+  // ── infinite scroll sentinels ──
+  const sentinelRefs = useRef<Record<string, HTMLDivElement | null>>({});
+
   // ── search / filter ──
   const [search, setSearch] = useState('');
   const [filterSource, setFilterSource] = useState('');
+  const debouncedSearch = useDebounce(search, 400);
 
   // ── analytics period ──
   const [analyticsFrom, setAnalyticsFrom] = useState('');
@@ -168,17 +173,21 @@ export default function FunnelPage() {
     if (!orgId) return;
     try {
       setLoadingKanban(true);
-      const [s, l, src, g, u, fl, sub] = await Promise.all([
-        AuthenticatedApiService.getFunnelStages(orgId),
-        AuthenticatedApiService.getLeads(orgId, filterSource ? { sourceId: filterSource } : undefined),
+      const [board, src, g, u, fl, sub] = await Promise.all([
+        AuthenticatedApiService.getFunnelBoard(orgId, {
+          take: 20,
+          search: debouncedSearch || undefined,
+          sourceId: filterSource || undefined,
+        }),
         AuthenticatedApiService.getLeadSources(orgId),
         AuthenticatedApiService.getGroups(orgId, 1000),
         AuthenticatedApiService.getUsers({ organizationId: orgId, pageSize: 500, roleIds: [2, 3, 4] }),
         AuthenticatedApiService.getStudentFlags(),
         AuthenticatedApiService.getSubjects(orgId),
       ]);
-      setStages(s.sort((a, b) => a.order - b.order));
-      setLeads(l);
+      const sortedStages = [...board.stages].sort((a, b) => a.order - b.order);
+      setKanbanStages(sortedStages);
+      setStages(sortedStages.map(s => ({ id: s.id, name: s.name, order: s.order, colorHex: s.colorHex, isClosedWon: s.isClosedWon, isClosedLost: s.isClosedLost, leadsCount: s.totalCount })));
       setSources(src);
       setGroups((g.items || []).map((gr: { id: string; name: string; subject?: { subjectId?: string } | string }) => ({ id: gr.id, name: gr.name, subjectId: typeof gr.subject === 'object' ? (gr.subject as { subjectId?: string })?.subjectId : undefined })));
       setStaff((u.items || []).filter((m: { id: string; name?: string; fullName?: string }) => m.name || m.fullName).map((m: { id: string; name?: string; fullName?: string }) => ({ id: m.id, fullName: m.fullName || m.name || '' })));
@@ -189,11 +198,58 @@ export default function FunnelPage() {
     } finally {
       setLoadingKanban(false);
     }
-  }, [orgId, filterSource, showError]);
+  }, [orgId, debouncedSearch, filterSource, showError]);
+
+  // Load more for a specific stage
+  const loadMoreForStage = useCallback(async (stageId: string) => {
+    if (!orgId) return;
+    const stageData = kanbanStages.find(s => s.id === stageId);
+    if (!stageData || !stageData.hasMore || stageData.isLoadingMore) return;
+    setKanbanStages(prev => prev.map(s => s.id === stageId ? { ...s, isLoadingMore: true } : s));
+    try {
+      const result = await AuthenticatedApiService.getFunnelStageLeads(orgId, stageId, {
+        skip: stageData.leads.length,
+        take: 20,
+        search: debouncedSearch || undefined,
+        sourceId: filterSource || undefined,
+      });
+      setKanbanStages(prev => prev.map(s => s.id === stageId
+        ? { ...s, leads: [...s.leads, ...result.leads], totalCount: result.totalCount, hasMore: result.hasMore, isLoadingMore: false }
+        : s,
+      ));
+    } catch {
+      showError('Ошибка при загрузке лидов');
+      setKanbanStages(prev => prev.map(s => s.id === stageId ? { ...s, isLoadingMore: false } : s));
+    }
+  }, [orgId, kanbanStages, debouncedSearch, filterSource, showError]);
+
+  // Infinite scroll: observe sentinel divs at bottom of each column
+  useEffect(() => {
+    const observer = new IntersectionObserver(entries => {
+      for (const entry of entries) {
+        if (entry.isIntersecting) {
+          const stageId = (entry.target as HTMLElement).dataset.stageId;
+          if (stageId) loadMoreForStage(stageId);
+        }
+      }
+    }, { threshold: 0.1 });
+    const currentRefs = sentinelRefs.current;
+    for (const stageId of Object.keys(currentRefs)) {
+      const el = currentRefs[stageId];
+      if (el) { el.dataset.stageId = stageId; observer.observe(el); }
+    }
+    return () => observer.disconnect();
+  }, [kanbanStages, loadMoreForStage]);
 
   useEffect(() => {
     if (!isLoading && isAuthenticated) loadKanban();
   }, [isLoading, isAuthenticated, loadKanban]);
+
+  // Re-fetch board when debounced search or filter changes
+  useEffect(() => {
+    if (!isLoading && isAuthenticated && orgId) loadKanban();
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [debouncedSearch, filterSource]);
 
   async function loadAnalytics() {
     if (!orgId) return;
@@ -264,7 +320,7 @@ export default function FunnelPage() {
   async function onDrop(stageId: string) {
     const leadId = dragLeadId.current;
     if (!leadId) return;
-    const lead = leads.find(l => l.id === leadId);
+    const lead = kanbanStages.flatMap(s => s.leads).find(l => l.id === leadId);
     if (!lead || lead.currentStageId === stageId) return;
     if (lead.convertedUserId) { showError('Нельзя перемещать конвертированного лида'); return; }
     setMoveTarget({ leadId, stageId });
@@ -278,9 +334,25 @@ export default function FunnelPage() {
         stageId: moveTarget.stageId,
         comment: moveComment || null,
       });
-      setLeads(prev => prev.map(l => l.id === updated.id ? updated : l));
+      // Update kanbanStages: remove from source, prepend to target, adjust totalCount
+      setKanbanStages(prev => {
+        const fromId = prev.find(s => s.leads.some(l => l.id === updated.id))?.id;
+        return prev.map(s => {
+          if (s.id === fromId && fromId !== moveTarget.stageId) {
+            return { ...s, leads: s.leads.filter(l => l.id !== updated.id), totalCount: Math.max(0, s.totalCount - 1) };
+          }
+          if (s.id === moveTarget.stageId) {
+            const alreadyIn = s.leads.some(l => l.id === updated.id);
+            return {
+              ...s,
+              leads: alreadyIn ? s.leads.map(l => l.id === updated.id ? updated : l) : [updated, ...s.leads],
+              totalCount: alreadyIn ? s.totalCount : s.totalCount + 1,
+            };
+          }
+          return s;
+        });
+      });
       showSuccess('Лид перемещён');
-      // If moved to a "Записан" (isClosedWon) stage — open convert modal
       const targetStage = stages.find(s => s.id === moveTarget.stageId);
       if (targetStage?.isClosedWon && !updated.convertedUserId) {
         localStorage.setItem('pendingConvert', JSON.stringify({ id: updated.id, name: updated.fullName }));
@@ -309,7 +381,10 @@ export default function FunnelPage() {
       if (convertForm.flagIds && convertForm.flagIds.length > 0) payload.flagIds = convertForm.flagIds;
       if (convertForm.comment?.trim()) payload.comment = convertForm.comment.trim();
       const updated = await AuthenticatedApiService.convertLead(convertLeadId, orgId, payload);
-      setLeads(prev => prev.map(l => l.id === updated.id ? updated : l));
+      setKanbanStages(prev => prev.map(s => ({
+        ...s,
+        leads: s.leads.map(l => l.id === updated.id ? updated : l),
+      })));
       showSuccess('Лид конвертирован в студента!');
       localStorage.removeItem('pendingConvert');
       setConvertLeadId(null);
@@ -332,7 +407,11 @@ export default function FunnelPage() {
         try {
           await AuthenticatedApiService.deleteLead(lead.id, orgId);
           showSuccess('Лид удалён');
-          setLeads(prev => prev.filter(l => l.id !== lead.id));
+          setKanbanStages(prev => prev.map(s => ({
+            ...s,
+            leads: s.leads.filter(l => l.id !== lead.id),
+            totalCount: s.leads.some(l => l.id === lead.id) ? Math.max(0, s.totalCount - 1) : s.totalCount,
+          })));
         } catch { showError('Ошибка при удалении лида'); }
       },
     });
@@ -482,14 +561,13 @@ export default function FunnelPage() {
   }
 
   // ── filtered leads per stage ──
-  function stageLeads(stageId: string) {
-    return leads.filter(l => {
-      if (l.currentStageId !== stageId) return false;
-      if (search && !l.fullName.toLowerCase().includes(search.toLowerCase()) && !l.phone.includes(search)) return false;
-      if (filterSource && l.sourceId !== filterSource) return false;
-      return true;
-    });
-  }
+  // With the new board API, leads are already pre-filtered server-side;
+  // this just looks up the stage's lead array from kanbanStages.
+  const stageLeads = useMemo(() => {
+    const map: Record<string, LeadDto[]> = {};
+    for (const s of kanbanStages) map[s.id] = s.leads;
+    return map;
+  }, [kanbanStages]);
 
   // ─────────────────────────────────────────────────────────────────────────────
   // Render
@@ -542,7 +620,7 @@ export default function FunnelPage() {
   ] as const;
 
   return (
-    <div className="min-h-screen bg-gray-50 dark:bg-gray-900 page-container max-w-full">
+    <div className="min-h-screen bg-gray-50 dark:bg-gray-900 max-w-full">
       <div className="max-w-full mx-auto">
 
         {/* Header */}
@@ -630,7 +708,7 @@ export default function FunnelPage() {
                 <div className="flex justify-center pt-16">
                   <div className="animate-spin h-10 w-10 border-b-2 border-violet-600 rounded-full" />
                 </div>
-              ) : stages.length === 0 ? (
+              ) : kanbanStages.length === 0 ? (
                 <div className="text-center py-20">
                   <FunnelIcon className="h-16 w-16 text-gray-300 dark:text-gray-600 mx-auto mb-4" />
                   <p className="text-gray-500 dark:text-gray-400 text-lg mb-3">Воронка не настроена</p>
@@ -644,12 +722,9 @@ export default function FunnelPage() {
                   )}
                 </div>
               ) : (
-                /* w-full gives the container an explicit width equal to parent,
-                   so overflow-x:auto scrolls columns WITHIN this box instead
-                   of expanding the box and scrolling the page */
                 <div className="w-full h-full flex gap-4 overflow-x-auto overflow-y-hidden pb-3 scrollbar-custom">
-                  {stages.map(stage => {
-                    const sLeads = stageLeads(stage.id);
+                  {kanbanStages.map(stage => {
+                    const sLeads = stageLeads[stage.id] ?? [];
                     const isWon = stage.isClosedWon;
                     const isLost = stage.isClosedLost;
                     return (
@@ -671,7 +746,7 @@ export default function FunnelPage() {
                             <span
                               className="text-xs font-bold px-2 py-0.5 rounded-full text-white"
                               style={{ backgroundColor: stage.colorHex }}
-                            >{sLeads.length}</span>
+                            >{stage.totalCount}</span>
                           </div>
                         </div>
 
@@ -730,6 +805,18 @@ export default function FunnelPage() {
                           {sLeads.length === 0 && (
                             <div className="text-center py-6 text-xs text-gray-400 dark:text-gray-500">
                               Нет лидов
+                            </div>
+                          )}
+
+                          {/* Sentinel for infinite scroll */}
+                          {stage.hasMore && (
+                            <div
+                              ref={el => { sentinelRefs.current[stage.id] = el; }}
+                              className="py-2 flex items-center justify-center"
+                            >
+                              {stage.isLoadingMore && (
+                                <span className="animate-spin h-4 w-4 border-b-2 border-violet-500 rounded-full inline-block" />
+                              )}
                             </div>
                           )}
                         </div>

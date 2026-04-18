@@ -349,7 +349,7 @@ body {
 }
 
 .page-container {
-  padding-top: 84px; /* For full-screen page containers */
+  /* padding-top handled by LayoutContent (pt-[84px]) */
 }
 
 /* Responsive table utilities */
@@ -385,7 +385,7 @@ body {
 @media (max-width: 1024px) {
   .page-content,
   .page-container {
-    padding-top: 84px; /* Same for mobile since TopBar height is consistent */
+    /* padding-top handled by LayoutContent */
   }
 }
 

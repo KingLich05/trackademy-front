@@ -128,6 +128,32 @@ export interface LoseLeadRequest {
   reason: string;
 }
 
+// ─── Board API (paginated) ────────────────────────────────────────────────────
+
+export interface FunnelStageWithLeads {
+  id: string;
+  name: string;
+  order: number;
+  colorHex: string;
+  isClosedWon: boolean;
+  isClosedLost: boolean;
+  totalCount: number;
+  hasMore: boolean;
+  leads: LeadDto[];
+  isLoadingMore?: boolean; // UI only
+}
+
+export interface FunnelBoardResponse {
+  stages: FunnelStageWithLeads[];
+}
+
+export interface StageLeadsResponse {
+  stageId: string;
+  totalCount: number;
+  hasMore: boolean;
+  leads: LeadDto[];
+}
+
 // ─── Stage History ────────────────────────────────────────────────────────────
 
 export interface LeadStageHistoryDto {
