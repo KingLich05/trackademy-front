@@ -157,6 +157,26 @@ export class StudentBalanceApiService {
   }
 
   /**
+   * Получить сводку по платежам организации (для хедера)
+   */
+  static async getPaymentsSummary(organizationId: string): Promise<{
+    totalPaidThisMonth: number;
+    totalPaidAllTime: number;
+    totalRefundedThisMonth: number;
+    refundsCountThisMonth: number;
+    debtorsCount: number;
+    totalDebt: number;
+    subjectsCount: number;
+    groupsCount: number;
+    activeStudentsCount: number;
+    frozenStudentsCount: number;
+  }> {
+    return AuthenticatedApiService.get(
+      `/StudentBalance/organization/${organizationId}/payments-summary`
+    );
+  }
+
+  /**
    * Получить детальную информацию о балансе студента в конкретной группе
    */
   static async getStudentGroupBalanceDetails(

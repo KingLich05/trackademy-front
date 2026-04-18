@@ -22,9 +22,11 @@ import {
   ArrowPathIcon,
   ExclamationTriangleIcon,
   DocumentArrowDownIcon,
-  ArrowRightIcon
+  ArrowRightIcon,
+  ArrowTrendingUpIcon,
+  BanknotesIcon,
+  PauseCircleIcon
 } from '@heroicons/react/24/outline';
-import { PageHeaderWithStats } from '../../components/ui/PageHeaderWithStats';
 import { RefundModal } from '../../components/RefundModal';
 import { AddBalanceModal } from '../../components/AddBalanceModal';
 import { DiscountModal } from '../../components/DiscountModal';
@@ -77,6 +79,19 @@ interface PaymentsGroupedResponse {
   hasPreviousPage: boolean;
 }
 
+interface PaymentsSummary {
+  totalPaidThisMonth: number;
+  totalPaidAllTime: number;
+  totalRefundedThisMonth: number;
+  refundsCountThisMonth: number;
+  debtorsCount: number;
+  totalDebt: number;
+  subjectsCount: number;
+  groupsCount: number;
+  activeStudentsCount: number;
+  frozenStudentsCount: number;
+}
+
 interface Subject {
   id: string;
   name: string;
@@ -90,6 +105,7 @@ export default function PaymentsGroupedPage() {
   const isAdmin = user?.role === 'Administrator' || user?.role === 'Owner';
   
   const [data, setData] = useState<PaymentsGroupedResponse | null>(null);
+  const [summary, setSummary] = useState<PaymentsSummary | null>(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   
@@ -239,11 +255,27 @@ export default function PaymentsGroupedPage() {
     }
   }, [user?.organizationId, currentPage, pageSize, subjectIdFilter, groupIdFilter, debouncedStudentSearch]);
 
+  const loadSummary = useCallback(async () => {
+    if (!user?.organizationId) return;
+    try {
+      const result = await StudentBalanceApiService.getPaymentsSummary(user.organizationId);
+      setSummary(result);
+    } catch (err) {
+      console.error('Error loading payments summary:', err);
+    }
+  }, [user?.organizationId]);
+
   useEffect(() => {
     if (user?.organizationId) {
       loadData();
     }
   }, [loadData, user?.organizationId]);
+
+  useEffect(() => {
+    if (user?.organizationId) {
+      loadSummary();
+    }
+  }, [loadSummary, user?.organizationId]);
 
   // Calculate discounted price based on discount type
   const calculateDiscountedPrice = (
@@ -570,8 +602,6 @@ export default function PaymentsGroupedPage() {
     return null;
   };
 
-  const totalPaidAllSubjects = data?.items?.reduce((sum, subject) => sum + subject.totalPaid, 0) || 0;
-
   if (!isAdmin) {
     return null;
   }
@@ -579,39 +609,139 @@ export default function PaymentsGroupedPage() {
   return (
     <div className="min-h-screen bg-gray-50 dark:bg-gray-900 max-w-full overflow-x-hidden">
       <div className="max-w-7xl mx-auto mt-6">
-        <PageHeaderWithStats
-          title="Платежи по предметам"
-          subtitle="Управление платежами студентов по предметам и группам"
-          icon={CurrencyDollarIcon}
-          gradientFrom="from-green-500"
-          gradientTo="to-emerald-600"
-          stats={[
-            {
-              label: 'Всего оплачено',
-              value: formatBalance(totalPaidAllSubjects),
-              color: 'green'
-            },
-            {
-              label: 'Предметов',
-              value: data?.items?.length || 0,
-              color: 'blue'
-            },
-            {
-              label: 'Групп',
-              value: data?.items?.reduce((sum, s) => sum + s.groups.length, 0) || 0,
-              color: 'purple'
-            }
-          ]}
-          extraActions={
-            <button
-              onClick={() => setShowExportModal(true)}
-              className="flex items-center gap-2 px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg font-medium transition-colors shadow-md hover:shadow-lg"
-            >
-              <DocumentArrowDownIcon className="h-5 w-5" />
-              Экспорт
-            </button>
-          }
-        />
+        {/* ── Custom payments header ── */}
+        <div className="rounded-2xl overflow-hidden shadow-lg border border-gray-200 dark:border-gray-700 mb-6">
+
+          {/* Gradient banner */}
+          <div className="bg-gradient-to-r from-green-500 via-emerald-500 to-teal-600 px-5 py-4">
+            <div className="flex items-center justify-between gap-4 flex-wrap">
+              <div className="flex items-center gap-3">
+                <div className="w-11 h-11 bg-white/20 backdrop-blur-sm rounded-xl flex items-center justify-center border border-white/20 shadow-inner">
+                  <CurrencyDollarIcon className="h-6 w-6 text-white" />
+                </div>
+                <div>
+                  <h1 className="text-xl font-bold text-white">Платежи по предметам</h1>
+                  <p className="text-white/75 text-sm mt-0.5">Управление финансами студентов</p>
+                </div>
+              </div>
+              <button
+                onClick={() => setShowExportModal(true)}
+                className="flex items-center gap-2 px-4 py-2 bg-white/20 hover:bg-white/30 backdrop-blur-sm text-white rounded-xl font-medium transition-all border border-white/20 shadow-sm text-sm"
+              >
+                <DocumentArrowDownIcon className="h-4 w-4" />
+                Экспорт
+              </button>
+            </div>
+          </div>
+
+          {/* Primary financial cards */}
+          <div className="bg-white dark:bg-gray-800 px-4 pt-4 pb-3 border-b border-gray-100 dark:border-gray-700">
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3">
+
+              {/* За всё время */}
+              <div className="bg-gradient-to-br from-green-50 to-emerald-50 dark:from-green-900/20 dark:to-emerald-900/10 rounded-xl p-4 border border-green-200/60 dark:border-green-700/30">
+                <div className="flex items-start justify-between gap-2">
+                  <div className="min-w-0">
+                    <p className="text-xs font-semibold text-green-600 dark:text-green-400 uppercase tracking-wider">За всё время</p>
+                    <p className="text-xl font-bold text-green-700 dark:text-green-300 mt-1 truncate">{formatBalance(summary?.totalPaidAllTime || 0)}</p>
+                  </div>
+                  <div className="w-9 h-9 bg-green-100 dark:bg-green-800/50 rounded-lg flex items-center justify-center flex-shrink-0">
+                    <BanknotesIcon className="h-5 w-5 text-green-600 dark:text-green-400" />
+                  </div>
+                </div>
+              </div>
+
+              {/* За этот месяц */}
+              <div className="bg-gradient-to-br from-teal-50 to-cyan-50 dark:from-teal-900/20 dark:to-cyan-900/10 rounded-xl p-4 border border-teal-200/60 dark:border-teal-700/30">
+                <div className="flex items-start justify-between gap-2">
+                  <div className="min-w-0">
+                    <p className="text-xs font-semibold text-teal-600 dark:text-teal-400 uppercase tracking-wider">За этот месяц</p>
+                    <p className="text-xl font-bold text-teal-700 dark:text-teal-300 mt-1 truncate">{formatBalance(summary?.totalPaidThisMonth || 0)}</p>
+                  </div>
+                  <div className="w-9 h-9 bg-teal-100 dark:bg-teal-800/50 rounded-lg flex items-center justify-center flex-shrink-0">
+                    <ArrowTrendingUpIcon className="h-5 w-5 text-teal-600 dark:text-teal-400" />
+                  </div>
+                </div>
+              </div>
+
+              {/* Возвраты */}
+              <div className="bg-gradient-to-br from-orange-50 to-amber-50 dark:from-orange-900/20 dark:to-amber-900/10 rounded-xl p-4 border border-orange-200/60 dark:border-orange-700/30">
+                <div className="flex items-start justify-between gap-2">
+                  <div className="min-w-0">
+                    <p className="text-xs font-semibold text-orange-600 dark:text-orange-400 uppercase tracking-wider">Возвраты (месяц)</p>
+                    <p className="text-xl font-bold text-orange-700 dark:text-orange-300 mt-1">{summary?.refundsCountThisMonth || 0} чел.</p>
+                    <p className="text-xs text-orange-500/80 dark:text-orange-400/70 mt-0.5 truncate">{formatBalance(summary?.totalRefundedThisMonth || 0)}</p>
+                  </div>
+                  <div className="w-9 h-9 bg-orange-100 dark:bg-orange-800/50 rounded-lg flex items-center justify-center flex-shrink-0">
+                    <ReceiptPercentIcon className="h-5 w-5 text-orange-600 dark:text-orange-400" />
+                  </div>
+                </div>
+              </div>
+
+              {/* Должники */}
+              <div className="bg-gradient-to-br from-red-50 to-rose-50 dark:from-red-900/20 dark:to-rose-900/10 rounded-xl p-4 border border-red-200/60 dark:border-red-700/30">
+                <div className="flex items-start justify-between gap-2">
+                  <div className="min-w-0">
+                    <p className="text-xs font-semibold text-red-600 dark:text-red-400 uppercase tracking-wider">Должники</p>
+                    <p className="text-xl font-bold text-red-700 dark:text-red-300 mt-1">{summary?.debtorsCount || 0} чел.</p>
+                    <p className="text-xs text-red-500/80 dark:text-red-400/70 mt-0.5 truncate">{formatBalance(summary?.totalDebt || 0)}</p>
+                  </div>
+                  <div className="w-9 h-9 bg-red-100 dark:bg-red-800/50 rounded-lg flex items-center justify-center flex-shrink-0">
+                    <ExclamationTriangleIcon className="h-5 w-5 text-red-600 dark:text-red-400" />
+                  </div>
+                </div>
+              </div>
+
+            </div>
+          </div>
+
+          {/* Secondary stats row */}
+          <div className="bg-gray-50 dark:bg-gray-800/60 px-4 py-3">
+            <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
+
+              <div className="flex items-center gap-3 bg-white dark:bg-gray-800 rounded-lg px-3 py-2.5 border border-gray-200 dark:border-gray-700">
+                <div className="w-8 h-8 bg-blue-100 dark:bg-blue-900/40 rounded-lg flex items-center justify-center flex-shrink-0">
+                  <AcademicCapIcon className="h-4 w-4 text-blue-600 dark:text-blue-400" />
+                </div>
+                <div>
+                  <p className="text-base font-bold text-gray-900 dark:text-white leading-none">{summary?.subjectsCount ?? (data?.items?.length || 0)}</p>
+                  <p className="text-xs text-gray-500 dark:text-gray-400 mt-0.5">Предметов</p>
+                </div>
+              </div>
+
+              <div className="flex items-center gap-3 bg-white dark:bg-gray-800 rounded-lg px-3 py-2.5 border border-gray-200 dark:border-gray-700">
+                <div className="w-8 h-8 bg-purple-100 dark:bg-purple-900/40 rounded-lg flex items-center justify-center flex-shrink-0">
+                  <UserGroupIcon className="h-4 w-4 text-purple-600 dark:text-purple-400" />
+                </div>
+                <div>
+                  <p className="text-base font-bold text-gray-900 dark:text-white leading-none">{summary?.groupsCount ?? (data?.items?.reduce((sum, s) => sum + s.groups.length, 0) || 0)}</p>
+                  <p className="text-xs text-gray-500 dark:text-gray-400 mt-0.5">Групп</p>
+                </div>
+              </div>
+
+              <div className="flex items-center gap-3 bg-white dark:bg-gray-800 rounded-lg px-3 py-2.5 border border-gray-200 dark:border-gray-700">
+                <div className="w-8 h-8 bg-indigo-100 dark:bg-indigo-900/40 rounded-lg flex items-center justify-center flex-shrink-0">
+                  <UserIcon className="h-4 w-4 text-indigo-600 dark:text-indigo-400" />
+                </div>
+                <div>
+                  <p className="text-base font-bold text-gray-900 dark:text-white leading-none">{summary?.activeStudentsCount || 0}</p>
+                  <p className="text-xs text-gray-500 dark:text-gray-400 mt-0.5">Студентов</p>
+                </div>
+              </div>
+
+              <div className="flex items-center gap-3 bg-white dark:bg-gray-800 rounded-lg px-3 py-2.5 border border-gray-200 dark:border-gray-700">
+                <div className="w-8 h-8 bg-cyan-100 dark:bg-cyan-900/40 rounded-lg flex items-center justify-center flex-shrink-0">
+                  <PauseCircleIcon className="h-4 w-4 text-cyan-600 dark:text-cyan-400" />
+                </div>
+                <div>
+                  <p className="text-base font-bold text-gray-900 dark:text-white leading-none">{summary?.frozenStudentsCount || 0}</p>
+                  <p className="text-xs text-gray-500 dark:text-gray-400 mt-0.5">Заморожены</p>
+                </div>
+              </div>
+
+            </div>
+          </div>
+        </div>
 
         {/* Filters */}
         <div className="mt-6 bg-white dark:bg-gray-800 rounded-xl shadow-lg border border-gray-200 dark:border-gray-700 p-4 mb-6">
