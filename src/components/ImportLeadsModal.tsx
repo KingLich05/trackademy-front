@@ -56,11 +56,13 @@ export const ImportLeadsModal: React.FC<ImportLeadsModalProps> = ({
 
   const handleClose = () => {
     if (!isUploading) {
+      const hadResult = !!importResult;
       setSelectedFile(null);
       setImportResult(null);
       setError(null);
       setMode(1);
       onClose();
+      if (hadResult) onSuccess();
     }
   };
 
@@ -107,7 +109,7 @@ export const ImportLeadsModal: React.FC<ImportLeadsModalProps> = ({
       const result = await AuthenticatedApiService.importLeads(organizationId, selectedFile, mode);
       setImportResult(result);
       setSelectedFile(null);
-      if (result.successCount > 0) onSuccess();
+      onSuccess();
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Ошибка при импорте файла');
     } finally {

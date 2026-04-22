@@ -292,6 +292,7 @@ export const SubjectForm: React.FC<SubjectFormProps> = ({
                 <div>
                   <label className="block text-xs font-medium text-gray-600 dark:text-gray-400 mb-1">
                     {pkg.paymentType === PaymentType.Monthly ? 'Уроков/месяц' : 'Всего уроков'}
+                    <span className="text-red-500 ml-0.5">*</span>
                   </label>
                   {pkg.paymentType === PaymentType.Monthly ? (
                     <input
@@ -315,7 +316,7 @@ export const SubjectForm: React.FC<SubjectFormProps> = ({
                 </div>
                 {pkg.paymentType === PaymentType.OneTime && (
                   <div>
-                    <label className="block text-xs font-medium text-gray-600 dark:text-gray-400 mb-1">Уроков/месяц</label>
+                    <label className="block text-xs font-medium text-gray-600 dark:text-gray-400 mb-1">Уроков/месяц <span className="text-red-500">*</span></label>
                     <input
                       type="number"
                       value={pkg.lessonsPerMonth === 0 ? '' : pkg.lessonsPerMonth}
