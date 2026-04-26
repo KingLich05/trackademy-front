@@ -1,8 +1,22 @@
 import { AuthenticatedApiService } from './AuthenticatedApiService';
 import { DashboardSummary, DashboardFilters, TeacherDashboardSummary, StudentDashboardSummary } from '../types/Dashboard';
+import { DetailedDashboard } from '../types/DetailedDashboard';
 
 export class DashboardApiService {
   private static readonly BASE_URL = '/Dashboard';
+
+  static async getDetailedDashboard(
+    organizationId: string,
+    from: string,
+    to: string
+  ): Promise<DetailedDashboard> {
+    const params = new URLSearchParams({
+      OrganizationId: organizationId,
+      ReportPeriodFrom: from,
+      ReportPeriodTo: to,
+    });
+    return AuthenticatedApiService.get<DetailedDashboard>(`${this.BASE_URL}/detailed?${params.toString()}`);
+  }
 
   static async getSummary(filters: DashboardFilters): Promise<DashboardSummary> {
     const params = new URLSearchParams({

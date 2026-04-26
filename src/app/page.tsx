@@ -27,6 +27,7 @@ import { DashboardApiService } from '../services/DashboardApiService';
 import { DashboardSummary, DashboardStats, TeacherDashboardSummary, StudentDashboardSummary, UpcomingBirthday } from '../types/Dashboard';
 import { StatsCard } from '../components/dashboard/StatsCard';
 import { PageHeaderWithStats } from '../components/ui/PageHeaderWithStats';
+import { DetailedDashboardView } from '../components/dashboard/DetailedDashboardView';
 import Link from 'next/link';
 
 // Компонент сайта-визитки для неавторизованных пользователей
@@ -341,6 +342,7 @@ export default function Dashboard() {
   const [studentSummary, setStudentSummary] = useState<StudentDashboardSummary | null>(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [adminTab, setAdminTab] = useState<'overview' | 'detailed'>('overview');
 
   const isTeacher = user?.role === 'Teacher';
   const isStudent = user?.role === 'Student';
@@ -944,73 +946,98 @@ export default function Dashboard() {
               ]}
             />
 
-            {/* Stats Grid */}
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
-              {stats.map((stat, index) => (
-                <StatsCard key={index} stat={stat} />
+            {/* Tabs */}
+            <div className="flex gap-1 bg-white dark:bg-gray-800 rounded-2xl p-1.5 shadow-sm border border-gray-100 dark:border-gray-700 w-fit">
+              {([
+                { key: 'overview', label: 'Обзор' },
+                { key: 'detailed', label: 'Подробно' },
+              ] as { key: 'overview' | 'detailed'; label: string }[]).map(tab => (
+                <button
+                  key={tab.key}
+                  onClick={() => setAdminTab(tab.key)}
+                  className={`px-5 py-2 rounded-xl text-sm font-semibold transition-all ${
+                    adminTab === tab.key
+                      ? 'bg-gradient-to-r from-blue-500 to-purple-600 text-white shadow'
+                      : 'text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-200'
+                  }`}
+                >
+                  {tab.label}
+                </button>
               ))}
             </div>
 
-            {/* Upcoming Birthdays */}
-            {summary.upcomingBirthdays && summary.upcomingBirthdays.length > 0 && (
-              <div className="bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700 overflow-hidden">
-                <div className="flex items-center gap-3 px-5 py-4 border-b border-gray-200 dark:border-gray-700 bg-gradient-to-r from-pink-50 to-rose-50 dark:from-pink-900/20 dark:to-rose-900/20">
-                  <div className="w-8 h-8 rounded-lg bg-pink-100 dark:bg-pink-900/40 flex items-center justify-center text-lg">
-                    🎂
-                  </div>
-                  <div>
-                    <h3 className="text-sm font-semibold text-gray-900 dark:text-white">Предстоящие дни рождения</h3>
-                    <p className="text-xs text-gray-500 dark:text-gray-400">Ближайшие 7 дней</p>
-                  </div>
-                  <span className="ml-auto inline-flex items-center justify-center w-6 h-6 rounded-full bg-pink-500 text-white text-xs font-bold">
-                    {summary.upcomingBirthdays.length}
-                  </span>
+            {adminTab === 'overview' && (
+              <>
+                {/* Stats Grid */}
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
+                  {stats.map((stat, index) => (
+                    <StatsCard key={index} stat={stat} />
+                  ))}
                 </div>
-                <ul className="divide-y divide-gray-100 dark:divide-gray-700/50">
-                  {(summary.upcomingBirthdays as UpcomingBirthday[]).map((b) => {
-                    const date = new Date(b.birthday);
-                    const dateLabel = date.toLocaleDateString('ru-RU', { day: 'numeric', month: 'long' });
-                    const now = new Date();
-                    const todayMidnight = new Date(now.getFullYear(), now.getMonth(), now.getDate());
-                    const thisYearBirthday = new Date(now.getFullYear(), date.getMonth(), date.getDate());
-                    if (thisYearBirthday < todayMidnight) thisYearBirthday.setFullYear(now.getFullYear() + 1);
-                    const daysLeft = Math.round((thisYearBirthday.getTime() - todayMidnight.getTime()) / 86400000);
-                    const isToday = daysLeft === 0;
-                    return (
-                      <li key={b.studentId} className={`flex items-center gap-4 px-5 py-3 transition-colors hover:bg-gray-50 dark:hover:bg-gray-700/40 ${isToday ? 'bg-pink-50/60 dark:bg-pink-900/10' : ''}`}>
-                        {/* Avatar */}
-                        <div className="w-9 h-9 rounded-full bg-gradient-to-br from-pink-400 to-rose-500 flex items-center justify-center shrink-0">
-                          <span className="text-white text-sm font-bold">{b.fullName.charAt(0)}</span>
-                        </div>
-                        {/* Name & phone */}
-                        <div className="flex-1 min-w-0">
-                          <p className="text-sm font-medium text-gray-900 dark:text-white truncate">{b.fullName}</p>
-                          <p className="text-xs text-gray-500 dark:text-gray-400">{b.phone}</p>
-                        </div>
-                        {/* Date badge */}
-                        <div className="shrink-0 text-right">
-                          <p className="text-sm font-semibold text-gray-800 dark:text-gray-200">{dateLabel}</p>
-                          {isToday ? (
-                            <span className="inline-flex items-center gap-1 text-xs font-semibold text-pink-600 dark:text-pink-400">
-                              🎉 Сегодня!
-                            </span>
-                          ) : (
-                            <p className="text-xs text-gray-400 dark:text-gray-500">через {daysLeft} д.</p>
-                          )}
-                        </div>
-                      </li>
-                    );
-                  })}
-                </ul>
-              </div>
+
+                {/* Upcoming Birthdays */}
+                {summary.upcomingBirthdays && summary.upcomingBirthdays.length > 0 && (
+                  <div className="bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700 overflow-hidden">
+                    <div className="flex items-center gap-3 px-5 py-4 border-b border-gray-200 dark:border-gray-700 bg-gradient-to-r from-pink-50 to-rose-50 dark:from-pink-900/20 dark:to-rose-900/20">
+                      <div className="w-8 h-8 rounded-lg bg-pink-100 dark:bg-pink-900/40 flex items-center justify-center text-lg">
+                        🎂
+                      </div>
+                      <div>
+                        <h3 className="text-sm font-semibold text-gray-900 dark:text-white">Предстоящие дни рождения</h3>
+                        <p className="text-xs text-gray-500 dark:text-gray-400">Ближайшие 7 дней</p>
+                      </div>
+                      <span className="ml-auto inline-flex items-center justify-center w-6 h-6 rounded-full bg-pink-500 text-white text-xs font-bold">
+                        {summary.upcomingBirthdays.length}
+                      </span>
+                    </div>
+                    <ul className="divide-y divide-gray-100 dark:divide-gray-700/50">
+                      {(summary.upcomingBirthdays as UpcomingBirthday[]).map((b) => {
+                        const date = new Date(b.birthday);
+                        const dateLabel = date.toLocaleDateString('ru-RU', { day: 'numeric', month: 'long' });
+                        const now = new Date();
+                        const todayMidnight = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+                        const thisYearBirthday = new Date(now.getFullYear(), date.getMonth(), date.getDate());
+                        if (thisYearBirthday < todayMidnight) thisYearBirthday.setFullYear(now.getFullYear() + 1);
+                        const daysLeft = Math.round((thisYearBirthday.getTime() - todayMidnight.getTime()) / 86400000);
+                        const isToday = daysLeft === 0;
+                        return (
+                          <li key={b.studentId} className={`flex items-center gap-4 px-5 py-3 transition-colors hover:bg-gray-50 dark:hover:bg-gray-700/40 ${isToday ? 'bg-pink-50/60 dark:bg-pink-900/10' : ''}`}>
+                            <div className="w-9 h-9 rounded-full bg-gradient-to-br from-pink-400 to-rose-500 flex items-center justify-center shrink-0">
+                              <span className="text-white text-sm font-bold">{b.fullName.charAt(0)}</span>
+                            </div>
+                            <div className="flex-1 min-w-0">
+                              <p className="text-sm font-medium text-gray-900 dark:text-white truncate">{b.fullName}</p>
+                              <p className="text-xs text-gray-500 dark:text-gray-400">{b.phone}</p>
+                            </div>
+                            <div className="shrink-0 text-right">
+                              <p className="text-sm font-semibold text-gray-800 dark:text-gray-200">{dateLabel}</p>
+                              {isToday ? (
+                                <span className="inline-flex items-center gap-1 text-xs font-semibold text-pink-600 dark:text-pink-400">
+                                  🎉 Сегодня!
+                                </span>
+                              ) : (
+                                <p className="text-xs text-gray-400 dark:text-gray-500">через {daysLeft} д.</p>
+                              )}
+                            </div>
+                          </li>
+                        );
+                      })}
+                    </ul>
+                  </div>
+                )}
+
+                {/* Last Updated */}
+                <div className="bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700 p-4">
+                  <p className="text-sm text-gray-600 dark:text-gray-400 text-center">
+                    Последнее обновление: {new Date(summary.lastUpdated).toLocaleString('ru-RU')}
+                  </p>
+                </div>
+              </>
             )}
 
-            {/* Last Updated */}
-            <div className="bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700 p-4">
-              <p className="text-sm text-gray-600 dark:text-gray-400 text-center">
-                Последнее обновление: {new Date(summary.lastUpdated).toLocaleString('ru-RU')}
-              </p>
-            </div>
+            {adminTab === 'detailed' && user?.organizationId && (
+              <DetailedDashboardView organizationId={user.organizationId} />
+            )}
           </>
         ) : null}
 
