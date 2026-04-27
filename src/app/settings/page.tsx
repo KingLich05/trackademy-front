@@ -350,7 +350,7 @@ export default function SettingsPage() {
                   <div className="text-white font-semibold text-sm capitalize">{user?.role}</div>
                 </div>
                 <div className="w-10 h-10 rounded-xl bg-white/15 border border-white/20 flex items-center justify-center">
-                  <span className="text-white font-bold text-sm">{user?.name?.charAt(0)?.toUpperCase() ?? 'A'}</span>
+                  <span className="text-white font-bold text-sm">{user?.fullName?.charAt(0)?.toUpperCase() ?? 'A'}</span>
                 </div>
               </div>
             </div>
