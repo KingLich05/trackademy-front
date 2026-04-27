@@ -40,6 +40,7 @@ interface StudentBalance {
   balance: number;
   remainingLessons?: number;
   isFrozen?: boolean;
+  haveExemption?: boolean;
   discountType: number | null;
   discountValue: number | null;
   discountReason: string | null;
@@ -373,22 +374,36 @@ export const GroupStudentsModal: React.FC<GroupStudentsModalProps> = ({
                               : `${studentBalance.discountValue.toLocaleString()} ₸`}
                           </div>
                         )}
+                        {studentBalance.haveExemption && (
+                          <div className="inline-flex items-center px-1.5 py-0.5 rounded text-xs font-medium bg-amber-100 text-amber-700 dark:bg-amber-900/30 dark:text-amber-400">
+                            🎫 Льготник
+                          </div>
+                        )}
                       </div>
                     </div>
                   </div>
                   
                   <div className="flex items-center gap-1 flex-wrap justify-start">
-                    <button
-                      onClick={() => {
-                        setSelectedStudent(studentBalance);
-                        setIsAddBalanceOpen(true);
-                      }}
-                      className="flex items-center gap-1 px-2 py-1.5 text-xs font-medium text-green-700 bg-green-100 hover:bg-green-200 dark:bg-green-900/30 dark:text-green-400 dark:hover:bg-green-900/50 rounded transition-colors"
-                      title="Пополнить баланс"
-                    >
-                      <PlusCircleIcon className="w-3 h-3" />
-                      Пополнить
-                    </button>
+                    {studentBalance.haveExemption ? (
+                      <span
+                        className="flex items-center gap-1 px-2 py-1.5 text-xs font-medium text-amber-700 bg-amber-100 dark:bg-amber-900/30 dark:text-amber-400 rounded"
+                        title="Ручное пополнение недоступно для льготников"
+                      >
+                        🎫 Автопополнение
+                      </span>
+                    ) : (
+                      <button
+                        onClick={() => {
+                          setSelectedStudent(studentBalance);
+                          setIsAddBalanceOpen(true);
+                        }}
+                        className="flex items-center gap-1 px-2 py-1.5 text-xs font-medium text-green-700 bg-green-100 hover:bg-green-200 dark:bg-green-900/30 dark:text-green-400 dark:hover:bg-green-900/50 rounded transition-colors"
+                        title="Пополнить баланс"
+                      >
+                        <PlusCircleIcon className="w-3 h-3" />
+                        Пополнить
+                      </button>
+                    )}
                     
                     <button
                       onClick={() => {

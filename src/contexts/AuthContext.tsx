@@ -424,10 +424,17 @@ export function AuthProvider({ children }: Readonly<{ children: ReactNode }>) {
           role: typeof userData.role === 'number' ? getRoleFromRoleId(userData.role) : userData.role,
           roleId: userData.roleId || userData.role, // roleId может быть в userData.role
           organizationId: userData.organizationId,
-          organizationNames: userData.organizationNames
+          organizationNames: userData.organizationNames ?? user?.organizationNames
         };
-        setUser(updatedUser);
-        localStorage.setItem('user', JSON.stringify(updatedUser));
+        setUser(prev => {
+          const merged: User = {
+            ...updatedUser,
+            // preserve organizationNames if the API response didn't include it
+            organizationNames: updatedUser.organizationNames ?? prev?.organizationNames,
+          };
+          localStorage.setItem('user', JSON.stringify(merged));
+          return merged;
+        });
       }
     } catch (error) {
       console.error('Failed to refresh user data:', error);

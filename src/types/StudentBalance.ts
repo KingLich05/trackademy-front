@@ -110,6 +110,7 @@ export interface StudentGroupBalanceDetail {
     code: string;
   };
   balance: number;
+  haveExemption?: boolean;
   discountType: number;
   discountTypeName: string;
   discountValue: number;

@@ -43,6 +43,7 @@ export default function SubjectsPage() {
     totalLessons: 0,
     hasFreezeOption: false,
     hasMakeUpLessons: false,
+    isExemption: false,
   };
 
   const initialData: Record<string, unknown> = {
@@ -584,6 +585,11 @@ export default function SubjectsPage() {
                                         </div>
                                         {/* Options */}
                                         <div className="flex gap-2">
+                                          {pkg.isExemption && (
+                                            <span className="flex items-center gap-1 text-xs px-2 py-1 rounded-lg border font-medium bg-amber-50 text-amber-700 border-amber-200 dark:bg-amber-900/20 dark:text-amber-400 dark:border-amber-700/40">
+                                              🎫 Льготный
+                                            </span>
+                                          )}
                                           <span className={`flex items-center gap-1 text-xs px-2 py-1 rounded-lg border font-medium transition-colors ${pkg.hasFreezeOption ? 'bg-cyan-50 text-cyan-700 border-cyan-200 dark:bg-cyan-900/20 dark:text-cyan-300 dark:border-cyan-800/40' : 'bg-gray-50 text-gray-400 border-gray-200 dark:bg-gray-800 dark:text-gray-600 dark:border-gray-700 line-through'}`}>
                                             ❄️ Заморозка
                                           </span>

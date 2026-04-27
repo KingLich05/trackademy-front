@@ -48,6 +48,7 @@ interface StudentPayment {
   frozenFrom: string | null;
   frozenTo: string | null;
   freezeReason: string | null;
+  haveExemption?: boolean;
   discountType: number | null;
   discountValue: number | null;
   discountReason: string | null;
@@ -1035,25 +1036,34 @@ export default function PaymentsGroupedPage() {
                                     </td>
                                     <td className="px-4 py-3 whitespace-nowrap">
                                       <div className="flex gap-1.5 flex-wrap">
-                                        <button
-                                          onClick={(e) => {
-                                            e.stopPropagation();
-                                            handleAddBalanceClick(
-                                              student.studentId,
-                                              group.groupId,
-                                              student.studentName,
-                                              group.groupName,
-                                              subject.price,
-                                              student.discountType,
-                                              student.discountValue
-                                            );
-                                          }}
-                                          className="px-2 py-1 bg-emerald-100 hover:bg-emerald-200 text-emerald-700 dark:bg-emerald-900/30 dark:hover:bg-emerald-900/50 dark:text-emerald-300 rounded text-xs font-medium transition-colors flex items-center gap-1"
-                                          title="Пополнить баланс"
-                                        >
-                                          <PlusCircleIcon className="h-3.5 w-3.5" />
-                                          Пополнить
-                                        </button>
+                                        {student.haveExemption ? (
+                                          <span
+                                            className="px-2 py-1 bg-amber-100 text-amber-700 dark:bg-amber-900/30 dark:text-amber-400 rounded text-xs font-medium flex items-center gap-1"
+                                            title="Ручное пополнение недоступно для льготников"
+                                          >
+                                            🎫 Автопополнение
+                                          </span>
+                                        ) : (
+                                          <button
+                                            onClick={(e) => {
+                                              e.stopPropagation();
+                                              handleAddBalanceClick(
+                                                student.studentId,
+                                                group.groupId,
+                                                student.studentName,
+                                                group.groupName,
+                                                subject.price,
+                                                student.discountType,
+                                                student.discountValue
+                                              );
+                                            }}
+                                            className="px-2 py-1 bg-emerald-100 hover:bg-emerald-200 text-emerald-700 dark:bg-emerald-900/30 dark:hover:bg-emerald-900/50 dark:text-emerald-300 rounded text-xs font-medium transition-colors flex items-center gap-1"
+                                            title="Пополнить баланс"
+                                          >
+                                            <PlusCircleIcon className="h-3.5 w-3.5" />
+                                            Пополнить
+                                          </button>
+                                        )}
                                         <button
                                           onClick={(e) => {
                                             e.stopPropagation();

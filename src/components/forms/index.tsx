@@ -135,6 +135,7 @@ export const SubjectForm: React.FC<SubjectFormProps> = ({
       totalLessons: 0,
       hasFreezeOption: false,
       hasMakeUpLessons: false,
+      isExemption: false,
     };
     setFormData((prev: SubjectFormData) => ({
       ...prev,
@@ -215,9 +216,16 @@ export const SubjectForm: React.FC<SubjectFormProps> = ({
               className="border border-gray-200 dark:border-gray-600 rounded-xl p-4 bg-gray-50/60 dark:bg-gray-700/40 space-y-3"
             >
               <div className="flex items-center justify-between mb-1">
-                <span className="text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider">
-                  Пакет {i + 1}
-                </span>
+                <div className="flex items-center gap-2">
+                  <span className="text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider">
+                    Пакет {i + 1}
+                  </span>
+                  {pkg.isExemption && (
+                    <span className="inline-flex items-center gap-1 text-xs font-semibold px-2 py-0.5 rounded-full bg-amber-100 text-amber-700 border border-amber-200 dark:bg-amber-900/30 dark:text-amber-400 dark:border-amber-700/40">
+                      🎫 Льготный
+                    </span>
+                  )}
+                </div>
                 {packages.length > 1 && (
                   <button
                     type="button"
@@ -330,7 +338,7 @@ export const SubjectForm: React.FC<SubjectFormProps> = ({
               </div>
 
               {/* Flags */}
-              <div className="flex gap-6 pt-1">
+              <div className="flex flex-wrap gap-4 pt-1">
                 <label className="flex items-center gap-2 cursor-pointer select-none">
                   <input
                     type="checkbox"
@@ -348,6 +356,41 @@ export const SubjectForm: React.FC<SubjectFormProps> = ({
                     className="w-4 h-4 rounded border-gray-300 text-violet-600 focus:ring-violet-500"
                   />
                   <span className="text-xs text-gray-700 dark:text-gray-300">Отработка</span>
+                </label>
+              </div>
+              {/* Exemption toggle */}
+              <div className={`mt-1 rounded-xl border p-3 flex items-start gap-3 transition-colors ${
+                pkg.isExemption
+                  ? 'bg-amber-50 border-amber-200 dark:bg-amber-900/20 dark:border-amber-700/40'
+                  : 'bg-gray-50 border-gray-200 dark:bg-gray-800/40 dark:border-gray-700'
+              }`}>
+                <label className="flex items-start gap-3 cursor-pointer select-none flex-1">
+                  <div className="relative mt-0.5">
+                    <input
+                      type="checkbox"
+                      checked={!!pkg.isExemption}
+                      onChange={(e) => updatePackage(i, 'isExemption', e.target.checked)}
+                      className="sr-only"
+                    />
+                    <div
+                      onClick={() => updatePackage(i, 'isExemption', !pkg.isExemption)}
+                      className={`w-9 h-5 rounded-full transition-colors cursor-pointer ${
+                        pkg.isExemption ? 'bg-amber-500' : 'bg-gray-300 dark:bg-gray-600'
+                      }`}
+                    >
+                      <div className={`w-3.5 h-3.5 bg-white rounded-full shadow-sm absolute top-0.75 transition-transform ${
+                        pkg.isExemption ? 'translate-x-4' : 'translate-x-0.5'
+                      }`} style={{ top: '3px', left: '3px', position: 'absolute', transform: pkg.isExemption ? 'translateX(16px)' : 'translateX(0)' }} />
+                    </div>
+                  </div>
+                  <div>
+                    <p className={`text-xs font-semibold ${
+                      pkg.isExemption ? 'text-amber-700 dark:text-amber-400' : 'text-gray-600 dark:text-gray-400'
+                    }`}>🎫 Льготный абонемент</p>
+                    <p className="text-xs text-gray-500 dark:text-gray-500 mt-0.5">
+                      Автопополнение; ручное пополнение баланса будет недоступно
+                    </p>
+                  </div>
                 </label>
               </div>
             </div>

@@ -8,6 +8,7 @@ export interface SubjectPackage {
   totalLessons: number;
   hasFreezeOption: boolean;
   hasMakeUpLessons: boolean;
+  isExemption?: boolean;
   pricePerLesson?: number;
 }
 
