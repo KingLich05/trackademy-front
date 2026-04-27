@@ -1093,7 +1093,6 @@ const [teachers, setTeachers] = useState<Array<{id: string, name: string}>>([]);
           setViewingGroup(null);
         }}
         title="Детали группы"
-        customBackground="bg-gray-800 dark:bg-gray-800"
         gradientFrom="from-teal-500"
         gradientTo="to-cyan-600"
         maxWidth="4xl"
@@ -1107,40 +1106,40 @@ const [teachers, setTeachers] = useState<Array<{id: string, name: string}>>([]);
             {/* Основная информация */}
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <div>
-                <label className="block text-sm font-medium text-gray-400 mb-2">
+                <label className="block text-sm font-medium text-gray-500 dark:text-gray-400 mb-2">
                   Название группы
                 </label>
-                <div className="bg-gray-700 rounded-lg p-4">
-                  <div className="text-white font-medium">{viewingGroup.name}</div>
+                <div className="bg-gray-100 dark:bg-gray-700 rounded-lg p-4">
+                  <div className="text-gray-900 dark:text-white font-medium">{viewingGroup.name}</div>
                 </div>
               </div>
 
               <div>
-                <label className="block text-sm font-medium text-gray-400 mb-2">
+                <label className="block text-sm font-medium text-gray-500 dark:text-gray-400 mb-2">
                   Код группы
                 </label>
-                <div className="bg-gray-700 rounded-lg p-4">
-                  <div className="text-white">{viewingGroup.code || '—'}</div>
+                <div className="bg-gray-100 dark:bg-gray-700 rounded-lg p-4">
+                  <div className="text-gray-900 dark:text-white">{viewingGroup.code || '—'}</div>
                 </div>
               </div>
             </div>
 
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <div>
-                <label className="block text-sm font-medium text-gray-400 mb-2">
+                <label className="block text-sm font-medium text-gray-500 dark:text-gray-400 mb-2">
                   Уровень
                 </label>
-                <div className="bg-gray-700 rounded-lg p-4">
-                  <div className="text-white">{viewingGroup.level || '—'}</div>
+                <div className="bg-gray-100 dark:bg-gray-700 rounded-lg p-4">
+                  <div className="text-gray-900 dark:text-white">{viewingGroup.level || '—'}</div>
                 </div>
               </div>
 
               <div>
-                <label className="block text-sm font-medium text-gray-400 mb-2">
+                <label className="block text-sm font-medium text-gray-500 dark:text-gray-400 mb-2">
                   Предмет
                 </label>
-                <div className="bg-gray-700 rounded-lg p-4">
-                  <div className="text-white font-medium">
+                <div className="bg-gray-100 dark:bg-gray-700 rounded-lg p-4">
+                  <div className="text-gray-900 dark:text-white font-medium">
                     {typeof viewingGroup.subject === 'object' && viewingGroup.subject?.subjectName 
                       ? viewingGroup.subject.subjectName 
                       : typeof viewingGroup.subject === 'string' 
@@ -1152,33 +1151,33 @@ const [teachers, setTeachers] = useState<Array<{id: string, name: string}>>([]);
             </div>
 
             {/* Список студентов */}
-            <div className="border-t border-gray-700 pt-6">
+            <div className="border-t border-gray-200 dark:border-gray-700 pt-6">
               <div className="flex items-center justify-between mb-4">
-                <h3 className="text-lg font-medium text-white">
+                <h3 className="text-lg font-medium text-gray-900 dark:text-white">
                   Студенты
-                  <span className="ml-2 px-2 py-0.5 text-xs rounded-full bg-teal-500/20 text-teal-300">
+                  <span className="ml-2 px-2 py-0.5 text-xs rounded-full bg-teal-500/20 text-teal-600 dark:text-teal-300">
                     {viewingGroup.students.length}
                   </span>
                 </h3>
               </div>
               
               {viewingGroup.students.length === 0 ? (
-                <div className="bg-gray-700 rounded-lg p-8 text-center">
-                  <p className="text-gray-400">В группе пока нет студентов</p>
+                <div className="bg-gray-100 dark:bg-gray-700 rounded-lg p-8 text-center">
+                  <p className="text-gray-500 dark:text-gray-400">В группе пока нет студентов</p>
                 </div>
               ) : (
-                <div className="bg-gray-700 rounded-lg divide-y divide-gray-600 max-h-96 overflow-y-auto">
+                <div className="bg-gray-100 dark:bg-gray-700 rounded-lg divide-y divide-gray-200 dark:divide-gray-600 max-h-96 overflow-y-auto">
                   {viewingGroup.students.map((student, index) => (
                     <div 
                       key={student.studentId} 
-                      className="p-4 hover:bg-gray-600/50 transition-colors"
+                      className="p-4 hover:bg-gray-200/60 dark:hover:bg-gray-600/50 transition-colors"
                     >
                       <div className="flex items-center space-x-3">
                         <div className="flex-shrink-0 w-8 h-8 bg-gradient-to-br from-teal-500 to-cyan-600 rounded-lg flex items-center justify-center">
                           <span className="text-white font-semibold text-sm">{index + 1}</span>
                         </div>
                         <div className="flex-1">
-                          <div className="text-white font-medium">{student.studentName}</div>
+                          <div className="text-gray-900 dark:text-white font-medium">{student.studentName}</div>
                         </div>
                       </div>
                     </div>
@@ -1188,7 +1187,7 @@ const [teachers, setTeachers] = useState<Array<{id: string, name: string}>>([]);
             </div>
           </div>
         ) : (
-          <div className="text-center py-8 text-gray-400">
+          <div className="text-center py-8 text-gray-500 dark:text-gray-400">
             Группа не найдена
           </div>
         )}

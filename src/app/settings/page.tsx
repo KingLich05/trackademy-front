@@ -6,8 +6,7 @@ import { useRouter } from 'next/navigation';
 import { useToast } from '../../contexts/ToastContext';
 import { AuthenticatedApiService } from '../../services/AuthenticatedApiService';
 import { StudentFlag, CreateStudentFlagRequest } from '../../types/StudentFlag';
-import { OrganizationDetail } from '../../types/Organization';
-import { CogIcon, BuildingOfficeIcon, ChevronRightIcon, FlagIcon, PlusIcon, PencilIcon, TrashIcon, SparklesIcon, ServerStackIcon, ArrowPathIcon, XMarkIcon } from '@heroicons/react/24/outline';
+import { CogIcon, ChevronRightIcon, FlagIcon, PlusIcon, PencilIcon, TrashIcon, SparklesIcon, ServerStackIcon, ArrowPathIcon, XMarkIcon } from '@heroicons/react/24/outline';
 import { RewardRuleDto, RewardEventType, CreateRewardRuleRequest, UpdateRewardRuleRequest } from '../../types/Market';
 import { BaseModal } from '../../components/ui/BaseModal';
 import { SettingsForm, DEFAULT_SETTINGS_FORM, mapSettingsToForm, mapFormToSettings } from '../../types/Setting';
@@ -16,15 +15,14 @@ export default function SettingsPage() {
   const { isAuthenticated, user } = useAuth();
   const { showSuccess, showError } = useToast();
   const router = useRouter();
-  const [activeTab, setActiveTab] = useState('general');
+  const [activeTab, setActiveTab] = useState('system-settings');
   const [studentFlags, setStudentFlags] = useState<StudentFlag[]>([]);
   const [isLoadingFlags, setIsLoadingFlags] = useState(false);
   const [showCreateFlagModal, setShowCreateFlagModal] = useState(false);
   const [showEditFlagModal, setShowEditFlagModal] = useState(false);
   const [editingFlag, setEditingFlag] = useState<StudentFlag | null>(null);
   const [flagName, setFlagName] = useState('');
-  const [organizationData, setOrganizationData] = useState<OrganizationDetail | null>(null);
-  const [isLoadingOrganization, setIsLoadingOrganization] = useState(false);
+
 
   // Reward Rules state
   const [rewardRules, setRewardRules] = useState<RewardRuleDto[]>([]);
@@ -56,32 +54,12 @@ export default function SettingsPage() {
 
     if (activeTab === 'student-flags') {
       loadStudentFlags();
-    } else if (activeTab === 'organization') {
-      loadOrganizationData();
     } else if (activeTab === 'reward-rules') {
       loadRewardRules();
     } else if (activeTab === 'system-settings') {
       loadSystemSettings();
     }
   }, [isAuthenticated, user, router, activeTab]);
-
-  const loadOrganizationData = async () => {
-    if (!user?.organizationId) {
-      showError('Организация не найдена');
-      return;
-    }
-
-    try {
-      setIsLoadingOrganization(true);
-      const orgData = await AuthenticatedApiService.getOrganizationById(user.organizationId);
-      setOrganizationData(orgData);
-    } catch (error) {
-      console.error('Error loading organization data:', error);
-      showError('Ошибка при загрузке данных организации');
-    } finally {
-      setIsLoadingOrganization(false);
-    }
-  };
 
   const loadSystemSettings = async () => {
     if (!user?.organizationId) return;
@@ -300,16 +278,10 @@ export default function SettingsPage() {
 
   const tabs = [
     {
-      id: 'general',
-      label: 'Общие настройки',
-      icon: CogIcon,
-      description: 'Основные параметры системы'
-    },
-    {
-      id: 'organization',
-      label: 'Организация',
-      icon: BuildingOfficeIcon,
-      description: 'Настройки организации и брендинга'
+      id: 'system-settings',
+      label: 'Настройки системы',
+      icon: ServerStackIcon,
+      description: 'Расписание, посещаемость, финансы'
     },
     {
       id: 'student-flags',
@@ -322,12 +294,6 @@ export default function SettingsPage() {
       label: 'Правила маркета',
       icon: SparklesIcon,
       description: 'Начисление монет за действия'
-    },
-    {
-      id: 'system-settings',
-      label: 'Настройки системы',
-      icon: ServerStackIcon,
-      description: 'Расписание, посещаемость, финансы'
     }
   ];
 
@@ -357,16 +323,38 @@ export default function SettingsPage() {
     <div className="min-h-screen bg-gray-50 dark:bg-gray-900 page-container max-w-full overflow-x-hidden">
       <div className="max-w-7xl mx-auto">
         {/* Header */}
-        <div className="mb-8">
-          <div className="flex items-center gap-3 mb-2">
-            <CogIcon className="h-8 w-8 text-blue-600 dark:text-blue-400" />
-            <h1 className="text-3xl font-bold text-gray-900 dark:text-white">
-              Настройки системы
-            </h1>
+        <div className="relative mb-8 rounded-2xl overflow-hidden">
+          <div className="absolute inset-0 bg-gradient-to-br from-blue-600 via-blue-700 to-indigo-800 dark:from-blue-800 dark:via-blue-900 dark:to-indigo-950" />
+          <div className="absolute inset-0 bg-[url('data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iNjAiIGhlaWdodD0iNjAiIHZpZXdCb3g9IjAgMCA2MCA2MCIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj48ZyBmaWxsPSJub25lIiBmaWxsLXJ1bGU9ImV2ZW5vZGQiPjxnIGZpbGw9IiNmZmZmZmYiIGZpbGwtb3BhY2l0eT0iMC4wNCI+PHBhdGggZD0iTTM2IDM0djZoNnYtNmgtNnptNiA2djZoNnYtNmgtNnptLTEyIDBoNnY2aC02di02em0tNiAwaDZ2NmgtNnYtNnoiLz48L2c+PC9nPjwvc3ZnPg==')] opacity-40" />
+          <div className="relative px-8 py-8">
+            <div className="flex items-start justify-between gap-6">
+              <div className="flex items-center gap-4">
+                <div className="flex-shrink-0 w-14 h-14 bg-white/15 backdrop-blur-sm rounded-2xl flex items-center justify-center border border-white/20 shadow-lg">
+                  <CogIcon className="h-7 w-7 text-white" />
+                </div>
+                <div>
+                  <div className="flex items-center gap-2 mb-1">
+                    <span className="text-blue-200 text-xs font-medium uppercase tracking-wider">Панель управления</span>
+                  </div>
+                  <h1 className="text-2xl font-bold text-white leading-tight">
+                    Настройки
+                  </h1>
+                  <p className="text-blue-100/80 text-sm mt-0.5">
+                    Управление параметрами и конфигурацией системы
+                  </p>
+                </div>
+              </div>
+              <div className="hidden sm:flex items-center gap-3 shrink-0">
+                <div className="text-right">
+                  <div className="text-white/60 text-xs">Роль</div>
+                  <div className="text-white font-semibold text-sm capitalize">{user?.role}</div>
+                </div>
+                <div className="w-10 h-10 rounded-xl bg-white/15 border border-white/20 flex items-center justify-center">
+                  <span className="text-white font-bold text-sm">{user?.name?.charAt(0)?.toUpperCase() ?? 'A'}</span>
+                </div>
+              </div>
+            </div>
           </div>
-          <p className="text-gray-600 dark:text-gray-400">
-            Управление основными параметрами и конфигурацией системы
-          </p>
         </div>
 
         <div className="grid grid-cols-1 lg:grid-cols-4 gap-6">
@@ -409,134 +397,6 @@ export default function SettingsPage() {
           {/* Основной контент */}
           <div className="lg:col-span-3">
             <div className="bg-white dark:bg-gray-800 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700">
-              {activeTab === 'general' && (
-                <div className="p-6">
-                  <div className="mb-6">
-                    <h3 className="text-xl font-semibold text-gray-900 dark:text-white mb-2">
-                      Общие настройки
-                    </h3>
-                    <p className="text-gray-600 dark:text-gray-400">
-                      Основные параметры работы системы
-                    </p>
-                  </div>
-
-                  <div className="space-y-6">
-                    {/* Пример настройки */}
-                    <div className="border border-gray-200 dark:border-gray-700 rounded-lg p-4">
-                      <div className="flex items-center justify-between mb-2">
-                        <h4 className="font-medium text-gray-900 dark:text-white">
-                          Автоматические уведомления
-                        </h4>
-                        <label className="relative inline-flex items-center cursor-pointer">
-                          <input type="checkbox" className="sr-only peer" defaultChecked />
-                          <div className="w-11 h-6 bg-gray-200 dark:bg-gray-700 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-blue-300 dark:peer-focus:ring-blue-800 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-blue-600"></div>
-                        </label>
-                      </div>
-                      <p className="text-sm text-gray-600 dark:text-gray-400">
-                        Включить автоматическую отправку уведомлений пользователям
-                      </p>
-                    </div>
-
-                    <div className="border border-gray-200 dark:border-gray-700 rounded-lg p-4">
-                      <h4 className="font-medium text-gray-900 dark:text-white mb-2">
-                        Максимальный размер файла
-                      </h4>
-                      <div className="flex items-center gap-3">
-                        <input
-                          type="number"
-                          defaultValue="10"
-                          className="w-24 px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-blue-500 focus:border-blue-500"
-                        />
-                        <span className="text-gray-600 dark:text-gray-400">МБ</span>
-                      </div>
-                      <p className="text-sm text-gray-600 dark:text-gray-400 mt-1">
-                        Максимальный размер загружаемых файлов
-                      </p>
-                    </div>
-
-                    <div className="border border-gray-200 dark:border-gray-700 rounded-lg p-4">
-                      <h4 className="font-medium text-gray-900 dark:text-white mb-2">
-                        Часовой пояс по умолчанию
-                      </h4>
-                      <select className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-blue-500 focus:border-blue-500">
-                        <option value="UTC+6">UTC+6 (Алматы)</option>
-                        <option value="UTC+3">UTC+3 (Москва)</option>
-                        <option value="UTC+0">UTC+0 (GMT)</option>
-                      </select>
-                    </div>
-                  </div>
-                </div>
-              )}
-
-              {activeTab === 'organization' && (
-                <div className="p-6">
-                  <div className="mb-6">
-                    <h3 className="text-xl font-semibold text-gray-900 dark:text-white mb-2">
-                      Настройки организации
-                    </h3>
-                    <p className="text-gray-600 dark:text-gray-400">
-                      Информация об организации и брендинг
-                    </p>
-                  </div>
-
-                  {isLoadingOrganization ? (
-                    <div className="p-8 text-center">
-                      <div className="inline-block animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"></div>
-                      <p className="text-gray-600 dark:text-gray-400 mt-2">Загрузка данных организации...</p>
-                    </div>
-                  ) : organizationData ? (
-                    <div className="space-y-6">
-                      <div className="border border-gray-200 dark:border-gray-700 rounded-lg p-4">
-                        <h4 className="font-medium text-gray-900 dark:text-white mb-2">
-                          Название организации
-                        </h4>
-                        <input
-                          type="text"
-                          value={organizationData.name}
-                          readOnly
-                          className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-gray-100 dark:bg-gray-700 text-gray-900 dark:text-white cursor-not-allowed"
-                        />
-                      </div>
-
-                      <div className="border border-gray-200 dark:border-gray-700 rounded-lg p-4">
-                        <h4 className="font-medium text-gray-900 dark:text-white mb-2">
-                          Контактная информация
-                        </h4>
-                        <div>
-                          <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
-                            Телефон
-                          </label>
-                          <input
-                            type="text"
-                            value={organizationData.phone || ''}
-                            readOnly
-                            placeholder="Не указан"
-                            className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-gray-100 dark:bg-gray-700 text-gray-900 dark:text-white cursor-not-allowed"
-                          />
-                        </div>
-                      </div>
-
-                      <div className="border border-gray-200 dark:border-gray-700 rounded-lg p-4">
-                        <h4 className="font-medium text-gray-900 dark:text-white mb-2">
-                          Адрес
-                        </h4>
-                        <textarea
-                          rows={3}
-                          value={organizationData.address || ''}
-                          readOnly
-                          placeholder="Не указан"
-                          className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-gray-100 dark:bg-gray-700 text-gray-900 dark:text-white cursor-not-allowed"
-                        />
-                      </div>
-                    </div>
-                  ) : (
-                    <div className="p-8 text-center">
-                      <p className="text-gray-600 dark:text-gray-400">Не удалось загрузить данные организации</p>
-                    </div>
-                  )}
-                </div>
-              )}
-
               {activeTab === 'student-flags' && (
                 <div className="p-6">
                   <div className="mb-6">
@@ -862,17 +722,6 @@ export default function SettingsPage() {
                 </div>
               )}
 
-              {/* Кнопки сохранения */}
-              <div className="px-6 py-4 bg-gray-50 dark:bg-gray-800/50 border-t border-gray-200 dark:border-gray-700 rounded-b-lg">
-                <div className="flex justify-end gap-3">
-                  <button className="px-4 py-2 text-gray-700 dark:text-gray-300 border border-gray-300 dark:border-gray-600 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors">
-                    Отменить
-                  </button>
-                  <button className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors">
-                    Сохранить изменения
-                  </button>
-                </div>
-              </div>
             </div>
           </div>
         </div>
