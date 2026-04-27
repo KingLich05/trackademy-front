@@ -10,7 +10,7 @@ import { OrganizationDetail } from '../../types/Organization';
 import { CogIcon, BuildingOfficeIcon, ChevronRightIcon, FlagIcon, PlusIcon, PencilIcon, TrashIcon, SparklesIcon, ServerStackIcon, ArrowPathIcon, XMarkIcon } from '@heroicons/react/24/outline';
 import { RewardRuleDto, RewardEventType, CreateRewardRuleRequest, UpdateRewardRuleRequest } from '../../types/Market';
 import { BaseModal } from '../../components/ui/BaseModal';
-import { SettingDto, SettingDefinition, SettingType, UpsertSettingRequest, SETTING_GROUPS, WEEKDAYS } from '../../types/Setting';
+import { SettingsForm, DEFAULT_SETTINGS_FORM, mapSettingsToForm, mapFormToSettings } from '../../types/Setting';
 
 export default function SettingsPage() {
   const { isAuthenticated, user } = useAuth();
@@ -35,16 +35,12 @@ export default function SettingsPage() {
   const [ruleForm, setRuleForm] = useState({ name: '', eventType: RewardEventType.AttendanceMarked as RewardEventType, coinAmount: 5, minScore: '', isActive: true });
 
   // System settings state
-  const [definitions, setDefinitions] = useState<SettingDefinition[]>([]);
-  const [savedSettings, setSavedSettings] = useState<SettingDto[]>([]);
-  const [settingsForm, setSettingsForm] = useState<Record<string, unknown>>({});
-  const [dirtyKeys, setDirtyKeys] = useState<Set<string>>(new Set());
+  const [settingsForm, setSettingsForm] = useState<SettingsForm>(DEFAULT_SETTINGS_FORM);
+  const [isFormDirty, setIsFormDirty] = useState(false);
   const [isLoadingSettings, setIsLoadingSettings] = useState(false);
   const [isSavingSettings, setIsSavingSettings] = useState(false);
   const [isInitializingSettings, setIsInitializingSettings] = useState(false);
-  const [activeSettingsGroup, setActiveSettingsGroup] = useState<string>('general');
   const [newHolidayDate, setNewHolidayDate] = useState('');
-  const [newLeadSource, setNewLeadSource] = useState('');
 
   useEffect(() => {
     if (!isAuthenticated) {
@@ -91,40 +87,9 @@ export default function SettingsPage() {
     if (!user?.organizationId) return;
     setIsLoadingSettings(true);
     try {
-      const [defs, saved] = await Promise.all([
-        AuthenticatedApiService.getSettingDefinitions(),
-        AuthenticatedApiService.getOrganizationSettings(user.organizationId),
-      ]);
-
-      // If no settings have been persisted yet, seed defaults to the DB
-      const allDefaults = saved.every(s => s.id === '00000000-0000-0000-0000-000000000000');
-      if (saved.length === 0 || allDefaults) {
-        try {
-          const initialized = await AuthenticatedApiService.initializeDefaultSettings(user.organizationId);
-          setSavedSettings(initialized);
-          const savedMap = new Map(initialized.map(s => [s.key, s.value]));
-          const form: Record<string, unknown> = {};
-          defs.forEach(def => {
-            form[def.key] = savedMap.has(def.key) ? savedMap.get(def.key) : def.defaultValue;
-          });
-          setDefinitions(defs);
-          setSettingsForm(form);
-          setDirtyKeys(new Set());
-          return;
-        } catch {
-          // Init failed silently — fall through to normal load
-        }
-      }
-
-      setDefinitions(defs);
-      setSavedSettings(saved);
-      const savedMap = new Map(saved.map(s => [s.key, s.value]));
-      const form: Record<string, unknown> = {};
-      defs.forEach(def => {
-        form[def.key] = savedMap.has(def.key) ? savedMap.get(def.key) : def.defaultValue;
-      });
-      setSettingsForm(form);
-      setDirtyKeys(new Set());
+      const saved = await AuthenticatedApiService.getOrganizationSettings(user.organizationId);
+      setSettingsForm(mapSettingsToForm(saved));
+      setIsFormDirty(false);
     } catch {
       showError('Ошибка при загрузке настроек');
     } finally {
@@ -132,41 +97,22 @@ export default function SettingsPage() {
     }
   };
 
-  const handleSettingChange = (key: string, value: unknown) => {
+  const handleSettingChange = (key: keyof SettingsForm, value: unknown) => {
     setSettingsForm(prev => ({ ...prev, [key]: value }));
-    setDirtyKeys(prev => new Set(prev).add(key));
+    setIsFormDirty(true);
   };
 
   const handleSaveSettings = async () => {
-    if (!user?.organizationId || dirtyKeys.size === 0) return;
+    if (!user?.organizationId) return;
     setIsSavingSettings(true);
     try {
-      const defsMap = new Map(definitions.map(d => [d.key, d]));
-      const settings: UpsertSettingRequest[] = Array.from(dirtyKeys).map(key => ({
-        key,
-        type: defsMap.get(key)!.type,
-        value: settingsForm[key],
-      }));
-      await AuthenticatedApiService.bulkUpsertSettings(user.organizationId, settings);
+      await AuthenticatedApiService.bulkUpsertSettings(user.organizationId, mapFormToSettings(settingsForm));
       showSuccess('Настройки сохранены');
-      setDirtyKeys(new Set());
-      await loadSystemSettings();
+      setIsFormDirty(false);
     } catch {
       showError('Ошибка при сохранении');
     } finally {
       setIsSavingSettings(false);
-    }
-  };
-
-  const handleResetSetting = async (key: string, defaultValue: unknown) => {
-    if (!user?.organizationId) return;
-    try {
-      await AuthenticatedApiService.deleteOrganizationSetting(user.organizationId, key);
-      setSettingsForm(prev => ({ ...prev, [key]: defaultValue }));
-      setDirtyKeys(prev => { const s = new Set(prev); s.delete(key); return s; });
-      showSuccess('Настройка сброшена к значению по умолчанию');
-    } catch {
-      showError('Ошибка при сбросе');
     }
   };
 
@@ -824,14 +770,14 @@ export default function SettingsPage() {
                         {isInitializingSettings ? <ArrowPathIcon className="w-4 h-4 animate-spin" /> : <ArrowPathIcon className="w-4 h-4" />}
                         Инициализировать
                       </button>
-                      {dirtyKeys.size > 0 && (
+                      {isFormDirty && (
                         <button
                           onClick={handleSaveSettings}
                           disabled={isSavingSettings}
                           className="flex items-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors disabled:opacity-50 text-sm font-medium"
                         >
                           {isSavingSettings ? <ArrowPathIcon className="w-4 h-4 animate-spin" /> : null}
-                          Сохранить ({dirtyKeys.size})
+                          Сохранить
                         </button>
                       )}
                     </div>
@@ -841,226 +787,75 @@ export default function SettingsPage() {
                     <div className="flex justify-center py-16">
                       <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600" />
                     </div>
-                  ) : definitions.length === 0 ? (
-                    <div className="text-center py-12 text-gray-400">Настройки не загружены</div>
                   ) : (
-                    <div className="flex gap-6">
-                      {/* Group nav */}
-                      <div className="w-40 shrink-0">
-                        <nav className="space-y-1">
-                          {Object.entries(SETTING_GROUPS).filter(([g]) => definitions.some(d => d.group === g)).map(([g, meta]) => (
-                            <button
-                              key={g}
-                              onClick={() => setActiveSettingsGroup(g)}
-                              className={`w-full text-left px-3 py-2 rounded-lg text-sm transition-colors ${
-                                activeSettingsGroup === g
-                                  ? 'bg-blue-50 dark:bg-blue-900/20 text-blue-700 dark:text-blue-300 font-medium'
-                                  : 'text-gray-600 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-700'
-                              }`}
-                            >
-                              {meta.title}
-                            </button>
+                    <div className="space-y-3">
+                      {/* Switch toggles */}
+                      {([
+                        { key: 'attendanceAllowBackdate' as const, label: 'Отметка посещаемости задним числом', description: 'Разрешить отмечать посещаемость за прошлые даты' },
+                        { key: 'qrAllowTrialRegistration' as const, label: 'Пробные и новые студенты', description: 'Разрешить публичную регистрацию через QR-ссылку' },
+                        { key: 'scoresAllowEditAfterGrading' as const, label: 'Изменение оценок', description: 'Разрешить редактировать уже выставленные оценки' },
+                        { key: 'notificationsOnAbsent' as const, label: 'Уведомления о пропусках', description: 'Отправлять уведомления при пропуске урока' },
+                        { key: 'notificationsOnLowBalance' as const, label: 'Финансовые уведомления', description: 'Отправлять уведомления о низком балансе' },
+                        { key: 'attendanceAutoCharge' as const, label: 'Платные/бесплатные уроки', description: 'Автоматически списывать баланс при отметке посещаемости' },
+                      ] as const).map(({ key, label, description }) => (
+                        <div key={key} className="border border-gray-200 dark:border-gray-700 rounded-lg p-4 flex items-center justify-between gap-4">
+                          <div>
+                            <p className="font-medium text-gray-900 dark:text-white text-sm">{label}</p>
+                            <p className="text-xs text-gray-500 dark:text-gray-400 mt-0.5">{description}</p>
+                          </div>
+                          <label className="relative inline-flex items-center cursor-pointer shrink-0">
+                            <input
+                              type="checkbox"
+                              className="sr-only peer"
+                              checked={settingsForm[key]}
+                              onChange={e => handleSettingChange(key, e.target.checked)}
+                            />
+                            <div className="w-11 h-6 bg-gray-200 dark:bg-gray-700 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-blue-600"></div>
+                          </label>
+                        </div>
+                      ))}
+
+                      {/* org.holidays */}
+                      <div className="border border-gray-200 dark:border-gray-700 rounded-lg p-4">
+                        <p className="font-medium text-gray-900 dark:text-white text-sm mb-0.5">Выбор праздничных дней</p>
+                        <p className="text-xs text-gray-500 dark:text-gray-400 mb-3">Уроки не создаются в эти дни. Формат: ГГГГ-ММ-ДД</p>
+                        <div className="flex flex-wrap gap-2 mb-3">
+                          {settingsForm.orgHolidays.map(date => (
+                            <span key={date} className="flex items-center gap-1 px-2 py-1 bg-gray-100 dark:bg-gray-700 rounded-lg text-sm text-gray-700 dark:text-gray-300">
+                              {date}
+                              <button
+                                onClick={() => handleSettingChange('orgHolidays', settingsForm.orgHolidays.filter(d => d !== date))}
+                                className="text-gray-400 hover:text-red-500 ml-1"
+                              >
+                                <XMarkIcon className="w-3 h-3" />
+                              </button>
+                            </span>
                           ))}
-                        </nav>
-                      </div>
-
-                      {/* Settings list */}
-                      <div className="flex-1 min-w-0 space-y-3">
-                        {definitions
-                          .filter(def => def.group === activeSettingsGroup)
-                          .map(def => {
-                            const value = settingsForm[def.key];
-                            const savedMap = new Map(savedSettings.map(s => [s.key, s.value]));
-                            const isCustom = savedMap.has(def.key);
-                            const isDirty = dirtyKeys.has(def.key);
-
-                            return (
-                              <div key={def.key} className={`border rounded-lg p-4 transition-colors ${isDirty ? 'border-blue-400 dark:border-blue-500 bg-blue-50/30 dark:bg-blue-900/10' : 'border-gray-200 dark:border-gray-700'}`}>
-                                <div className="flex items-start justify-between gap-3 mb-2">
-                                  <div className="flex-1 min-w-0">
-                                    <div className="flex items-center gap-2 flex-wrap">
-                                      <span className="font-medium text-gray-900 dark:text-white text-sm">{def.label}</span>
-                                      {isCustom && !isDirty && (
-                                        <span className="text-xs px-1.5 py-0.5 bg-amber-100 dark:bg-amber-900/30 text-amber-700 dark:text-amber-400 rounded">изменено</span>
-                                      )}
-                                      {isDirty && (
-                                        <span className="text-xs px-1.5 py-0.5 bg-blue-100 dark:bg-blue-900/30 text-blue-700 dark:text-blue-400 rounded">не сохранено</span>
-                                      )}
-                                    </div>
-                                    {def.description && (
-                                      <p className="text-xs text-gray-500 dark:text-gray-400 mt-0.5">{def.description}</p>
-                                    )}
-                                  </div>
-                                  {isCustom && (
-                                    <button
-                                      onClick={() => handleResetSetting(def.key, def.defaultValue)}
-                                      className="text-xs text-gray-400 hover:text-red-500 dark:hover:text-red-400 transition-colors shrink-0"
-                                      title="Сбросить к значению по умолчанию"
-                                    >
-                                      <XMarkIcon className="w-4 h-4" />
-                                    </button>
-                                  )}
-                                </div>
-
-                                {/* Boolean */}
-                                {def.type === SettingType.Boolean && (
-                                  <label className="relative inline-flex items-center cursor-pointer">
-                                    <input
-                                      type="checkbox"
-                                      className="sr-only peer"
-                                      checked={value as boolean}
-                                      onChange={e => handleSettingChange(def.key, e.target.checked)}
-                                    />
-                                    <div className="w-11 h-6 bg-gray-200 dark:bg-gray-700 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-blue-600"></div>
-                                  </label>
-                                )}
-
-                                {/* String */}
-                                {def.type === SettingType.String && (
-                                  <input
-                                    type="text"
-                                    value={value as string}
-                                    onChange={e => handleSettingChange(def.key, e.target.value)}
-                                    className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white text-sm focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                                  />
-                                )}
-
-                                {/* Integer */}
-                                {def.type === SettingType.Integer && (
-                                  <input
-                                    type="number"
-                                    step={1}
-                                    value={value as number}
-                                    onChange={e => handleSettingChange(def.key, parseInt(e.target.value, 10) || 0)}
-                                    className="w-40 px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white text-sm focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                                  />
-                                )}
-
-                                {/* Decimal */}
-                                {def.type === SettingType.Decimal && (
-                                  <input
-                                    type="number"
-                                    step={0.01}
-                                    value={value as number}
-                                    onChange={e => handleSettingChange(def.key, parseFloat(e.target.value) || 0)}
-                                    className="w-40 px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white text-sm focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                                  />
-                                )}
-
-                                {/* Json — working_days */}
-                                {def.type === SettingType.Json && def.key === 'schedule.working_days' && (
-                                  <div className="flex flex-wrap gap-2">
-                                    {WEEKDAYS.map(day => {
-                                      const days = (value as number[]) || [];
-                                      const checked = days.includes(day.value);
-                                      return (
-                                        <button
-                                          key={day.value}
-                                          onClick={() => {
-                                            const next = checked
-                                              ? days.filter(d => d !== day.value)
-                                              : [...days, day.value].sort();
-                                            handleSettingChange(def.key, next);
-                                          }}
-                                          className={`px-3 py-1.5 rounded-lg text-sm font-medium transition-colors ${
-                                            checked
-                                              ? 'bg-blue-600 text-white'
-                                              : 'bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-600'
-                                          }`}
-                                        >
-                                          {day.label}
-                                        </button>
-                                      );
-                                    })}
-                                  </div>
-                                )}
-
-                                {/* Json — holidays */}
-                                {def.type === SettingType.Json && def.key === 'org.holidays' && (
-                                  <div className="space-y-2">
-                                    <div className="flex flex-wrap gap-2">
-                                      {((value as string[]) || []).map(date => (
-                                        <span key={date} className="flex items-center gap-1 px-2 py-1 bg-gray-100 dark:bg-gray-700 rounded-lg text-sm text-gray-700 dark:text-gray-300">
-                                          {date}
-                                          <button
-                                            onClick={() => handleSettingChange(def.key, ((value as string[]) || []).filter(d => d !== date))}
-                                            className="text-gray-400 hover:text-red-500 ml-1"
-                                          >
-                                            <XMarkIcon className="w-3 h-3" />
-                                          </button>
-                                        </span>
-                                      ))}
-                                    </div>
-                                    <div className="flex gap-2">
-                                      <input
-                                        type="date"
-                                        value={newHolidayDate}
-                                        onChange={e => setNewHolidayDate(e.target.value)}
-                                        className="px-3 py-1.5 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white text-sm focus:ring-2 focus:ring-blue-500"
-                                      />
-                                      <button
-                                        onClick={() => {
-                                          if (!newHolidayDate) return;
-                                          const arr = (value as string[]) || [];
-                                          if (!arr.includes(newHolidayDate)) {
-                                            handleSettingChange(def.key, [...arr, newHolidayDate].sort());
-                                          }
-                                          setNewHolidayDate('');
-                                        }}
-                                        className="px-3 py-1.5 bg-blue-600 text-white rounded-lg hover:bg-blue-700 text-sm transition-colors"
-                                      >
-                                        Добавить
-                                      </button>
-                                    </div>
-                                  </div>
-                                )}
-
-                                {/* Json — lead_sources */}
-                                {def.type === SettingType.Json && def.key === 'crm.lead_sources' && (
-                                  <div className="space-y-2">
-                                    <div className="flex flex-wrap gap-2">
-                                      {((value as string[]) || []).map((src, i) => (
-                                        <span key={i} className="flex items-center gap-1 px-2 py-1 bg-gray-100 dark:bg-gray-700 rounded-lg text-sm text-gray-700 dark:text-gray-300">
-                                          {src}
-                                          <button
-                                            onClick={() => handleSettingChange(def.key, ((value as string[]) || []).filter((_, idx) => idx !== i))}
-                                            className="text-gray-400 hover:text-red-500 ml-1"
-                                          >
-                                            <XMarkIcon className="w-3 h-3" />
-                                          </button>
-                                        </span>
-                                      ))}
-                                    </div>
-                                    <div className="flex gap-2">
-                                      <input
-                                        type="text"
-                                        value={newLeadSource}
-                                        onChange={e => setNewLeadSource(e.target.value)}
-                                        onKeyDown={e => {
-                                          if (e.key === 'Enter' && newLeadSource.trim()) {
-                                            handleSettingChange(def.key, [...((value as string[]) || []), newLeadSource.trim()]);
-                                            setNewLeadSource('');
-                                          }
-                                        }}
-                                        placeholder="Новый источник..."
-                                        className="px-3 py-1.5 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white text-sm focus:ring-2 focus:ring-blue-500"
-                                      />
-                                      <button
-                                        onClick={() => {
-                                          if (!newLeadSource.trim()) return;
-                                          handleSettingChange(def.key, [...((value as string[]) || []), newLeadSource.trim()]);
-                                          setNewLeadSource('');
-                                        }}
-                                        className="px-3 py-1.5 bg-blue-600 text-white rounded-lg hover:bg-blue-700 text-sm transition-colors"
-                                      >
-                                        Добавить
-                                      </button>
-                                    </div>
-                                  </div>
-                                )}
-                              </div>
-                            );
-                          })}
+                          {settingsForm.orgHolidays.length === 0 && (
+                            <span className="text-xs text-gray-400 dark:text-gray-500">Праздничные дни не добавлены</span>
+                          )}
+                        </div>
+                        <div className="flex gap-2">
+                          <input
+                            type="date"
+                            value={newHolidayDate}
+                            onChange={e => setNewHolidayDate(e.target.value)}
+                            className="px-3 py-1.5 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white text-sm focus:ring-2 focus:ring-blue-500"
+                          />
+                          <button
+                            onClick={() => {
+                              if (!newHolidayDate) return;
+                              const next = settingsForm.orgHolidays.includes(newHolidayDate)
+                                ? settingsForm.orgHolidays
+                                : [...settingsForm.orgHolidays, newHolidayDate].sort();
+                              handleSettingChange('orgHolidays', next);
+                              setNewHolidayDate('');
+                            }}
+                            className="px-3 py-1.5 bg-blue-600 text-white rounded-lg hover:bg-blue-700 text-sm transition-colors"
+                          >
+                            Добавить
+                          </button>
+                        </div>
                       </div>
                     </div>
                   )}
