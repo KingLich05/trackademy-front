@@ -1314,19 +1314,31 @@ export class AuthenticatedApiService {
   // ── Settings ──────────────────────────────────────────────────────────────
 
   static async getSettingDefinitions(): Promise<import('../types/Setting').SettingDefinition[]> {
-    return this.get('/Setting/definitions');
+    return this.get('/settings/definitions');
   }
 
   static async getOrganizationSettings(organizationId: string): Promise<import('../types/Setting').SettingDto[]> {
-    return this.get(`/Setting/organization/${organizationId}`);
+    return this.get(`/settings/organization/${organizationId}`);
+  }
+
+  static async getSettingByKey(organizationId: string, key: string): Promise<import('../types/Setting').SettingDto> {
+    return this.get(`/settings/organization/${organizationId}/key/${encodeURIComponent(key)}`);
+  }
+
+  static async initializeDefaultSettings(organizationId: string): Promise<import('../types/Setting').SettingDto[]> {
+    return this.post(`/settings/organization/${organizationId}/initialize-defaults`, {});
+  }
+
+  static async upsertSetting(organizationId: string, request: import('../types/Setting').UpsertSettingRequest): Promise<import('../types/Setting').SettingDto> {
+    return this.put(`/settings/organization/${organizationId}`, request);
   }
 
   static async bulkUpsertSettings(organizationId: string, settings: import('../types/Setting').UpsertSettingRequest[]): Promise<import('../types/Setting').SettingDto[]> {
-    return this.put(`/Setting/organization/${organizationId}/bulk`, { settings });
+    return this.put(`/settings/organization/${organizationId}/bulk`, { settings });
   }
 
   static async deleteOrganizationSetting(organizationId: string, key: string): Promise<void> {
-    return this.delete(`/Setting/organization/${organizationId}/key/${encodeURIComponent(key)}`);
+    return this.delete(`/settings/organization/${organizationId}/key/${encodeURIComponent(key)}`);
   }
 
   // ── Lead Import ───────────────────────────────────────────────────────────

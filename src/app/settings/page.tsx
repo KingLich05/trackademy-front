@@ -41,6 +41,7 @@ export default function SettingsPage() {
   const [dirtyKeys, setDirtyKeys] = useState<Set<string>>(new Set());
   const [isLoadingSettings, setIsLoadingSettings] = useState(false);
   const [isSavingSettings, setIsSavingSettings] = useState(false);
+  const [isInitializingSettings, setIsInitializingSettings] = useState(false);
   const [activeSettingsGroup, setActiveSettingsGroup] = useState<string>('general');
   const [newHolidayDate, setNewHolidayDate] = useState('');
   const [newLeadSource, setNewLeadSource] = useState('');
@@ -94,6 +95,27 @@ export default function SettingsPage() {
         AuthenticatedApiService.getSettingDefinitions(),
         AuthenticatedApiService.getOrganizationSettings(user.organizationId),
       ]);
+
+      // If no settings have been persisted yet, seed defaults to the DB
+      const allDefaults = saved.every(s => s.id === '00000000-0000-0000-0000-000000000000');
+      if (saved.length === 0 || allDefaults) {
+        try {
+          const initialized = await AuthenticatedApiService.initializeDefaultSettings(user.organizationId);
+          setSavedSettings(initialized);
+          const savedMap = new Map(initialized.map(s => [s.key, s.value]));
+          const form: Record<string, unknown> = {};
+          defs.forEach(def => {
+            form[def.key] = savedMap.has(def.key) ? savedMap.get(def.key) : def.defaultValue;
+          });
+          setDefinitions(defs);
+          setSettingsForm(form);
+          setDirtyKeys(new Set());
+          return;
+        } catch {
+          // Init failed silently — fall through to normal load
+        }
+      }
+
       setDefinitions(defs);
       setSavedSettings(saved);
       const savedMap = new Map(saved.map(s => [s.key, s.value]));
@@ -145,6 +167,20 @@ export default function SettingsPage() {
       showSuccess('Настройка сброшена к значению по умолчанию');
     } catch {
       showError('Ошибка при сбросе');
+    }
+  };
+
+  const handleInitializeDefaults = async () => {
+    if (!user?.organizationId) return;
+    setIsInitializingSettings(true);
+    try {
+      await AuthenticatedApiService.initializeDefaultSettings(user.organizationId);
+      showSuccess('Дефолтные настройки инициализированы');
+      await loadSystemSettings();
+    } catch {
+      showError('Ошибка при инициализации настроек');
+    } finally {
+      setIsInitializingSettings(false);
     }
   };
 
@@ -778,16 +814,27 @@ export default function SettingsPage() {
                       <h3 className="text-xl font-semibold text-gray-900 dark:text-white mb-1">Настройки системы</h3>
                       <p className="text-gray-500 dark:text-gray-400 text-sm">Расписание, посещаемость, финансы, уведомления и другие параметры</p>
                     </div>
-                    {dirtyKeys.size > 0 && (
+                    <div className="flex items-center gap-2 shrink-0">
                       <button
-                        onClick={handleSaveSettings}
-                        disabled={isSavingSettings}
-                        className="flex items-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors disabled:opacity-50 shrink-0 text-sm font-medium"
+                        onClick={handleInitializeDefaults}
+                        disabled={isInitializingSettings || isLoadingSettings}
+                        className="flex items-center gap-1.5 px-3 py-2 border border-gray-300 dark:border-gray-600 text-gray-600 dark:text-gray-400 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors disabled:opacity-50 text-sm"
+                        title="Записать дефолтные значения в базу данных"
                       >
-                        {isSavingSettings ? <ArrowPathIcon className="w-4 h-4 animate-spin" /> : null}
-                        Сохранить ({dirtyKeys.size})
+                        {isInitializingSettings ? <ArrowPathIcon className="w-4 h-4 animate-spin" /> : <ArrowPathIcon className="w-4 h-4" />}
+                        Инициализировать
                       </button>
-                    )}
+                      {dirtyKeys.size > 0 && (
+                        <button
+                          onClick={handleSaveSettings}
+                          disabled={isSavingSettings}
+                          className="flex items-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors disabled:opacity-50 text-sm font-medium"
+                        >
+                          {isSavingSettings ? <ArrowPathIcon className="w-4 h-4 animate-spin" /> : null}
+                          Сохранить ({dirtyKeys.size})
+                        </button>
+                      )}
+                    </div>
                   </div>
 
                   {isLoadingSettings ? (
