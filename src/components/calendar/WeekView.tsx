@@ -2,7 +2,7 @@
 
 import { useState } from 'react';
 import { Lesson, getTimeSlots, getLessonsForDay, getWeekDays, formatTime, generateSubjectColor, getLessonStatusColor } from '@/types/Lesson';
-import { ChatBubbleLeftIcon } from '@heroicons/react/24/outline';
+import { ChatBubbleLeftIcon, ViewColumnsIcon, Bars3Icon } from '@heroicons/react/24/outline';
 import OverlappingLessonsModal from './OverlappingLessonsModal';
 
 interface WeekViewProps {
@@ -95,16 +95,13 @@ function groupOverlappingLessons(lessonsList: Lesson[]): TimeSlot[] {
 export default function WeekView({ date, lessons, onLessonClick }: WeekViewProps) {
   const timeSlots = getTimeSlots(); // 08:00 - 23:00
   const weekDays = getWeekDays(date);
-  
+
+  const [overlapMode, setOverlapMode] = useState<'side-by-side' | 'compact'>('compact');
   const [overlappingModal, setOverlappingModal] = useState<{
     isOpen: boolean;
     lessons: Lesson[];
     timeSlot: string;
-  }>({
-    isOpen: false,
-    lessons: [],
-    timeSlot: ''
-  });
+  }>({ isOpen: false, lessons: [], timeSlot: '' });
 
   const dayNames = ['Пн', 'Вт', 'Ср', 'Чт', 'Пт', 'Сб', 'Вс'];
 
@@ -129,29 +126,50 @@ export default function WeekView({ date, lessons, onLessonClick }: WeekViewProps
     };
   };
 
-  // Calculate position for time slot (used for overlapping lessons block)
   const getTimeSlotPosition = (startTime: string, endTime: string) => {
     const [startHour, startMin] = startTime.split(':').map(Number);
     const [endHour, endMin] = endTime.split(':').map(Number);
-    
     const startTotalMin = startHour * 60 + startMin;
     const endTotalMin = endHour * 60 + endMin;
-    
-    // First time slot is 08:00 (8 * 60 = 480 minutes from midnight)
     const firstSlotMin = 8 * 60;
-    
-    // Calculate position relative to the first time slot (120px per hour for consistency with DayView)
     const topOffset = ((startTotalMin - firstSlotMin) / 60) * 120;
     const height = ((endTotalMin - startTotalMin) / 60) * 120;
-    
-    return {
-      top: Math.max(0, topOffset), // Ensure non-negative
-      height: Math.max(60, height) // Minimum 60px for very short lessons
-    };
+    return { top: Math.max(0, topOffset), height: Math.max(60, height) };
   };
 
   return (
     <div className="flex flex-col h-full overflow-hidden">
+      {/* Overlap mode toggle */}
+      <div className="flex justify-end items-center px-4 py-1.5 bg-gray-50 dark:bg-gray-800/60 border-b border-gray-200 dark:border-gray-700">
+        <span className="text-xs text-gray-500 dark:text-gray-400 mr-2">Наложения:</span>
+        <div className="flex bg-gray-100 dark:bg-gray-700 rounded-lg p-0.5">
+          <button
+            onClick={() => setOverlapMode('side-by-side')}
+            title="Показывать рядом"
+            className={`flex items-center gap-1 px-2.5 py-1 rounded-md text-xs font-medium transition-all duration-200 ${
+              overlapMode === 'side-by-side'
+                ? 'bg-white dark:bg-gray-600 text-violet-600 dark:text-violet-400 shadow-sm'
+                : 'text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-200'
+            }`}
+          >
+            <ViewColumnsIcon className="w-3.5 h-3.5" />
+            Рядом
+          </button>
+          <button
+            onClick={() => setOverlapMode('compact')}
+            title="Объединить в один блок"
+            className={`flex items-center gap-1 px-2.5 py-1 rounded-md text-xs font-medium transition-all duration-200 ${
+              overlapMode === 'compact'
+                ? 'bg-white dark:bg-gray-600 text-violet-600 dark:text-violet-400 shadow-sm'
+                : 'text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-200'
+            }`}
+          >
+            <Bars3Icon className="w-3.5 h-3.5" />
+            Группой
+          </button>
+        </div>
+      </div>
+
       {/* Single scrollable container — scrolls both X and Y together */}
       <div className="flex-1 overflow-auto">
         {/* Min-width wrapper: 64px time col + 7 × 110px day cols = 834px */}
@@ -229,40 +247,12 @@ export default function WeekView({ date, lessons, onLessonClick }: WeekViewProps
                     zIndex: 10
                   }}
                 >
-                  {timeSlotGroups.map((slot, idx) => {
-                    const hasOverlap = slot.lessons.length > 1;
-                    const position = hasOverlap
-                      ? getTimeSlotPosition(slot.startTime, slot.endTime)
-                      : getLessonPosition(slot.lessons[0]);
+                  {timeSlotGroups.flatMap((slot) => {
+                    const count = slot.lessons.length;
 
-                    if (hasOverlap) {
-                      const subjects = slot.lessons.map(l => l.subject.subjectName).join(', ');
-                      return (
-                        <div
-                          key={`overlap-${idx}`}
-                          className="absolute left-1 right-1 pointer-events-auto cursor-pointer"
-                          style={{ top: `${position.top}px`, height: `${position.height}px` }}
-                          onClick={() => setOverlappingModal({
-                            isOpen: true,
-                            lessons: slot.lessons,
-                            timeSlot: `${formatTime(slot.startTime)} - ${formatTime(slot.endTime)}`
-                          })}
-                          title={`${slot.lessons.length} занятий (${formatTime(slot.startTime)}-${formatTime(slot.endTime)})\n${subjects}`}
-                        >
-                          <div className="w-full h-full p-1.5 rounded text-xs bg-gradient-to-r from-amber-50 to-amber-100 dark:from-amber-900/30 dark:to-amber-800/30 border border-amber-300 dark:border-amber-600 hover:shadow-sm transition-all overflow-hidden">
-                            <div className="flex flex-col h-full justify-center gap-0.5">
-                              <span className="font-semibold text-amber-900 dark:text-amber-100 truncate text-center">
-                                {formatTime(slot.startTime)}-{formatTime(slot.endTime)}
-                              </span>
-                              <span className="text-amber-700 dark:text-amber-300 text-[10px] truncate text-center">
-                                {subjects}
-                              </span>
-                            </div>
-                          </div>
-                        </div>
-                      );
-                    } else {
+                    if (count === 1) {
                       const lesson = slot.lessons[0];
+                      const position = getLessonPosition(lesson);
                       return (
                         <div
                           key={lesson.id}
@@ -277,6 +267,61 @@ export default function WeekView({ date, lessons, onLessonClick }: WeekViewProps
                         </div>
                       );
                     }
+
+                    if (overlapMode === 'compact') {
+                      // Compact: single amber block, click opens modal
+                      const position = getTimeSlotPosition(slot.startTime, slot.endTime);
+                      const subjects = slot.lessons.map(l => l.subject.subjectName).join(', ');
+                      return (
+                        <div
+                          key={`overlap-${slot.startTime}-${slot.endTime}`}
+                          className="absolute left-1 right-1 pointer-events-auto cursor-pointer"
+                          style={{ top: `${position.top}px`, height: `${position.height}px` }}
+                          onClick={() => setOverlappingModal({
+                            isOpen: true,
+                            lessons: slot.lessons,
+                            timeSlot: `${formatTime(slot.startTime)} - ${formatTime(slot.endTime)}`
+                          })}
+                        >
+                          <div className="w-full h-full p-1.5 rounded text-xs bg-gradient-to-r from-amber-50 to-amber-100 dark:from-amber-900/30 dark:to-amber-800/30 border border-amber-300 dark:border-amber-600 hover:shadow-sm transition-all overflow-hidden">
+                            <div className="flex flex-col h-full justify-center gap-0.5">
+                              <span className="font-semibold text-amber-900 dark:text-amber-100 truncate text-center">
+                                {formatTime(slot.startTime)}–{formatTime(slot.endTime)}
+                              </span>
+                              <span className="text-amber-700 dark:text-amber-300 text-[10px] truncate text-center">
+                                {count} занятий
+                              </span>
+                              <span className="text-amber-600 dark:text-amber-400 text-[9px] truncate text-center">
+                                {subjects}
+                              </span>
+                            </div>
+                          </div>
+                        </div>
+                      );
+                    }
+
+                    // Side-by-side for overlapping lessons
+                    return slot.lessons.map((lesson, lessonIndex) => {
+                      const position = getLessonPosition(lesson);
+                      return (
+                        <div
+                          key={`${lesson.id}-col${lessonIndex}`}
+                          className="absolute pointer-events-auto"
+                          style={{
+                            top: `${position.top}px`,
+                            height: `${position.height}px`,
+                            left: `calc(2px + ${lessonIndex} * (100% - 4px) / ${count})`,
+                            width: `calc((100% - 4px) / ${count} - 1px)`,
+                          }}
+                        >
+                          <WeekLessonBlock
+                            lesson={lesson}
+                            onClick={() => onLessonClick(lesson)}
+                            height={position.height}
+                          />
+                        </div>
+                      );
+                    });
                   })}
                 </div>
               );
@@ -305,7 +350,7 @@ interface WeekLessonBlockProps {
 function WeekLessonBlock({ lesson, onClick, height }: WeekLessonBlockProps) {
   const subjectColor = generateSubjectColor(lesson.subject.subjectName);
   const statusColor = getLessonStatusColor(lesson.lessonStatus);
-  
+
   // Определяем, что показывать в зависимости от высоты блока (120px per hour scale)
   const showFullInfo = !height || height >= 120; // Полная информация
   const showMinimal = height && height < 120 && height >= 70; // Только предмет и статус
@@ -316,8 +361,8 @@ function WeekLessonBlock({ lesson, onClick, height }: WeekLessonBlockProps) {
       onClick={onClick}
       className="w-full p-1 rounded text-xs cursor-pointer hover:shadow-sm transition-all
                  bg-white dark:bg-gray-700 border border-gray-200 dark:border-gray-600 overflow-hidden relative group"
-      style={{ 
-        borderLeftColor: subjectColor, 
+      style={{
+        borderLeftColor: subjectColor,
         borderLeftWidth: '3px',
         height: height ? `${height}px` : 'auto',
         maxHeight: height ? `${height}px` : 'none',
