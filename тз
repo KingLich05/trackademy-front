@@ -1,0 +1,364 @@
+# WhatsApp Integration API для Frontend
+
+## Цель
+
+Документ описывает, как фронтенду управлять WhatsApp-интеграцией в Trackademy:
+- конфигурация провайдера
+- шаблоны уведомлений
+- ручная отправка сообщений
+- настройки уведомлений пользователя и организации
+- логи доставки
+
+## Базовые данные
+
+- Авторизация: Bearer JWT
+- Все endpoint требуют авторизацию
+
+## Раздел 1. Конфигурация WhatsApp
+
+### GET /api/whatsapp/config/{organizationId}
+
+Назначение: получить текущую конфигурацию WhatsApp для организации.
+
+Особенности:
+- токен не возвращается в ответе
+- возвращается признак HasToken
+
+Пример ответа:
+
+```json
+{
+  "provider": 1,
+  "apiUrl": "https://api.ultramsg.com/instance123/messages/chat",
+  "instanceId": "instance123",
+  "isEnabled": true,
+  "retryAttempts": 3,
+  "retryDelaySeconds": 60,
+  "hasToken": true
+}
+```
+
+### POST /api/whatsapp/config/{organizationId}
+
+Назначение: создать или обновить конфигурацию.
+
+Request body:
+
+```json
+{
+  "provider": 1,
+  "apiUrl": "https://api.ultramsg.com/instance123/messages/chat",
+  "token": "your-token",
+  "instanceId": "instance123",
+  "isEnabled": true,
+  "retryAttempts": 3,
+  "retryDelaySeconds": 60
+}
+```
+
+Response:
+
+```json
+{
+  "message": "Конфигурация WhatsApp успешно сохранена",
+  "id": "00000000-0000-0000-0000-000000000000"
+}
+```
+
+### POST /api/whatsapp/config/{organizationId}/test
+
+Назначение: проверить подключение к API провайдера.
+
+Пример ответа:
+
+```json
+{
+  "isConnected": true,
+  "message": "Соединение установлено"
+}
+```
+
+## Раздел 2. Шаблоны уведомлений
+
+### GET /api/whatsapp/templates/{organizationId}
+
+Назначение: получить все шаблоны организации.
+
+Пример ответа:
+
+```json
+[
+  {
+    "id": "00000000-0000-0000-0000-000000000000",
+    "organizationId": "00000000-0000-0000-0000-000000000000",
+    "type": 1,
+    "language": 1,
+    "templateText": "Здравствуйте, {full_name}",
+    "isActive": true,
+    "createdAt": "2026-04-28T10:00:00Z",
+    "updatedAt": "2026-04-28T10:00:00Z"
+  }
+]
+```
+
+### POST /api/whatsapp/templates/{organizationId}
+
+Назначение: создать или обновить шаблон.
+
+Request body:
+
+```json
+{
+  "type": 1,
+  "language": 1,
+  "templateText": "Здравствуйте, {full_name}. Ваш логин: {login}"
+}
+```
+
+Response:
+
+```json
+{
+  "message": "Шаблон успешно сохранен",
+  "id": "00000000-0000-0000-0000-000000000000"
+}
+```
+
+### GET /api/whatsapp/templates/notification-types
+
+Назначение: получить типы уведомлений для UI.
+
+Пример ответа:
+
+```json
+[
+  {
+    "value": 1,
+    "name": "PasswordReset",
+    "displayName": "Сброс пароля"
+  }
+]
+```
+
+## Раздел 3. Уведомления
+
+### POST /api/notifications/send
+
+Назначение: отправить уведомление пользователю.
+
+Request body:
+
+```json
+{
+  "userId": "00000000-0000-0000-0000-000000000000",
+  "organizationId": "00000000-0000-0000-0000-000000000000",
+  "type": 1,
+  "channel": 1,
+  "variables": {
+    "full_name": "Иван Иванов",
+    "login": "ivan"
+  },
+  "customMessage": null,
+  "preferredLanguage": 1
+}
+```
+
+Response:
+
+```json
+{
+  "message": "Уведомление отправлено"
+}
+```
+
+### GET /api/notifications/settings/{userId}?organizationId={organizationId}
+
+Назначение: получить пользовательские настройки уведомлений.
+
+Пример ответа:
+
+```json
+{
+  "id": "00000000-0000-0000-0000-000000000000",
+  "userId": "00000000-0000-0000-0000-000000000000",
+  "organizationId": "00000000-0000-0000-0000-000000000000",
+  "whatsAppEnabled": true,
+  "emailEnabled": false,
+  "smsEnabled": false,
+  "preferredLanguage": 1,
+  "receivePasswordNotifications": true,
+  "receiveAttendanceNotifications": true,
+  "receiveBalanceNotifications": true,
+  "receivePaymentNotifications": true,
+  "receiveTrialLessonNotifications": true,
+  "receiveUserCreationNotifications": true,
+  "receiveLessonCancellationNotifications": true,
+  "receiveLessonMovedNotifications": true,
+  "receiveBirthdayNotification": true,
+  "parentPhoneEnabled": false,
+  "parentPhone": null,
+  "quietHoursStart": "22:00:00",
+  "quietHoursEnd": "08:00:00"
+}
+```
+
+### GET /api/notifications/org-settings/{organizationId}
+
+Назначение: получить настройки уведомлений организации.
+
+Пример ответа:
+
+```json
+{
+  "id": "00000000-0000-0000-0000-000000000000",
+  "organizationId": "00000000-0000-0000-0000-000000000000",
+  "whatsAppEnabled": true,
+  "emailEnabled": false,
+  "smsEnabled": false,
+  "attendanceCheckDelayMinutes": 5,
+  "notifyTeacherOnMissed": true,
+  "notifyOnBirthdays": true,
+  "notifyTrialStudents": true,
+  "balanceLowThreshold": 1,
+  "notifyOnNegativeBalance": true,
+  "balanceCheckFrequencyHours": 24,
+  "allowNightNotifications": false,
+  "quietHoursStart": "22:00:00",
+  "quietHoursEnd": "08:00:00"
+}
+```
+
+## Раздел 4. Логи WhatsApp
+
+### GET /api/whatsapp/logs/{organizationId}?fromDate={isoDate}&toDate={isoDate}
+
+Назначение: получить журнал отправок по организации.
+
+Пример ответа:
+
+```json
+[
+  {
+    "id": "00000000-0000-0000-0000-000000000000",
+    "organizationId": "00000000-0000-0000-0000-000000000000",
+    "userId": "00000000-0000-0000-0000-000000000000",
+    "type": 1,
+    "phoneNumber": "+77001234567",
+    "messageText": "Текст сообщения",
+    "status": 2,
+    "externalMessageId": "abc-123",
+    "errorMessage": null,
+    "attemptCount": 1,
+    "createdAt": "2026-04-28T10:00:00Z",
+    "sentAt": "2026-04-28T10:00:01Z",
+    "lastAttemptAt": "2026-04-28T10:00:01Z"
+  }
+]
+```
+
+### GET /api/whatsapp/logs/details/{logId}
+
+Назначение: получить детали одной отправки.
+
+## Раздел 5. Справочники для фронта
+
+### WhatsAppProvider
+
+- 1: UltraMsg
+- 2: Twilio
+- 3: Meta
+- 4: Dialog360
+
+Важно:
+- в текущей реализации отправка полноценно сделана для UltraMsg
+- Twilio и Meta подготовлены как заглушки
+- Dialog360 есть в enum, но не реализован в sender
+
+### NotificationLanguage
+
+Используется в шаблонах и пользовательских настройках языка.
+
+### NotificationType
+
+Используется в шаблонах и отправке уведомлений.
+
+## Раздел 6. Рекомендованный UI для фронта
+
+### Экран 1. Integration Settings
+
+Поля:
+- Provider
+- ApiUrl
+- InstanceId
+- Token (masked input)
+- IsEnabled
+- RetryAttempts
+- RetryDelaySeconds
+
+Кнопки:
+- Save
+- Test Connection
+
+### Экран 2. Templates
+
+Функции:
+- список шаблонов по organizationId
+- фильтр по Type и Language
+- создание/редактирование TemplateText
+- предпросмотр подстановки переменных
+
+### Экран 3. Notification Settings
+
+Показывать:
+- User settings
+- Organization settings
+
+## Раздел 7. Обязательные доработки backend для полного управления с фронта
+
+На текущий момент отсутствуют endpoint для изменения notification settings.
+
+Нужно добавить:
+
+1. Обновление пользовательских настроек
+- PUT/PATCH /api/notifications/settings/{userId}?organizationId={organizationId}
+
+2. Обновление организационных настроек
+- PUT/PATCH /api/notifications/org-settings/{organizationId}
+
+3. Безопасность доступа
+- добавить проверку роли и доступа к organizationId на WhatsApp endpoint
+
+4. Уточнить логику GetConfig
+- сейчас поиск идет по IsEnabled=true
+- лучше искать конфиг по organizationId независимо от IsEnabled
+
+## Раздел 8. Ошибки API
+
+Типовые ответы:
+- 400 BadRequest: неверные параметры или ошибка провайдера
+- 401 Unauthorized: невалидный или отсутствующий JWT
+- 403 Forbidden: недостаточно прав
+- 404 NotFound: сущность не найдена
+
+## Раздел 9. Минимальный frontend flow
+
+1. Загрузить конфиг:
+- GET /api/whatsapp/config/{organizationId}
+
+2. Сохранить конфиг:
+- POST /api/whatsapp/config/{organizationId}
+
+3. Проверить подключение:
+- POST /api/whatsapp/config/{organizationId}/test
+
+4. Загрузить шаблоны:
+- GET /api/whatsapp/templates/{organizationId}
+
+5. Сохранить шаблон:
+- POST /api/whatsapp/templates/{organizationId}
+
+6. Протестировать отправку:
+- POST /api/notifications/send
+
+7. Проверить результат:
+- GET /api/whatsapp/logs/{organizationId}

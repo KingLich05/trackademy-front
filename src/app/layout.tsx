@@ -76,7 +76,7 @@ import { ThemeProvider } from '../contexts/ThemeContext';
 import { ToastProvider } from '../contexts/ToastContext';
 import LayoutContent from '../components/LayoutContent';
 
-const inter = Inter({ subsets: ['latin'] });
+const inter = Inter({ subsets: ['latin', 'cyrillic'] });
 
 export default function RootLayout({
   children,
@@ -86,6 +86,7 @@ export default function RootLayout({
   return (
     <html lang="ru" suppressHydrationWarning>
       <head>
+        <meta charSet="utf-8" />
         <meta name="google-site-verification" content="your-google-verification-code" />
         <meta name="yandex-verification" content="your-yandex-verification-code" />
         <link rel="canonical" href="https://trackademy.kz" />

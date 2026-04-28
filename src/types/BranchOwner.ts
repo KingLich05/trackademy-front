@@ -245,6 +245,63 @@ export interface BranchOwnerLinkRequest {
   organizationId: string;
 }
 
+// ─── Analytics ───────────────────────────────────────────────────────────────
+
+export interface BranchOwnerAnalyticsRequest {
+  organizationId?: string | null;
+  reportPeriodFrom?: string | null; // YYYY-MM-DD
+  reportPeriodTo?: string | null;   // YYYY-MM-DD
+  topOrganizationsCount?: number;
+}
+
+export interface TopOrgItem {
+  organizationId: string;
+  name: string;
+  value: number;
+}
+
+export interface BranchOwnerAnalyticsTotalsDto {
+  studentsCount: number;
+  teachersCount: number;
+  groupsCount: number;
+  newStudentsCount: number;
+  trialStudentsCount: number;
+  leadsCount: number;
+  convertedLeadsCount: number;
+  leadConversionRate: number;
+  lessonsCount: number;
+  completedLessonsCount: number;
+  lessonCompletionRate: number;
+  attendancesCount: number;
+  presentAttendancesCount: number;
+  lateAttendancesCount: number;
+  absentAttendancesCount: number;
+  attendanceRate: number;
+  topUpAmount: number;
+  exemptionTopUpAmount: number;
+  refundAmount: number;
+  lessonChargeAmount: number;
+  netIncome: number;
+  totalDebt: number;
+  unpaidStudentsCount: number;
+}
+
+export interface BranchOwnerOrgAnalyticsDto extends BranchOwnerAnalyticsTotalsDto {
+  organizationId: string;
+  name: string;
+}
+
+export interface BranchOwnerAnalyticsDto {
+  reportPeriodFrom: string;
+  reportPeriodTo: string;
+  organizationsCount: number;
+  totals: BranchOwnerAnalyticsTotalsDto;
+  organizations: BranchOwnerOrgAnalyticsDto[];
+  topByNetIncome: TopOrgItem[];
+  topByDebt: TopOrgItem[];
+  topByAttendance: TopOrgItem[];
+}
+
 // ─── Shared ───────────────────────────────────────────────────────────────────
 
 export interface BranchOwnerPagedResult<T> {

@@ -5,6 +5,8 @@ import {
   BranchOwnerOrganizationDetailsDto,
   BranchOwnerAggregatedDashboardDto,
   BranchOwnerDashboardSummaryDto,
+  BranchOwnerAnalyticsRequest,
+  BranchOwnerAnalyticsDto,
   GroupAttendanceStatsRequest,
   GroupAttendanceStatsDto,
   LessonAttendanceMonitoringRequest,
@@ -42,6 +44,10 @@ export class BranchOwnerApiService {
 
   static async getDashboard(): Promise<BranchOwnerAggregatedDashboardDto> {
     return AuthenticatedApiService.get<BranchOwnerAggregatedDashboardDto>(`${BASE}/dashboard`);
+  }
+
+  static async getAnalytics(request: BranchOwnerAnalyticsRequest = {}): Promise<BranchOwnerAnalyticsDto> {
+    return AuthenticatedApiService.post<BranchOwnerAnalyticsDto>(`${BASE}/dashboard/analytics`, request);
   }
 
   static async getDashboardSummary(organizationId: string): Promise<BranchOwnerDashboardSummaryDto> {
