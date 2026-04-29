@@ -1345,8 +1345,14 @@ export class AuthenticatedApiService {
   static async importLeads(organizationId: string, file: File, mode: 0 | 1 | 2): Promise<{
     totalRows: number;
     successCount: number;
+    importedLeads: number;
     errorCount: number;
-    errors: { rowNumber: number; fullName: string; phone: string; errors: string[] }[];
+    createdFunnels: number;
+    createdStages: number;
+    createdLeads: number;
+    updatedLeads: number;
+    skippedLeads: number;
+    errors: { rowNumber: number; reason: string }[];
   }> {
     const formData = new FormData();
     formData.append('File', file);

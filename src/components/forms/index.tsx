@@ -162,7 +162,7 @@ export const SubjectForm: React.FC<SubjectFormProps> = ({
       {/* Subject Name */}
       <div>
         <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1.5">
-          Название предмета *
+          Название предмета <span className="text-red-500 ml-0.5">*</span>
         </label>
         <input
           type="text"
@@ -240,7 +240,7 @@ export const SubjectForm: React.FC<SubjectFormProps> = ({
 
               {/* Package Name */}
               <div>
-                <label className="block text-xs font-medium text-gray-600 dark:text-gray-400 mb-1">Название *</label>
+                <label className="block text-xs font-medium text-gray-600 dark:text-gray-400 mb-1">Название <span className="text-red-500 ml-0.5">*</span></label>
                 <input
                   type="text"
                   value={pkg.name || ''}
@@ -268,7 +268,7 @@ export const SubjectForm: React.FC<SubjectFormProps> = ({
               {/* Price + Payment Type */}
               <div className="grid grid-cols-2 gap-3">
                 <div>
-                  <label className="block text-xs font-medium text-gray-600 dark:text-gray-400 mb-1">Цена (тенге) *</label>
+                  <label className="block text-xs font-medium text-gray-600 dark:text-gray-400 mb-1">Цена (тенге) <span className="text-red-500 ml-0.5">*</span></label>
                   <input
                     type="number"
                     value={pkg.price === 0 ? '' : pkg.price}
@@ -282,7 +282,7 @@ export const SubjectForm: React.FC<SubjectFormProps> = ({
                   )}
                 </div>
                 <div>
-                  <label className="block text-xs font-medium text-gray-600 dark:text-gray-400 mb-1">Тип оплаты *</label>
+                  <label className="block text-xs font-medium text-gray-600 dark:text-gray-400 mb-1">Тип оплаты <span className="text-red-500 ml-0.5">*</span></label>
                   <select
                     value={pkg.paymentType ?? ''}
                     onChange={(e) => updatePackage(i, 'paymentType', Number(e.target.value))}
@@ -373,7 +373,6 @@ export const SubjectForm: React.FC<SubjectFormProps> = ({
                       className="sr-only"
                     />
                     <div
-                      onClick={() => updatePackage(i, 'isExemption', !pkg.isExemption)}
                       className={`w-9 h-5 rounded-full transition-colors cursor-pointer ${
                         pkg.isExemption ? 'bg-amber-500' : 'bg-gray-300 dark:bg-gray-600'
                       }`}

@@ -13,15 +13,19 @@ type LeadImportMode = 0 | 1 | 2;
 
 interface LeadImportError {
   rowNumber: number;
-  fullName: string;
-  phone: string;
-  errors: string[];
+  reason: string;
 }
 
 interface LeadImportResult {
   totalRows: number;
   successCount: number;
+  importedLeads: number;
   errorCount: number;
+  createdFunnels: number;
+  createdStages: number;
+  createdLeads: number;
+  updatedLeads: number;
+  skippedLeads: number;
   errors: LeadImportError[];
 }
 
@@ -266,7 +270,7 @@ export const ImportLeadsModal: React.FC<ImportLeadsModalProps> = ({
             </>
           ) : (
             <>
-              {/* Results */}
+              {/* Summary stats */}
               <div className="grid grid-cols-3 gap-3">
                 <div className="bg-blue-50 dark:bg-blue-900/20 rounded-xl p-4 border border-blue-200 dark:border-blue-800 text-center">
                   <p className="text-xs text-blue-600 dark:text-blue-400 font-medium mb-1">Всего строк</p>
@@ -276,43 +280,60 @@ export const ImportLeadsModal: React.FC<ImportLeadsModalProps> = ({
                   <p className="text-xs text-green-600 dark:text-green-400 font-medium mb-1">Успешно</p>
                   <p className="text-2xl font-bold text-green-900 dark:text-green-100">{importResult.successCount}</p>
                 </div>
-                <div className="bg-red-50 dark:bg-red-900/20 rounded-xl p-4 border border-red-200 dark:border-red-800 text-center">
-                  <p className="text-xs text-red-600 dark:text-red-400 font-medium mb-1">Ошибки</p>
-                  <p className="text-2xl font-bold text-red-900 dark:text-red-100">{importResult.errorCount}</p>
+                <div className={`rounded-xl p-4 border text-center ${
+                  importResult.errorCount > 0
+                    ? 'bg-red-50 dark:bg-red-900/20 border-red-200 dark:border-red-800'
+                    : 'bg-gray-50 dark:bg-gray-700/40 border-gray-200 dark:border-gray-600'
+                }`}>
+                  <p className={`text-xs font-medium mb-1 ${
+                    importResult.errorCount > 0 ? 'text-red-600 dark:text-red-400' : 'text-gray-500 dark:text-gray-400'
+                  }`}>Ошибки</p>
+                  <p className={`text-2xl font-bold ${
+                    importResult.errorCount > 0 ? 'text-red-900 dark:text-red-100' : 'text-gray-400 dark:text-gray-500'
+                  }`}>{importResult.errorCount}</p>
                 </div>
               </div>
 
-              {importResult.successCount > 0 && (
-                <div className="bg-green-50 dark:bg-green-900/20 border border-green-200 dark:border-green-800 rounded-xl p-4 flex items-center gap-2 text-green-700 dark:text-green-400">
-                  <CheckCircleIcon className="w-5 h-5 flex-shrink-0" />
-                  <span className="text-sm font-medium">
-                    Успешно импортировано {importResult.successCount} лид{importResult.successCount === 1 ? '' : importResult.successCount < 5 ? 'а' : 'ов'}
-                  </span>
-                </div>
-              )}
+              {/* Detailed breakdown */}
+              <div className="bg-gray-50 dark:bg-gray-700/40 rounded-xl border border-gray-200 dark:border-gray-600 divide-y divide-gray-200 dark:divide-gray-600">
+                {[
+                  { label: 'Создано воронок', value: importResult.createdFunnels, color: 'text-violet-600 dark:text-violet-400' },
+                  { label: 'Создано этапов', value: importResult.createdStages, color: 'text-indigo-600 dark:text-indigo-400' },
+                  { label: 'Создано лидов', value: importResult.createdLeads, color: 'text-green-600 dark:text-green-400' },
+                  { label: 'Обновлено лидов', value: importResult.updatedLeads, color: 'text-blue-600 dark:text-blue-400' },
+                  { label: 'Пропущено лидов', value: importResult.skippedLeads, color: 'text-amber-600 dark:text-amber-400' },
+                ].map(row => (
+                  <div key={row.label} className="flex items-center justify-between px-4 py-2.5">
+                    <span className="text-sm text-gray-600 dark:text-gray-400">{row.label}</span>
+                    <span className={`text-sm font-semibold ${row.color}`}>{row.value}</span>
+                  </div>
+                ))}
+              </div>
 
-              {importResult.errors.length > 0 && (
-                <div>
-                  <h3 className="text-sm font-semibold text-gray-900 dark:text-white mb-2 flex items-center gap-2">
-                    <ExclamationTriangleIcon className="w-4 h-4 text-red-500" />
-                    Ошибки ({importResult.errors.length})
-                  </h3>
+              {/* Errors */}
+              <div>
+                <h3 className="text-sm font-semibold text-gray-900 dark:text-white mb-2 flex items-center gap-2">
+                  <ExclamationTriangleIcon className={`w-4 h-4 ${importResult.errors.length > 0 ? 'text-red-500' : 'text-gray-400'}`} />
+                  Ошибки ({importResult.errors.length})
+                </h3>
+                {importResult.errors.length === 0 ? (
+                  <div className="bg-green-50 dark:bg-green-900/20 border border-green-200 dark:border-green-800 rounded-xl p-4 flex items-center gap-2 text-green-700 dark:text-green-400">
+                    <CheckCircleIcon className="w-5 h-5 flex-shrink-0" />
+                    <span className="text-sm font-medium">Ошибок нет, все записи обработаны успешно</span>
+                  </div>
+                ) : (
                   <div className="space-y-2 max-h-52 overflow-y-auto pr-1">
                     {importResult.errors.map((err, i) => (
                       <div key={i} className="bg-red-50 dark:bg-red-900/10 border border-red-200 dark:border-red-800 rounded-lg p-3">
-                        <p className="text-xs font-semibold text-red-700 dark:text-red-400 mb-1">
-                          Строка {err.rowNumber}{err.fullName ? ` — ${err.fullName}` : ''}{err.phone ? ` (${err.phone})` : ''}
+                        <p className="text-xs font-semibold text-red-700 dark:text-red-400 mb-0.5">
+                          Строка {err.rowNumber}
                         </p>
-                        <ul className="list-disc list-inside space-y-0.5">
-                          {err.errors.map((e, j) => (
-                            <li key={j} className="text-xs text-red-600 dark:text-red-400">{e}</li>
-                          ))}
-                        </ul>
+                        <p className="text-xs text-red-600 dark:text-red-400">{err.reason}</p>
                       </div>
                     ))}
                   </div>
-                </div>
-              )}
+                )}
+              </div>
 
               <div className="flex gap-3 pt-1">
                 <button
