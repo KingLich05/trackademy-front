@@ -6,7 +6,8 @@ import { useRouter } from 'next/navigation';
 import { useToast } from '../../contexts/ToastContext';
 import { AuthenticatedApiService } from '../../services/AuthenticatedApiService';
 import { StudentFlag, CreateStudentFlagRequest } from '../../types/StudentFlag';
-import { CogIcon, ChevronRightIcon, FlagIcon, PlusIcon, PencilIcon, TrashIcon, SparklesIcon, ServerStackIcon, ArrowPathIcon, XMarkIcon } from '@heroicons/react/24/outline';
+import { CogIcon, ChevronRightIcon, FlagIcon, PlusIcon, PencilIcon, TrashIcon, SparklesIcon, ServerStackIcon, ArrowPathIcon, XMarkIcon, BellIcon } from '@heroicons/react/24/outline';
+import WhatsAppNotificationSettings from '../../components/whatsapp/WhatsAppNotificationSettings';
 import { RewardRuleDto, RewardEventType, CreateRewardRuleRequest, UpdateRewardRuleRequest } from '../../types/Market';
 import { BaseModal } from '../../components/ui/BaseModal';
 import { SettingsForm, DEFAULT_SETTINGS_FORM, mapSettingsToForm, mapFormToSettings } from '../../types/Setting';
@@ -294,6 +295,12 @@ export default function SettingsPage() {
       label: 'Правила маркета',
       icon: SparklesIcon,
       description: 'Начисление монет за действия'
+    },
+    {
+      id: 'notifications',
+      label: 'Уведомления',
+      icon: BellIcon,
+      description: 'Настройки WhatsApp уведомлений'
     }
   ];
 
@@ -397,6 +404,12 @@ export default function SettingsPage() {
           {/* Основной контент */}
           <div className="lg:col-span-3">
             <div className="bg-white dark:bg-gray-800 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700">
+              {activeTab === 'notifications' && (
+                <div className="p-6">
+                  <WhatsAppNotificationSettings />
+                </div>
+              )}
+
               {activeTab === 'student-flags' && (
                 <div className="p-6">
                   <div className="mb-6">

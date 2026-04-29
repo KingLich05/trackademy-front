@@ -130,11 +130,8 @@ export function DatePicker({ label, value, onChange, minDate, maxDate, align = '
         aria-expanded={open}
       >
         <CalendarDaysIcon className={`w-4 h-4 flex-shrink-0 ${open ? 'text-purple-500' : 'text-gray-400 dark:text-gray-500'}`} />
-        <span className="flex flex-col items-start leading-tight">
-          {label && <span className="text-[10px] font-semibold text-gray-400 dark:text-gray-500 uppercase tracking-wide -mb-0.5">{label}</span>}
-          <span className={selected ? 'text-gray-900 dark:text-white' : 'text-gray-400 dark:text-gray-500'}>
-            {displayText}
-          </span>
+        <span className={`text-sm ${selected ? 'text-gray-900 dark:text-white' : 'text-gray-400 dark:text-gray-500'}`}>
+          {displayText}
         </span>
         <svg className={`w-3.5 h-3.5 ml-1 text-gray-400 transition-transform flex-shrink-0 ${open ? 'rotate-180' : ''}`} fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}>
           <path strokeLinecap="round" strokeLinejoin="round" d="M19 9l-7 7-7-7" />

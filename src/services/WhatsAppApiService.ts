@@ -8,7 +8,9 @@ import {
   WhatsAppLog,
   SendNotificationRequest,
   UserNotificationSettings,
+  UserNotificationSettingsUpdateRequest,
   OrganizationNotificationSettings,
+  OrganizationNotificationSettingsUpdateRequest,
   CheckNotificationResponse,
   NotificationType,
   ApiResponse,
@@ -116,6 +118,27 @@ export class WhatsAppApiService {
       }
       throw error;
     }
+  }
+
+  static async updateUserNotificationSettings(
+    userId: string,
+    organizationId: string,
+    data: UserNotificationSettingsUpdateRequest
+  ): Promise<ApiResponse> {
+    return AuthenticatedApiService.request<ApiResponse>(
+      `/notifications/settings/${userId}?organizationId=${organizationId}`,
+      { method: 'PUT', body: JSON.stringify(data) }
+    );
+  }
+
+  static async updateOrganizationNotificationSettings(
+    organizationId: string,
+    data: OrganizationNotificationSettingsUpdateRequest
+  ): Promise<ApiResponse> {
+    return AuthenticatedApiService.request<ApiResponse>(
+      `/notifications/org-settings/${organizationId}`,
+      { method: 'PUT', body: JSON.stringify(data) }
+    );
   }
 
   static async checkNotification(userId: string, type: number): Promise<CheckNotificationResponse> {

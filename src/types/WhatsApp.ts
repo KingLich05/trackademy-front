@@ -162,11 +162,18 @@ export interface UserNotificationSettings {
   receiveAttendanceNotifications: boolean;
   receiveBalanceNotifications: boolean;
   receivePaymentNotifications: boolean;
+  receiveTrialLessonNotifications: boolean;
+  receiveUserCreationNotifications: boolean;
+  receiveLessonCancellationNotifications: boolean;
+  receiveLessonMovedNotifications: boolean;
+  receiveBirthdayNotification: boolean;
   parentPhoneEnabled: boolean;
-  parentPhone?: string;
+  parentPhone?: string | null;
   quietHoursStart: string;
   quietHoursEnd: string;
 }
+
+export type UserNotificationSettingsUpdateRequest = Omit<UserNotificationSettings, 'id' | 'userId' | 'organizationId'>;
 
 // Organization Notification Settings
 export interface OrganizationNotificationSettings {
@@ -177,6 +184,8 @@ export interface OrganizationNotificationSettings {
   smsEnabled: boolean;
   attendanceCheckDelayMinutes: number;
   notifyTeacherOnMissed: boolean;
+  notifyOnBirthdays: boolean;
+  notifyTrialStudents: boolean;
   balanceLowThreshold: number;
   notifyOnNegativeBalance: boolean;
   balanceCheckFrequencyHours: number;
@@ -184,6 +193,8 @@ export interface OrganizationNotificationSettings {
   quietHoursStart: string;
   quietHoursEnd: string;
 }
+
+export type OrganizationNotificationSettingsUpdateRequest = Omit<OrganizationNotificationSettings, 'id' | 'organizationId'>;
 
 // Check Notification Response
 export interface CheckNotificationResponse {

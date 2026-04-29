@@ -101,11 +101,12 @@ function KpiCard({
 }
 
 function HBarChart({
-  items, maxAbs, formatValue,
+  items, maxAbs, formatValue, prevLabel,
 }: {
   items: { label: string; value: number; prevValue?: number }[];
   maxAbs: number;
   formatValue: (v: number) => string;
+  prevLabel?: string;
 }) {
   if (items.length === 0) return <p className="text-gray-400 text-sm">Нет данных</p>;
   const safeMax = maxAbs === 0 ? 1 : maxAbs;
@@ -131,7 +132,10 @@ function HBarChart({
               </div>
             </div>
             {item.prevValue !== undefined && (
-              <span className="text-xs text-gray-400 dark:text-gray-500 whitespace-nowrap">
+              <span
+                title={prevLabel ? `Предыдущий период: ${prevLabel}` : undefined}
+                className={`text-xs text-gray-400 dark:text-gray-500 whitespace-nowrap ${prevLabel ? 'cursor-help border-b border-dashed border-gray-400 dark:border-gray-600' : ''}`}
+              >
                 пред: {formatValue(item.prevValue)}
               </span>
             )}
@@ -238,6 +242,18 @@ export function DetailedDashboardView({ organizationId }: Props) {
   const prevIncome = fin?.totalIncomeForPreviousPeriod ?? 0;
   const incomeTrend = fin?.incomeTrend ?? 0;
 
+  // Compute previous period dates for tooltip
+  const prevPeriodLabel = (() => {
+    if (!dateFrom || !dateTo) return undefined;
+    const from = new Date(dateFrom);
+    const to = new Date(dateTo);
+    const diffMs = to.getTime() - from.getTime();
+    const prevTo = new Date(from.getTime() - 86400000);
+    const prevFrom = new Date(prevTo.getTime() - diffMs);
+    const fmtD = (d: Date) => d.toLocaleDateString('ru-RU', { day: 'numeric', month: 'short', year: 'numeric' });
+    return `${fmtD(prevFrom)} — ${fmtD(prevTo)}`;
+  })();
+
   return (
     <div className="space-y-6">
       {/* Period controls */}
@@ -324,13 +340,13 @@ export function DetailedDashboardView({ organizationId }: Props) {
                 <h3 className="text-sm font-semibold text-gray-700 dark:text-gray-300 mb-4 flex items-center gap-2">
                   <ChartBarIcon className="w-4 h-4 text-purple-400" />Доход по предметам
                 </h3>
-                <HBarChart items={subjectItems} maxAbs={subMaxAbs} formatValue={fmtMoney} />
+                <HBarChart items={subjectItems} maxAbs={subMaxAbs} formatValue={fmtMoney} prevLabel={prevPeriodLabel} />
               </div>
               <div>
                 <h3 className="text-sm font-semibold text-gray-700 dark:text-gray-300 mb-4 flex items-center gap-2">
                   <ChartBarIcon className="w-4 h-4 text-indigo-400" />Доход по преподавателям
                 </h3>
-                <HBarChart items={teacherItems} maxAbs={tchMaxAbs} formatValue={fmtMoney} />
+                <HBarChart items={teacherItems} maxAbs={tchMaxAbs} formatValue={fmtMoney} prevLabel={prevPeriodLabel} />
               </div>
             </div>
           </Section>
@@ -377,9 +393,9 @@ export function DetailedDashboardView({ organizationId }: Props) {
                   {groupAttItems.map((g: GroupAttendanceStats) => (
                     <div key={g.group.id} className="grid grid-cols-[1fr_auto] gap-4 items-center">
                       <div>
-                        <div className="flex items-center justify-between mb-1">
+                        <div className="flex items-center gap-2 mb-1">
                           <span className="text-sm text-gray-700 dark:text-gray-300 truncate">{g.group.name}</span>
-                          <span className="text-xs text-gray-400 dark:text-gray-500 ml-2">{g.groupCode}</span>
+                          <span className="text-xs text-gray-400 dark:text-gray-500 shrink-0">#{g.groupCode}</span>
                         </div>
                         <AttendanceBar rate={g.groupAttendanceRateForPeriod} prevRate={g.groupAttendanceRateForPreviousPeriod} />
                       </div>
@@ -403,7 +419,9 @@ export function DetailedDashboardView({ organizationId }: Props) {
                     <th className="text-right py-2 px-3 text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase">Студентов</th>
                     <th className="text-right py-2 px-3 text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase">Групп</th>
                     <th className="text-right py-2 px-3 text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase">Уроков</th>
-                    <th className="text-right py-2 px-3 text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase">Пред.</th>
+                    <th className="text-right py-2 px-3 text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase">
+                      <span title="Предстоящие уроки" className="cursor-help border-b border-dashed border-gray-400 dark:border-gray-500">Пред.</span>
+                    </th>
                     <th className="py-2 pl-3 text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase min-w-[180px]">Посещаемость</th>
                   </tr>
                 </thead>
