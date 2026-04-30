@@ -130,7 +130,7 @@ export default function FunnelPage() {
   // ── convert modal (triggered after moving to isClosedWon stage) ──
   const [convertLeadId, setConvertLeadId] = useState<string | null>(null);
   const [convertLeadName, setConvertLeadName] = useState('');
-  const [convertForm, setConvertForm] = useState<ConvertLeadRequest>({ login: '', password: '', groupId: null, subjectPackageId: null, flagIds: [], comment: '' });
+  const [convertForm, setConvertForm] = useState<ConvertLeadRequest>({ login: '', groupId: null, subjectPackageId: null, flagIds: [], comment: '' });
   const [converting, setConverting] = useState(false);
   const [availableFlags, setAvailableFlags] = useState<StudentFlag[]>([]);
 
@@ -157,7 +157,7 @@ export default function FunnelPage() {
         const { id, name } = JSON.parse(pending);
         setConvertLeadId(id);
         setConvertLeadName(name);
-        setConvertForm({ login: '', password: '', groupId: null, subjectPackageId: null, flagIds: [], comment: '' });
+        setConvertForm({ login: '', groupId: null, subjectPackageId: null, flagIds: [], comment: '' });
       } catch { localStorage.removeItem('pendingConvert'); }
     }
   // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -360,7 +360,7 @@ export default function FunnelPage() {
         localStorage.setItem('pendingConvert', JSON.stringify({ id: updated.id, name: updated.fullName }));
         setConvertLeadId(updated.id);
         setConvertLeadName(updated.fullName);
-        setConvertForm({ login: '', password: '', groupId: null, subjectPackageId: null, flagIds: [], comment: '' });
+        setConvertForm({ login: '', groupId: null, subjectPackageId: null, flagIds: [], comment: '' });
       }
     } catch { showError('Ошибка при перемещении лида'); }
     finally { setMoveTarget(null); dragLeadId.current = null; }
@@ -368,14 +368,13 @@ export default function FunnelPage() {
 
   async function handleConvert() {
     if (!convertLeadId) return;
-    if (!convertForm.login.trim() || !convertForm.password.trim()) {
-      showError('Логин и пароль обязательны'); return;
+    if (!convertForm.login.trim()) {
+      showError('Логин обязателен'); return;
     }
     try {
       setConverting(true);
-      const payload: { login: string; password: string; groupId?: string; subjectPackageId?: string; status?: StudentStatus; flagIds?: string[]; comment?: string } = {
+      const payload: { login: string; groupId?: string; subjectPackageId?: string; status?: StudentStatus; flagIds?: string[]; comment?: string } = {
         login: convertForm.login.trim(),
-        password: convertForm.password,
       };
       if (convertForm.groupId) payload.groupId = convertForm.groupId;
       if (convertForm.subjectPackageId) payload.subjectPackageId = convertForm.subjectPackageId;
@@ -391,7 +390,7 @@ export default function FunnelPage() {
       localStorage.removeItem('pendingConvert');
       setConvertLeadId(null);
       setConvertLeadName('');
-      setConvertForm({ login: '', password: '', groupId: null, subjectPackageId: null, flagIds: [], comment: '' });
+      setConvertForm({ login: '', groupId: null, subjectPackageId: null, flagIds: [], comment: '' });
     } catch (err: unknown) {
       const message = (err as { message?: string })?.message;
       showError(message && message !== 'Failed to fetch' ? message : 'Ошибка при конвертации лида');
@@ -1461,14 +1460,6 @@ export default function FunnelPage() {
               className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-violet-500 focus:border-violet-500 text-sm" autoFocus />
           </div>
           <div>
-            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Пароль <span className="text-red-500">*</span></label>
-            <PasswordInput
-              value={convertForm.password}
-              onChange={value => setConvertForm(p => ({ ...p, password: value }))}
-              placeholder="Минимум 8 символов"
-            />
-          </div>
-          <div>
             <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Добавить в группу</label>
             <select value={convertForm.groupId ?? ''} onChange={e => setConvertForm(p => ({ ...p, groupId: e.target.value || null, subjectPackageId: null }))}
               className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-violet-500 focus:border-violet-500 text-sm">
@@ -1529,7 +1520,7 @@ export default function FunnelPage() {
               className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-violet-500 focus:border-violet-500 text-sm resize-none" />
           </div>
           <div className="flex justify-end gap-3 pt-2">
-            <button onClick={handleConvert} disabled={converting || !convertForm.login.trim() || !convertForm.password.trim()}
+            <button onClick={handleConvert} disabled={converting || !convertForm.login.trim()}
               className="px-4 py-2 bg-green-600 hover:bg-green-700 disabled:opacity-50 text-white rounded-lg text-sm font-medium transition-colors">
               {converting ? 'Конвертация...' : 'Конвертировать'}
             </button>

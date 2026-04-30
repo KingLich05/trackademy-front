@@ -873,20 +873,6 @@ export default function SchedulesPage() {
                 <span>Экспорт</span>
               </button>
               <button
-                onClick={() => setIsMakeUpModalOpen(true)}
-                className="hidden sm:flex px-3 py-1.5 bg-amber-100 hover:bg-amber-200 dark:bg-amber-900/30 dark:hover:bg-amber-900/50 text-amber-700 dark:text-amber-300 rounded-lg text-sm font-medium transition-all duration-200 items-center gap-1.5"
-              >
-                <PlusIcon className="w-4 h-4 flex-shrink-0" />
-                <span>Отработка</span>
-              </button>
-              <button
-                onClick={() => setIsMakeUpModalOpen(true)}
-                className="flex sm:hidden p-1.5 bg-amber-100 hover:bg-amber-200 dark:bg-amber-900/30 dark:hover:bg-amber-900/50 text-amber-700 dark:text-amber-300 rounded-lg transition-all duration-200"
-                title="Создать отработку"
-              >
-                <PlusIcon className="w-4 h-4" />
-              </button>
-              <button
                 onClick={() => {
                   setShowArchive(!showArchive);
                   setFilters(prev => ({ ...prev, includeDeleted: !showArchive, pageNumber: 1 }));

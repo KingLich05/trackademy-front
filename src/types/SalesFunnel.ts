@@ -116,7 +116,6 @@ export interface MoveLeadStageRequest {
 
 export interface ConvertLeadRequest {
   login: string;
-  password: string;
   groupId?: string | null;
   subjectPackageId?: string | null;
   status?: StudentStatus;

@@ -110,7 +110,7 @@ export default function LeadDetailPage() {
 
   // ── convert modal ──
   const [showConvert, setShowConvert] = useState(false);
-  const [convertForm, setConvertForm] = useState<ConvertLeadRequest>({ login: '', password: '', groupId: null, subjectPackageId: null, flagIds: [], comment: '' });
+  const [convertForm, setConvertForm] = useState<ConvertLeadRequest>({ login: '', groupId: null, subjectPackageId: null, flagIds: [], comment: '' });
   const [converting, setConverting] = useState(false);
   const [availableFlags, setAvailableFlags] = useState<StudentFlag[]>([]);
 
@@ -170,7 +170,7 @@ export default function LeadDetailPage() {
       // If moved to a "Записан" (isClosedWon) stage — open convert modal
       const targetStage = stages.find(s => s.id === moveTarget);
       if (targetStage?.isClosedWon && !updated.convertedUserId) {
-        setConvertForm({ login: '', password: '', groupId: null, subjectPackageId: null, flagIds: [], comment: '' });
+        setConvertForm({ login: '', groupId: null, subjectPackageId: null, flagIds: [], comment: '' });
         setShowConvert(true);
       }
       await load();
@@ -284,14 +284,13 @@ export default function LeadDetailPage() {
   // ── convert ──
   async function handleConvert() {
     if (!lead) return;
-    if (!convertForm.login.trim() || !convertForm.password.trim()) {
-      showError('Логин и пароль обязательны'); return;
+    if (!convertForm.login.trim()) {
+      showError('Логин обязателен'); return;
     }
     try {
       setConverting(true);
-      const payload: { login: string; password: string; groupId?: string; subjectPackageId?: string; status?: StudentStatus; flagIds?: string[]; comment?: string } = {
+      const payload: { login: string; groupId?: string; subjectPackageId?: string; status?: StudentStatus; flagIds?: string[]; comment?: string } = {
         login: convertForm.login.trim(),
-        password: convertForm.password,
       };
       if (convertForm.groupId) payload.groupId = convertForm.groupId;
       if (convertForm.subjectPackageId) payload.subjectPackageId = convertForm.subjectPackageId;
@@ -302,7 +301,7 @@ export default function LeadDetailPage() {
       setLead(prev => prev ? { ...prev, ...updated } : null);
       showSuccess('Лид конвертирован в студента!');
       setShowConvert(false);
-      setConvertForm({ login: '', password: '', groupId: null, subjectPackageId: null, flagIds: [], comment: '' });
+      setConvertForm({ login: '', groupId: null, subjectPackageId: null, flagIds: [], comment: '' });
     } catch (err: unknown) {
       const message = (err as { message?: string })?.message;
       showError(message && message !== 'Failed to fetch' ? message : 'Ошибка при конвертации лида');
@@ -795,14 +794,6 @@ export default function LeadDetailPage() {
               className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-violet-500 focus:border-violet-500 text-sm" autoFocus />
           </div>
           <div>
-            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Пароль <span className="text-red-500">*</span></label>
-            <PasswordInput
-              value={convertForm.password}
-              onChange={value => setConvertForm(p => ({ ...p, password: value }))}
-              placeholder="Минимум 8 символов"
-            />
-          </div>
-          <div>
             <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Добавить в группу</label>
             <select value={convertForm.groupId ?? ''} onChange={e => setConvertForm(p => ({ ...p, groupId: e.target.value || null, subjectPackageId: null }))}
               className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-violet-500 focus:border-violet-500 text-sm">
@@ -864,7 +855,7 @@ export default function LeadDetailPage() {
           </div>
           <div className="flex justify-end gap-3 pt-2">
             <button onClick={() => setShowConvert(false)} className="px-4 py-2 text-gray-700 dark:text-gray-300 border border-gray-300 dark:border-gray-600 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700 text-sm transition-colors">Отмена</button>
-            <button onClick={handleConvert} disabled={converting || !convertForm.login.trim() || !convertForm.password.trim()} className="px-4 py-2 bg-green-600 hover:bg-green-700 disabled:opacity-50 text-white rounded-lg text-sm font-medium transition-colors">
+            <button onClick={handleConvert} disabled={converting || !convertForm.login.trim()} className="px-4 py-2 bg-green-600 hover:bg-green-700 disabled:opacity-50 text-white rounded-lg text-sm font-medium transition-colors">
               {converting ? 'Конвертация...' : 'Конвертировать'}
             </button>
           </div>
