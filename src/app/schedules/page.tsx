@@ -22,6 +22,7 @@ import { Group } from '../../types/Group';
 import { Subject } from '../../types/Subject';
 import { User } from '../../types/User';
 import { useApiToast } from '../../hooks/useApiToast';
+import { useToast } from '../../contexts/ToastContext';
 import { Room } from '../../types/Room';
 import { DeleteConfirmationModal } from '../../components/ui/DeleteConfirmationModal';
 import { DaysOfWeekDisplay } from '../../components/ui/DaysOfWeekDisplay';
@@ -83,6 +84,7 @@ export default function SchedulesPage() {
   
   // Toast уведомления для API операций
   const { createOperation, updateOperation, deleteOperation, loadOperation, handleApiOperation } = useApiToast();
+  const { showError } = useToast();
 
   const [pageSize, setPageSize] = useState(10);
   
@@ -483,7 +485,7 @@ export default function SchedulesPage() {
         effectiveTo: schedule.effectiveTo || '',
         groupId: schedule.group.id,
         teacherId: schedule.teacher.id,
-        roomId: schedule.room.id,
+        roomId: (schedule.room?.id) || schedule.scheduleSlots[0]?.room?.id || '',
         organizationId: user?.organizationId || ''
       });
     }
@@ -505,7 +507,7 @@ export default function SchedulesPage() {
 
   // Handlers for Universal Modal save operations
   const handleSaveCreate = async (formData: Record<string, unknown>) => {
-    const directSlots = formData.scheduleSlots as { weekDay: number; startTime: string; endTime: string }[] | undefined;
+    const directSlots = formData.scheduleSlots as { weekDay: number; startTime: string; endTime: string; roomId?: string }[] | undefined;
 
     if (formData.mode === 'individual') {
       let scheduleSlots: { weekDay: number; startTime: string; endTime: string }[];
@@ -514,6 +516,7 @@ export default function SchedulesPage() {
           weekDay: s.weekDay,
           startTime: formatTimeWithSeconds(s.startTime) || '',
           endTime: formatTimeWithSeconds(s.endTime) || '',
+          roomId: s.roomId || (formData.roomId as string) || '',
         }));
       } else {
         const daysOfWeekStr = formData.daysOfWeek as string;
@@ -521,7 +524,7 @@ export default function SchedulesPage() {
           daysOfWeekStr.split(',').map(day => parseInt(day.trim())).filter(day => !isNaN(day)) : [];
         const slotStartTime = formatTimeWithSeconds(formData.startTime && (formData.startTime as string).trim() !== '' ? formData.startTime as string : null) || '';
         const slotEndTime = formatTimeWithSeconds(formData.endTime && (formData.endTime as string).trim() !== '' ? formData.endTime as string : null) || '';
-        scheduleSlots = daysOfWeekArray.map(day => ({ weekDay: day, startTime: slotStartTime, endTime: slotEndTime }));
+        scheduleSlots = daysOfWeekArray.map(day => ({ weekDay: day, startTime: slotStartTime, endTime: slotEndTime, roomId: (formData.roomId as string) || '' }));
       }
       const individualData = {
         studentId: formData.studentId as string,
@@ -532,7 +535,6 @@ export default function SchedulesPage() {
         effectiveFrom: formData.effectiveFrom && (formData.effectiveFrom as string).trim() !== '' ? formData.effectiveFrom as string : null,
         effectiveTo: formData.effectiveTo && (formData.effectiveTo as string).trim() !== '' ? formData.effectiveTo as string : null,
         teacherId: formData.teacherId && (formData.teacherId as string).trim() !== '' ? formData.teacherId as string : null,
-        roomId: formData.roomId && (formData.roomId as string).trim() !== '' ? formData.roomId as string : null,
         organizationId: user?.organizationId || ''
       };
 
@@ -548,12 +550,13 @@ export default function SchedulesPage() {
       return;
     }
 
-    let scheduleSlots: { weekDay: number; startTime: string; endTime: string }[];
+    let scheduleSlots: { weekDay: number; startTime: string; endTime: string; roomId: string }[];
     if (directSlots) {
       scheduleSlots = directSlots.map(s => ({
         weekDay: s.weekDay,
         startTime: formatTimeWithSeconds(s.startTime) || '',
         endTime: formatTimeWithSeconds(s.endTime) || '',
+        roomId: s.roomId || (formData.roomId as string) || '',
       }));
     } else {
       const daysOfWeekStr = formData.daysOfWeek as string;
@@ -561,7 +564,7 @@ export default function SchedulesPage() {
         daysOfWeekStr.split(',').map(day => parseInt(day.trim())).filter(day => !isNaN(day)) : [];
       const createStartTime = formatTimeWithSeconds(formData.startTime && (formData.startTime as string).trim() !== '' ? formData.startTime as string : null) || '';
       const createEndTime = formatTimeWithSeconds(formData.endTime && (formData.endTime as string).trim() !== '' ? formData.endTime as string : null) || '';
-      scheduleSlots = daysOfWeekArray.map(day => ({ weekDay: day, startTime: createStartTime, endTime: createEndTime }));
+      scheduleSlots = daysOfWeekArray.map(day => ({ weekDay: day, startTime: createStartTime, endTime: createEndTime, roomId: (formData.roomId as string) || '' }));
     }
     const scheduleData = {
       scheduleSlots,
@@ -569,16 +572,20 @@ export default function SchedulesPage() {
       effectiveTo: formData.effectiveTo && (formData.effectiveTo as string).trim() !== '' ? formData.effectiveTo as string : null,
       groupId: formData.groupId && (formData.groupId as string).trim() !== '' ? formData.groupId as string : null,
       teacherId: formData.teacherId && (formData.teacherId as string).trim() !== '' ? formData.teacherId as string : null,
-      roomId: formData.roomId && (formData.roomId as string).trim() !== '' ? formData.roomId as string : null,
       organizationId: user?.organizationId || ''
     };
     
     try {
       // Вызываем API напрямую для обработки ошибок
-      await AuthenticatedApiService.post('/Schedule/create-schedule', scheduleData);
+      const createResult = await AuthenticatedApiService.post<{ scheduleId: string; warning?: string }>('/Schedule/create-schedule', scheduleData);
       
       // Если успех - показываем уведомление
       await createOperation(() => Promise.resolve(), 'расписание');
+
+      // Если бэкенд вернул предупреждение — показываем его отдельно
+      if (createResult?.warning) {
+        showError(`Предупреждение: ${createResult.warning}`);
+      }
       
       // Перезагружаем данные и закрываем модалку
       await loadSchedules(currentPage, true);
@@ -607,7 +614,7 @@ export default function SchedulesPage() {
       : schedules.find(s =>
           s.group.id === (formData.groupId as string) &&
           s.teacher.id === (formData.teacherId as string) &&
-          s.room.id === (formData.roomId as string)
+          s.room?.id === (formData.roomId as string)
         );
 
     if (!scheduleToEdit) return;
@@ -620,13 +627,13 @@ export default function SchedulesPage() {
           weekDay: day,
           startTime: editStartTime,
           endTime: editEndTime,
+          roomId: formData.roomId && (formData.roomId as string).trim() !== '' ? formData.roomId as string : (existing?.room?.id ?? ''),
         };
       }),
       effectiveFrom: formData.effectiveFrom && (formData.effectiveFrom as string).trim() !== '' ? formData.effectiveFrom as string : null,
       effectiveTo: formData.effectiveTo && (formData.effectiveTo as string).trim() !== '' ? formData.effectiveTo as string : null,
       groupId: formData.groupId && (formData.groupId as string).trim() !== '' ? formData.groupId as string : null,
       teacherId: formData.teacherId && (formData.teacherId as string).trim() !== '' ? formData.teacherId as string : null,
-      roomId: formData.roomId && (formData.roomId as string).trim() !== '' ? formData.roomId as string : null,
     };
 
     try {
@@ -1095,7 +1102,7 @@ export default function SchedulesPage() {
                         </div>
                         <div className="flex items-center text-gray-600 dark:text-gray-400">
                           <span className="font-medium mr-2">Кабинет:</span>
-                          {schedule.room.name}
+                          {schedule.room?.name ?? schedule.scheduleSlots[0]?.room?.name ?? '—'}
                         </div>
                         <div className="flex items-start text-gray-600 dark:text-gray-400">
                           <span className="font-medium mr-2 mt-1">Дни:</span>
@@ -1233,7 +1240,7 @@ export default function SchedulesPage() {
                           )}
                           {isColumnVisible('room') && (
                             <td className="px-3 py-3 text-sm text-gray-900 dark:text-white truncate">
-                              {schedule.room.name}
+                              {schedule.room?.name ?? schedule.scheduleSlots[0]?.room?.name ?? '—'}
                             </td>
                           )}
                           {isColumnVisible('days') && (

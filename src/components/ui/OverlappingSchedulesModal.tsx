@@ -127,7 +127,7 @@ export const OverlappingSchedulesModal: React.FC<OverlappingSchedulesModalProps>
                           Аудитория
                         </div>
                         <div className="text-sm text-gray-900 dark:text-white truncate">
-                          {schedule.room.name}
+                          {schedule.room?.name ?? '—'}
                         </div>
                       </div>
                     </div>

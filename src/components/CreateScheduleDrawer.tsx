@@ -356,7 +356,7 @@ export default function CreateScheduleDrawer({
   const [mode, setMode] = useState<'group' | 'individual'>('group');
 
   // Form state
-  const [slots, setSlots] = useState<{ day: number; startTime: string; endTime: string }[]>([]);
+  const [slots, setSlots] = useState<{ day: number; startTime: string; endTime: string; roomId: string }[]>([]);
   const [effectiveFrom, setEffectiveFrom] = useState('');
   const [effectiveTo, setEffectiveTo]     = useState('');
   const [groupId, setGroupId]             = useState('');
@@ -467,8 +467,9 @@ export default function CreateScheduleDrawer({
       const newStart = minutesToHHMM(rawS);
       const newEnd = minutesToHHMM(Math.min(finalE, CALENDAR_END_H * 60));
       setSlots(prev => {
+        const existing = prev.find(s => s.day === drag.day);
         const filtered = prev.filter(s => s.day !== drag.day);
-        return [...filtered, { day: drag.day, startTime: newStart, endTime: newEnd }];
+        return [...filtered, { day: drag.day, startTime: newStart, endTime: newEnd, roomId: existing?.roomId || roomId }];
       });
       setDrag(null);
     };
@@ -534,7 +535,7 @@ export default function CreateScheduleDrawer({
       if (!subjectPackageId)                                  errs.subjectPackageId = 'Выберите пакет занятий';
     }
     if (!teacherId)                                           errs.teacherId     = 'Выберите преподавателя';
-    if (!roomId)                                              errs.roomId        = 'Выберите аудиторию';
+    if (slots.some(s => !s.roomId))                           errs.roomId        = 'Выберите аудиторию для каждого дня';
     setErrors(errs);
     return Object.keys(errs).length === 0;
   };
@@ -547,10 +548,11 @@ export default function CreateScheduleDrawer({
         weekDay: s.day,
         startTime: s.startTime,
         endTime: s.endTime,
+        roomId: s.roomId || roomId,
       }));
       const baseData: Record<string, unknown> = {
         mode, scheduleSlots,
-        effectiveFrom, effectiveTo, teacherId, roomId, organizationId,
+        effectiveFrom, effectiveTo, teacherId, organizationId,
       };
       if (mode === 'group') {
         await onSave({ ...baseData, groupId });
@@ -748,11 +750,20 @@ export default function CreateScheduleDrawer({
             {/* Room */}
             <div>
               <label className="block text-xs font-semibold text-gray-600 dark:text-gray-400 uppercase tracking-wide mb-1.5">
-                Аудитория <span className="text-red-500">*</span>
+                Аудитория <span className="text-red-500">*</span> <span className="normal-case font-normal text-gray-400">— по умолчанию</span>
               </label>
               <select
                 value={roomId}
-                onChange={e => setRoomId(e.target.value)}
+                onChange={e => {
+                  const newRoomId = e.target.value;
+                  setRoomId(prev => {
+                    // Update slots that still had the previous default room
+                    setSlots(prevSlots => prevSlots.map(s =>
+                      s.roomId === prev || s.roomId === '' ? { ...s, roomId: newRoomId } : s
+                    ));
+                    return newRoomId;
+                  });
+                }}
                 className={`w-full px-3 py-2.5 text-sm rounded-lg border bg-white dark:bg-gray-800 text-gray-900 dark:text-white
                   focus:ring-2 focus:ring-violet-500 focus:border-transparent outline-none transition-colors
                   ${errors.roomId ? 'border-red-400 dark:border-red-500' : 'border-gray-300 dark:border-gray-600'}`}
@@ -888,28 +899,40 @@ export default function CreateScheduleDrawer({
               ) : (
                 <div className="space-y-2">
                   {[...slots].sort((a, b) => a.day - b.day).map(s => (
-                    <div key={s.day} className="flex items-center gap-1.5 bg-violet-50 dark:bg-violet-900/20 border border-violet-200 dark:border-violet-800 rounded-lg px-2.5 py-1.5">
-                      <span className="text-xs font-semibold text-violet-700 dark:text-violet-300 w-5 shrink-0">{DAYS_SHORT[s.day - 1]}</span>
-                      <TimeInput
-                        value={s.startTime}
-                        onChange={v => setSlots(prev => prev.map(x => x.day === s.day ? { ...x, startTime: v || '' } : x))}
-                        placeholder="ЧЧ:ММ"
-                        required
-                      />
-                      <span className="text-gray-400 text-xs shrink-0">—</span>
-                      <TimeInput
-                        value={s.endTime}
-                        onChange={v => setSlots(prev => prev.map(x => x.day === s.day ? { ...x, endTime: v || '' } : x))}
-                        placeholder="ЧЧ:ММ"
-                        required
-                      />
-                      <button
-                        type="button"
-                        onClick={() => setSlots(prev => prev.filter(x => x.day !== s.day))}
-                        className="ml-auto p-1 rounded hover:bg-red-100 dark:hover:bg-red-900/30 text-gray-400 hover:text-red-500 transition-colors shrink-0"
+                    <div key={s.day} className="bg-violet-50 dark:bg-violet-900/20 border border-violet-200 dark:border-violet-800 rounded-lg px-2.5 py-1.5 space-y-1.5">
+                      <div className="flex items-center gap-1.5">
+                        <span className="text-xs font-semibold text-violet-700 dark:text-violet-300 w-5 shrink-0">{DAYS_SHORT[s.day - 1]}</span>
+                        <TimeInput
+                          value={s.startTime}
+                          onChange={v => setSlots(prev => prev.map(x => x.day === s.day ? { ...x, startTime: v || '' } : x))}
+                          placeholder="ЧЧ:ММ"
+                          required
+                        />
+                        <span className="text-gray-400 text-xs shrink-0">—</span>
+                        <TimeInput
+                          value={s.endTime}
+                          onChange={v => setSlots(prev => prev.map(x => x.day === s.day ? { ...x, endTime: v || '' } : x))}
+                          placeholder="ЧЧ:ММ"
+                          required
+                        />
+                        <button
+                          type="button"
+                          onClick={() => setSlots(prev => prev.filter(x => x.day !== s.day))}
+                          className="ml-auto p-1 rounded hover:bg-red-100 dark:hover:bg-red-900/30 text-gray-400 hover:text-red-500 transition-colors shrink-0"
+                        >
+                          <XMarkIcon className="w-3.5 h-3.5" />
+                        </button>
+                      </div>
+                      <select
+                        value={s.roomId}
+                        onChange={e => setSlots(prev => prev.map(x => x.day === s.day ? { ...x, roomId: e.target.value } : x))}
+                        className={`w-full px-2 py-1 text-xs rounded border bg-white dark:bg-gray-800 text-gray-900 dark:text-white
+                          focus:ring-1 focus:ring-violet-500 focus:border-transparent outline-none transition-colors
+                          ${errors.roomId && !s.roomId ? 'border-red-400 dark:border-red-500' : 'border-gray-300 dark:border-gray-600'}`}
                       >
-                        <XMarkIcon className="w-3.5 h-3.5" />
-                      </button>
+                        <option value="">Выберите аудиторию</option>
+                        {roomOptions.map(r => <option key={r.id} value={r.id}>{r.name}</option>)}
+                      </select>
                     </div>
                   ))}
                 </div>

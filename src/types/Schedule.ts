@@ -3,6 +3,7 @@ export interface ScheduleSlot {
   weekDay: number; // 1=Пн ... 7=Вс
   startTime: string; // "HH:mm:ss"
   endTime: string;   // "HH:mm:ss"
+  room?: { id: string; name: string };
 }
 
 export interface Schedule {
@@ -23,7 +24,7 @@ export interface Schedule {
     name: string;
     hasPhoto?: boolean;
   };
-  room: {
+  room?: {
     id: string;
     name: string;
   };
@@ -33,6 +34,7 @@ export interface ScheduleSlotInput {
   weekDay: number;
   startTime: string; // "HH:mm:ss"
   endTime: string;   // "HH:mm:ss"
+  roomId: string;
 }
 
 export interface ScheduleFormData {
@@ -41,7 +43,6 @@ export interface ScheduleFormData {
   effectiveTo?: string | null;
   groupId: string | null;
   teacherId: string | null;
-  roomId: string | null;
   organizationId: string;
 }
 
@@ -50,6 +51,7 @@ export interface ScheduleSlotUpdate {
   weekDay: number;
   startTime: string;
   endTime: string;
+  roomId: string;
 }
 
 export interface ScheduleUpdateData {
@@ -58,7 +60,6 @@ export interface ScheduleUpdateData {
   effectiveTo?: string | null;
   groupId: string | null;
   teacherId: string | null;
-  roomId: string | null;
 }
 
 export interface SchedulesResponse {
