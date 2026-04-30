@@ -354,7 +354,9 @@ export default function SettingsPage() {
               <div className="hidden sm:flex items-center gap-3 shrink-0">
                 <div className="text-right">
                   <div className="text-white/60 text-xs">Роль</div>
-                  <div className="text-white font-semibold text-sm capitalize">{user?.role}</div>
+                  <div className="text-white font-semibold text-sm capitalize">
+                    {user?.role === 'Administrator' ? 'Администратор' : user?.role === 'Owner' ? 'Владелец' : user?.role === 'Teacher' ? 'Учитель' : user?.role === 'Student' ? 'Студент' : user?.role}
+                  </div>
                 </div>
                 <div className="w-10 h-10 rounded-xl bg-white/15 border border-white/20 flex items-center justify-center">
                   <span className="text-white font-bold text-sm">{user?.fullName?.charAt(0)?.toUpperCase() ?? 'A'}</span>
