@@ -10,6 +10,18 @@ export interface MakeUpLessonCreateModel {
   studentIds: string[]; // минимум 1
 }
 
+// Быстрая отработка (quick-makeup) — создать для одного студента на базе исходного урока
+export interface QuickMakeUpRequest {
+  originalLessonId: string; // исходный урок (обязательно)
+  studentId: string;        // студент (обязательно)
+  date?: string;            // DateOnly "YYYY-MM-DD"; по умолчанию из исходного урока
+  startTime?: string;       // "HH:mm:ss"; по умолчанию из исходного урока
+  endTime?: string;         // "HH:mm:ss"; по умолчанию из исходного урока
+  teacherId?: string;       // по умолчанию преподаватель исходного урока
+  roomId?: string;          // по умолчанию кабинет исходного урока
+  note?: string;            // заметка
+}
+
 // Ответ создания урока-отработки
 export interface CreateMakeUpResponse {
   lessonId: string;

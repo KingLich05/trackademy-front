@@ -1,364 +1,241 @@
-# WhatsApp Integration API для Frontend
+# Frontend документация: Отработка уроков (Make-up)
 
-## Цель
+## Назначение
 
-Документ описывает, как фронтенду управлять WhatsApp-интеграцией в Trackademy:
-- конфигурация провайдера
-- шаблоны уведомлений
-- ручная отправка сообщений
-- настройки уведомлений пользователя и организации
-- логи доставки
+Этот документ описывает полный API-путь для работы с отработками уроков:
+- быстрая отработка в 1 действие (новый сценарий)
+- классическое создание отработки
+- добавление/удаление студентов
+- получение списков отработок
 
-## Базовые данные
+Базовый путь контроллера: `/api/UserLesson`
 
-- Авторизация: Bearer JWT
-- Все endpoint требуют авторизацию
+Требуется JWT в заголовке `Authorization: Bearer <token>`.
 
-## Раздел 1. Конфигурация WhatsApp
+## Роли доступа
 
-### GET /api/whatsapp/config/{organizationId}
+- `quick-makeup`: `Teacher` и выше
+- `create-makeup`: `Administrator` и выше
+- `add-student`: `Administrator` и выше
+- `remove-student`: `Administrator` и выше
+- `delete-lesson`: `Administrator` и выше
+- `by-lesson`: `Teacher` и выше
+- `by-student`: `Teacher` и выше
 
-Назначение: получить текущую конфигурацию WhatsApp для организации.
+## Форматы данных
 
-Особенности:
-- токен не возвращается в ответе
-- возвращается признак HasToken
+- `Guid`: строка UUID
+- `DateOnly`: `YYYY-MM-DD`
+- `TimeOnly`: `HH:mm:ss` (рекомендуется), допустимо `HH:mm`
+- `TimeSpan` в ответах: `HH:mm:ss`
 
-Пример ответа:
+---
 
-```json
-{
-  "provider": 1,
-  "apiUrl": "https://api.ultramsg.com/instance123/messages/chat",
-  "instanceId": "instance123",
-  "isEnabled": true,
-  "retryAttempts": 3,
-  "retryDelaySeconds": 60,
-  "hasToken": true
-}
-```
+## 1. Быстрая отработка (рекомендуемый основной сценарий)
 
-### POST /api/whatsapp/config/{organizationId}
+### POST `/api/UserLesson/quick-makeup`
 
-Назначение: создать или обновить конфигурацию.
+Создает новый урок-отработку на базе исходного урока и сразу назначает одного студента.
 
-Request body:
+### Request body
 
 ```json
 {
-  "provider": 1,
-  "apiUrl": "https://api.ultramsg.com/instance123/messages/chat",
-  "token": "your-token",
-  "instanceId": "instance123",
-  "isEnabled": true,
-  "retryAttempts": 3,
-  "retryDelaySeconds": 60
+  "originalLessonId": "3768def0-2e62-449b-90ea-e6d353335ea9",
+  "studentId": "195fb279-9033-4273-9a2a-1f1c828a28e2",
+  "date": "2026-05-02",
+  "startTime": "11:00:00",
+  "endTime": "12:30:00",
+  "teacherId": "d15a7304-f4d9-4a7a-9765-c0cc9ce761f0",
+  "roomId": "fce6f650-f86a-4509-8f13-ff04f916a45b",
+  "note": "Отработка пропущенного занятия"
 }
 ```
 
-Response:
+### Поля
+
+- `originalLessonId` (required): исходный урок
+- `studentId` (required): студент для отработки
+- `date` (optional): если не передан, берется дата исходного урока, а если она в прошлом - текущая дата
+- `startTime` (optional): по умолчанию из исходного урока
+- `endTime` (optional): по умолчанию из исходного урока
+- `teacherId` (optional): по умолчанию преподаватель исходного урока
+- `roomId` (optional): по умолчанию кабинет исходного урока
+- `note` (optional): заметка для нового урока-отработки
+
+### Успешный ответ (200)
 
 ```json
 {
-  "message": "Конфигурация WhatsApp успешно сохранена",
-  "id": "00000000-0000-0000-0000-000000000000"
+  "id": "2bbf84ec-9ce7-4c73-a6a4-b0b8de85ea5a",
+  "userId": "195fb279-9033-4273-9a2a-1f1c828a28e2",
+  "studentName": "Гермиона Грейнджер",
+  "lessonId": "e8cf9533-77e2-4c6f-9fa5-b95df72e7312",
+  "lessonDate": "2026-05-02",
+  "startTime": "11:00:00",
+  "endTime": "12:30:00",
+  "groupName": "Мандрагора",
+  "subjectName": "Травология",
+  "teacherName": "Помона Стебль",
+  "status": 0
 }
 ```
 
-### POST /api/whatsapp/config/{organizationId}/test
+`status` соответствует enum `AttendanceStatus`.
 
-Назначение: проверить подключение к API провайдера.
+### Ошибки (400)
 
-Пример ответа:
+Backend может вернуть строку с причиной:
+
+- `Студент не найден`
+- `Исходный урок не найден`
+- `Студент и урок принадлежат разным организациям`
+- `Студент не состоит в группе исходного урока`
+- `Нельзя создать урок в прошлом.`
+- `Время окончания должно быть позже начала.`
+- `Преподаватель не найден`
+- `Кабинет не найден`
+- `В выбранном кабинете нет доступных мест`
+- `Преподаватель/кабинет должны принадлежать той же организации`
+- `Указанное время пересекается с другим занятием.`
+- `Для группы нет активного расписания`
+
+---
+
+## 2. Классическое создание отработки
+
+### POST `/api/UserLesson/create-makeup`
+
+Создает новый урок-отработку и сразу может назначить несколько студентов.
+
+### Request body
 
 ```json
 {
-  "isConnected": true,
-  "message": "Соединение установлено"
+  "groupId": "27ef36f6-d62d-4855-a40f-9d0b47d84c2d",
+  "date": "2026-05-02",
+  "startTime": "11:00:00",
+  "endTime": "12:30:00",
+  "teacherId": "d15a7304-f4d9-4a7a-9765-c0cc9ce761f0",
+  "roomId": "fce6f650-f86a-4509-8f13-ff04f916a45b",
+  "note": "Субботняя отработка",
+  "studentIds": [
+    "195fb279-9033-4273-9a2a-1f1c828a28e2",
+    "a2a0a402-f318-4b68-8f68-bd5547b98a4f"
+  ]
 }
 ```
 
-## Раздел 2. Шаблоны уведомлений
-
-### GET /api/whatsapp/templates/{organizationId}
-
-Назначение: получить все шаблоны организации.
-
-Пример ответа:
-
-```json
-[
-  {
-    "id": "00000000-0000-0000-0000-000000000000",
-    "organizationId": "00000000-0000-0000-0000-000000000000",
-    "type": 1,
-    "language": 1,
-    "templateText": "Здравствуйте, {full_name}",
-    "isActive": true,
-    "createdAt": "2026-04-28T10:00:00Z",
-    "updatedAt": "2026-04-28T10:00:00Z"
-  }
-]
-```
-
-### POST /api/whatsapp/templates/{organizationId}
-
-Назначение: создать или обновить шаблон.
-
-Request body:
+### Успешный ответ (200)
 
 ```json
 {
-  "type": 1,
-  "language": 1,
-  "templateText": "Здравствуйте, {full_name}. Ваш логин: {login}"
+  "lessonId": "e8cf9533-77e2-4c6f-9fa5-b95df72e7312"
 }
 ```
 
-Response:
+### Частые ошибки (400)
+
+- `Укажите хотя бы одного студента.`
+- `Группа не найдена.`
+- `Нельзя создать урок в прошлом.`
+- `Проверьте корректность преподавателя, кабинета или активного расписания.`
+- `Количество студентов не вмещается в кабинет.`
+- `Указанное время пересекается с другим занятием.`
+- `Один или несколько студентов не найдены.`
+- `Студенты не состоят в группе: ...`
+
+---
+
+## 3. Добавление студента в существующую отработку
+
+### POST `/api/UserLesson/add-student`
+
+### Request body
 
 ```json
 {
-  "message": "Шаблон успешно сохранен",
-  "id": "00000000-0000-0000-0000-000000000000"
+  "userId": "195fb279-9033-4273-9a2a-1f1c828a28e2",
+  "lessonId": "e8cf9533-77e2-4c6f-9fa5-b95df72e7312"
 }
 ```
 
-### GET /api/whatsapp/templates/notification-types
+### Успешный ответ (200)
 
-Назначение: получить типы уведомлений для UI.
+Возвращает `UserLessonDto` (тот же формат, что у `quick-makeup`).
 
-Пример ответа:
+### Важно
 
-```json
-[
-  {
-    "value": 1,
-    "name": "PasswordReset",
-    "displayName": "Сброс пароля"
-  }
-]
-```
+Этот endpoint работает только для уроков с `IsMakeUp = true`.
+Если передан обычный урок, вернется ошибка:
 
-## Раздел 3. Уведомления
+- `Урок-отработка не найден`
 
-### POST /api/notifications/send
+---
 
-Назначение: отправить уведомление пользователю.
+## 4. Удаление студента из отработки
 
-Request body:
+### DELETE `/api/UserLesson/remove-student/{userLessonId}`
 
-```json
-{
-  "userId": "00000000-0000-0000-0000-000000000000",
-  "organizationId": "00000000-0000-0000-0000-000000000000",
-  "type": 1,
-  "channel": 1,
-  "variables": {
-    "full_name": "Иван Иванов",
-    "login": "ivan"
-  },
-  "customMessage": null,
-  "preferredLanguage": 1
-}
-```
+### Успешный ответ
 
-Response:
+- `204 No Content`
 
-```json
-{
-  "message": "Уведомление отправлено"
-}
-```
+---
 
-### GET /api/notifications/settings/{userId}?organizationId={organizationId}
+## 5. Удаление всей отработки
 
-Назначение: получить пользовательские настройки уведомлений.
+### DELETE `/api/UserLesson/delete-lesson/{lessonId}`
 
-Пример ответа:
+Удаляет урок-отработку и связанные назначения.
 
-```json
-{
-  "id": "00000000-0000-0000-0000-000000000000",
-  "userId": "00000000-0000-0000-0000-000000000000",
-  "organizationId": "00000000-0000-0000-0000-000000000000",
-  "whatsAppEnabled": true,
-  "emailEnabled": false,
-  "smsEnabled": false,
-  "preferredLanguage": 1,
-  "receivePasswordNotifications": true,
-  "receiveAttendanceNotifications": true,
-  "receiveBalanceNotifications": true,
-  "receivePaymentNotifications": true,
-  "receiveTrialLessonNotifications": true,
-  "receiveUserCreationNotifications": true,
-  "receiveLessonCancellationNotifications": true,
-  "receiveLessonMovedNotifications": true,
-  "receiveBirthdayNotification": true,
-  "parentPhoneEnabled": false,
-  "parentPhone": null,
-  "quietHoursStart": "22:00:00",
-  "quietHoursEnd": "08:00:00"
-}
-```
+### Успешный ответ
 
-### GET /api/notifications/org-settings/{organizationId}
+- `204 No Content`
 
-Назначение: получить настройки уведомлений организации.
+---
 
-Пример ответа:
+## 6. Получение студентов отработки
 
-```json
-{
-  "id": "00000000-0000-0000-0000-000000000000",
-  "organizationId": "00000000-0000-0000-0000-000000000000",
-  "whatsAppEnabled": true,
-  "emailEnabled": false,
-  "smsEnabled": false,
-  "attendanceCheckDelayMinutes": 5,
-  "notifyTeacherOnMissed": true,
-  "notifyOnBirthdays": true,
-  "notifyTrialStudents": true,
-  "balanceLowThreshold": 1,
-  "notifyOnNegativeBalance": true,
-  "balanceCheckFrequencyHours": 24,
-  "allowNightNotifications": false,
-  "quietHoursStart": "22:00:00",
-  "quietHoursEnd": "08:00:00"
-}
-```
+### GET `/api/UserLesson/by-lesson/{lessonId}`
 
-## Раздел 4. Логи WhatsApp
+### Успешный ответ (200)
 
-### GET /api/whatsapp/logs/{organizationId}?fromDate={isoDate}&toDate={isoDate}
+Массив `UserLessonDto[]`.
 
-Назначение: получить журнал отправок по организации.
+---
 
-Пример ответа:
+## 7. Получение всех отработок студента
 
-```json
-[
-  {
-    "id": "00000000-0000-0000-0000-000000000000",
-    "organizationId": "00000000-0000-0000-0000-000000000000",
-    "userId": "00000000-0000-0000-0000-000000000000",
-    "type": 1,
-    "phoneNumber": "+77001234567",
-    "messageText": "Текст сообщения",
-    "status": 2,
-    "externalMessageId": "abc-123",
-    "errorMessage": null,
-    "attemptCount": 1,
-    "createdAt": "2026-04-28T10:00:00Z",
-    "sentAt": "2026-04-28T10:00:01Z",
-    "lastAttemptAt": "2026-04-28T10:00:01Z"
-  }
-]
-```
+### GET `/api/UserLesson/by-student/{studentId}?organizationId={organizationId}`
 
-### GET /api/whatsapp/logs/details/{logId}
+### Успешный ответ (200)
 
-Назначение: получить детали одной отправки.
+Массив `UserLessonDto[]`.
 
-## Раздел 5. Справочники для фронта
+---
 
-### WhatsAppProvider
+## Рекомендуемый UX-поток для фронта (минимум кликов)
 
-- 1: UltraMsg
-- 2: Twilio
-- 3: Meta
-- 4: Dialog360
+1. На карточке пропуска/урока показывать кнопку `Создать отработку`.
+2. По клику открывать модалку с предзаполнением из исходного урока:
+   - дата, время, преподаватель, кабинет
+3. Вызывать только `POST /api/UserLesson/quick-makeup`.
+4. После успеха:
+   - показать toast `Отработка создана`
+   - обновить календарь/список уроков
+   - опционально открыть карточку нового урока
 
-Важно:
-- в текущей реализации отправка полноценно сделана для UltraMsg
-- Twilio и Meta подготовлены как заглушки
-- Dialog360 есть в enum, но не реализован в sender
+## Рекомендации по обработке ошибок
 
-### NotificationLanguage
+- Для 400 отображать текст ошибки от backend как есть.
+- Для пересечений по времени можно дополнительно подсвечивать поля времени/кабинета.
+- Для ошибки `Студент не состоит в группе исходного урока` предлагать смену группы/другой исходный урок.
 
-Используется в шаблонах и пользовательских настройках языка.
+## Быстрый чеклист интеграции
 
-### NotificationType
-
-Используется в шаблонах и отправке уведомлений.
-
-## Раздел 6. Рекомендованный UI для фронта
-
-### Экран 1. Integration Settings
-
-Поля:
-- Provider
-- ApiUrl
-- InstanceId
-- Token (masked input)
-- IsEnabled
-- RetryAttempts
-- RetryDelaySeconds
-
-Кнопки:
-- Save
-- Test Connection
-
-### Экран 2. Templates
-
-Функции:
-- список шаблонов по organizationId
-- фильтр по Type и Language
-- создание/редактирование TemplateText
-- предпросмотр подстановки переменных
-
-### Экран 3. Notification Settings
-
-Показывать:
-- User settings
-- Organization settings
-
-## Раздел 7. Обязательные доработки backend для полного управления с фронта
-
-На текущий момент отсутствуют endpoint для изменения notification settings.
-
-Нужно добавить:
-
-1. Обновление пользовательских настроек
-- PUT/PATCH /api/notifications/settings/{userId}?organizationId={organizationId}
-
-2. Обновление организационных настроек
-- PUT/PATCH /api/notifications/org-settings/{organizationId}
-
-3. Безопасность доступа
-- добавить проверку роли и доступа к organizationId на WhatsApp endpoint
-
-4. Уточнить логику GetConfig
-- сейчас поиск идет по IsEnabled=true
-- лучше искать конфиг по organizationId независимо от IsEnabled
-
-## Раздел 8. Ошибки API
-
-Типовые ответы:
-- 400 BadRequest: неверные параметры или ошибка провайдера
-- 401 Unauthorized: невалидный или отсутствующий JWT
-- 403 Forbidden: недостаточно прав
-- 404 NotFound: сущность не найдена
-
-## Раздел 9. Минимальный frontend flow
-
-1. Загрузить конфиг:
-- GET /api/whatsapp/config/{organizationId}
-
-2. Сохранить конфиг:
-- POST /api/whatsapp/config/{organizationId}
-
-3. Проверить подключение:
-- POST /api/whatsapp/config/{organizationId}/test
-
-4. Загрузить шаблоны:
-- GET /api/whatsapp/templates/{organizationId}
-
-5. Сохранить шаблон:
-- POST /api/whatsapp/templates/{organizationId}
-
-6. Протестировать отправку:
-- POST /api/notifications/send
-
-7. Проверить результат:
-- GET /api/whatsapp/logs/{organizationId}
+- Используется `quick-makeup` как основной путь
+- Передается JWT
+- Поддержаны форматы `DateOnly/TimeOnly`
+- Обработка 400 с показом server message
+- После успеха выполняется refetch расписания

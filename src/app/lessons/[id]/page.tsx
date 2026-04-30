@@ -38,6 +38,7 @@ import {
   PlusIcon,
   TrashIcon,
   MagnifyingGlassIcon,
+  ArrowPathIcon,
 } from '@heroicons/react/24/outline';
 
 import { MakeUpStudentDto } from '@/types/UserLesson';
@@ -113,6 +114,7 @@ function LessonDetailContent({ lessonId }: { lessonId: string }) {
   const [makeUpSearchLoading, setMakeUpSearchLoading] = useState(false);
   const [selectedMakeUpStudent, setSelectedMakeUpStudent] = useState<User | null>(null);
   const [isAddingMakeUp, setIsAddingMakeUp] = useState(false);
+  const [quickMakeUpStudentId, setQuickMakeUpStudentId] = useState<string | null>(null);
 
   // ── Roles ──
   const userRole = user?.role;
@@ -822,6 +824,34 @@ function LessonDetailContent({ lessonId }: { lessonId: string }) {
                               {student.grade && student.comment ? ' · ' : ''}
                               {student.comment ? '📝' : ''}
                             </span>
+                          )}
+                          {!isMakeUp && student.attendanceStatus === 2 && canEdit && (
+                            <button
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                if (!lesson || quickMakeUpStudentId) return;
+                                setQuickMakeUpStudentId(student.id);
+                                AuthenticatedApiService.quickMakeUpLesson({
+                                  originalLessonId: lesson.id,
+                                  studentId: student.id,
+                                })
+                                  .then(() => { showToast('Отработка создана', 'success'); loadLesson(); })
+                                  .catch((e: unknown) => showToast((e as { message?: string })?.message || 'Ошибка', 'error'))
+                                  .finally(() => setQuickMakeUpStudentId(null));
+                              }}
+                              disabled={quickMakeUpStudentId === student.id}
+                              title="Создать отработку"
+                              className="p-1.5 text-amber-500 hover:text-amber-700 dark:hover:text-amber-400 hover:bg-amber-50 dark:hover:bg-amber-900/20 rounded-lg transition-colors disabled:opacity-50"
+                            >
+                              {quickMakeUpStudentId === student.id ? (
+                                <svg className="animate-spin h-4 w-4" viewBox="0 0 24 24">
+                                  <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" fill="none" />
+                                  <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z" />
+                                </svg>
+                              ) : (
+                                <ArrowPathIcon className="w-4 h-4" />
+                              )}
+                            </button>
                           )}
                           {isMakeUp && (isAdministrator || isOwner) ? (
                             <button

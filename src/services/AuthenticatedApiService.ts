@@ -1272,6 +1272,11 @@ export class AuthenticatedApiService {
     return this.post<import('../types/UserLesson').CreateMakeUpResponse>('/UserLesson/create-makeup', data);
   }
 
+  /** POST /UserLesson/quick-makeup — быстрая отработка для одного студента на базе исходного урока */
+  static async quickMakeUpLesson(data: import('../types/UserLesson').QuickMakeUpRequest): Promise<import('../types/UserLesson').UserLessonDto> {
+    return this.post<import('../types/UserLesson').UserLessonDto>('/UserLesson/quick-makeup', data);
+  }
+
   /** POST /UserLesson/add-student — добавить студента к существующей отработке */
   static async addStudentToMakeUp(data: import('../types/UserLesson').UserLessonAddModel): Promise<import('../types/UserLesson').UserLessonDto> {
     return this.post<import('../types/UserLesson').UserLessonDto>('/UserLesson/add-student', data);
