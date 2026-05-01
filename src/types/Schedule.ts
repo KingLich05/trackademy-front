@@ -62,6 +62,50 @@ export interface ScheduleUpdateData {
   teacherId: string | null;
 }
 
+export interface ScheduleDetailStudent {
+  studentId: string;
+  studentName: string;
+  subjectPackage: { packageId: string; packageName: string } | null;
+  isFrozen: boolean;
+  frozenFrom: string | null;
+  frozenTo: string | null;
+  freezeReason: string | null;
+}
+
+export interface ScheduleDetailLesson {
+  id: string;
+  date: string;
+  startTime: string;
+  endTime: string;
+  status: string;
+  cancelReason: string | null;
+  room: { id: string; name: string };
+}
+
+export interface ScheduleDetail {
+  id: string;
+  effectiveFrom: string;
+  effectiveTo: string | null;
+  isDeleted: boolean;
+  subject: { subjectId: string; subjectName: string };
+  teacher: { id: string; name: string; hasPhoto: boolean };
+  group: {
+    id: string;
+    name: string;
+    code: string;
+    level: string;
+    students: ScheduleDetailStudent[];
+  };
+  scheduleSlots: ScheduleSlot[];
+  lessonsStats: {
+    total: number;
+    upcoming: number;
+    completed: number;
+    cancelled: number;
+  };
+  upcomingLessons: ScheduleDetailLesson[];
+}
+
 export interface SchedulesResponse {
   items: Schedule[];
   totalCount: number;

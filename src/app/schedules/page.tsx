@@ -30,6 +30,7 @@ import UniversalModal from '../../components/ui/UniversalModal';
 import { useUniversalModal } from '../../hooks/useUniversalModal';
 import CreateScheduleDrawer from '../../components/CreateScheduleDrawer';
 import CreateMakeUpLessonModal from '../../components/CreateMakeUpLessonModal';
+import ScheduleDetailModal from '../../components/ScheduleDetailModal';
 import { TimeInput } from '../../components/ui/TimeInput';
 import { DaysOfWeekSelector } from '../../components/ui/DaysOfWeekSelector';
 import { DateRangePicker } from '../../components/ui/DateRangePicker';
@@ -67,6 +68,7 @@ export default function SchedulesPage() {
   const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false);
   const [isScheduleDrawerOpen, setIsScheduleDrawerOpen] = useState(false);
   const [isMakeUpModalOpen, setIsMakeUpModalOpen] = useState(false);
+  const [detailScheduleId, setDetailScheduleId] = useState<string | null>(null);
 
   // Универсальная система модалов для расписаний
   const scheduleModal = useUniversalModal('schedule', {
@@ -1028,7 +1030,8 @@ export default function SchedulesPage() {
                   {schedules.map((schedule, index) => (
                     <div
                       key={schedule.id}
-                      className={`bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700 p-4 hover:shadow-md transition-shadow duration-200 ${
+                      onClick={() => setDetailScheduleId(schedule.id)}
+                      className={`bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700 p-4 hover:shadow-md transition-shadow duration-200 cursor-pointer ${
                         showArchive ? 'opacity-75 bg-red-50 dark:bg-red-900/10 border-red-200 dark:border-red-700/50' : ''
                       }`}
                     >
@@ -1056,7 +1059,7 @@ export default function SchedulesPage() {
                             </p>
                           </div>
                         </div>
-                        <div className="flex space-x-2">
+                        <div className="flex space-x-2" onClick={e => e.stopPropagation()}>
                           {showArchive ? (
                             <>
                               <button
@@ -1200,9 +1203,12 @@ export default function SchedulesPage() {
                     </thead>
                     <tbody className="bg-white dark:bg-gray-800 divide-y divide-gray-200 dark:divide-gray-700">
                       {schedules.map((schedule, index) => (
-                        <tr key={schedule.id} className={`hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors duration-200 ${index % 2 === 0 ? 'bg-white dark:bg-gray-800' : 'bg-gray-50/50 dark:bg-gray-700/30'} ${
-                          showArchive ? 'opacity-75 bg-red-50 dark:bg-red-900/10' : ''
-                        }`}>
+                        <tr
+                          key={schedule.id}
+                          onClick={() => setDetailScheduleId(schedule.id)}
+                          className={`hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors duration-200 cursor-pointer ${index % 2 === 0 ? 'bg-white dark:bg-gray-800' : 'bg-gray-50/50 dark:bg-gray-700/30'} ${
+                            showArchive ? 'opacity-75 bg-red-50 dark:bg-red-900/10' : ''
+                          }`}>
                           {isColumnVisible('number') && (
                             <td className="px-2 py-3 text-center">
                               <div className="flex items-center justify-center w-8 h-8 bg-gradient-to-r from-violet-500 to-purple-600 text-white text-sm font-medium rounded-lg shadow-sm mx-auto">
@@ -1283,7 +1289,7 @@ export default function SchedulesPage() {
                             </td>
                           )}
                           {isColumnVisible('actions') && (
-                            <td className="px-3 py-3 text-center">
+                            <td className="px-3 py-3 text-center" onClick={e => e.stopPropagation()}>
                               <div className="flex items-center justify-center gap-1">
                                 {showArchive ? (
                                   <>
@@ -1367,6 +1373,12 @@ export default function SchedulesPage() {
           title="Удалить шаблон расписания"
           message={`Вы уверены, что хотите удалить шаблон расписания для группы "${deletingSchedule?.group?.name}"?`}
           itemName={deletingSchedule?.group?.name}
+        />
+
+        {/* Schedule Detail Modal */}
+        <ScheduleDetailModal
+          scheduleId={detailScheduleId}
+          onClose={() => setDetailScheduleId(null)}
         />
 
         {/* Universal Schedule Modal */}

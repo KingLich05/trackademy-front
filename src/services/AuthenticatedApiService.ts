@@ -1272,6 +1272,11 @@ export class AuthenticatedApiService {
     return this.post<import('../types/UserLesson').CreateMakeUpResponse>('/UserLesson/create-makeup', data);
   }
 
+  /** GET /Schedule/GetScheduleById/{id} — детальная информация о расписании */
+  static async getScheduleById(id: string): Promise<import('../types/Schedule').ScheduleDetail | null> {
+    return this.get<import('../types/Schedule').ScheduleDetail | null>(`/Schedule/GetScheduleById/${id}`);
+  }
+
   /** POST /UserLesson/quick-makeup — быстрая отработка для одного студента на базе исходного урока */
   static async quickMakeUpLesson(data: import('../types/UserLesson').QuickMakeUpRequest): Promise<import('../types/UserLesson').UserLessonDto> {
     return this.post<import('../types/UserLesson').UserLessonDto>('/UserLesson/quick-makeup', data);

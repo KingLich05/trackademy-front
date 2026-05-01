@@ -35,6 +35,7 @@ interface DayAvailability {
   dayOfWeek: number; // 1=Mon … 7=Sun
   freeSlots: AvailabilitySlot[];
   busySlots: BusySlot[];
+  availableRooms: RoomMinimal[];
 }
 
 interface RoomMinimal { id: string; name: string; }
@@ -384,22 +385,47 @@ export default function CreateScheduleDrawer({
   const colRefs          = useRef<(HTMLDivElement | null)[]>(Array(7).fill(null));
 
   // Computed option lists (progressive filtering from API)
-  const roomOptions    = availability?.availableRooms?.length    ? availability.availableRooms    : rooms.map(r => ({ id: r.id, name: r.name }));
+  const allRooms       = rooms.map(r => ({ id: r.id, name: r.name }));
+  const roomOptions    = availability?.availableRooms?.length    ? availability.availableRooms    : allRooms;
   const teacherOptions = availability?.availableTeachers?.length ? availability.availableTeachers : teachers.map(t => ({ id: t.id, name: t.name || t.login }));
   const groupOptions   = availability?.availableGroups?.length   ? availability.availableGroups   : groups.map(g => ({ id: g.id, name: g.name }));
 
+  // Per-day room options: prefer days[].availableRooms, fallback to global availableRooms, fallback to full list
+  const getDayRoomOptions = (day: number): RoomMinimal[] => {
+    const dayAvail = availability?.days.find(d => d.dayOfWeek === day);
+    if (dayAvail?.availableRooms?.length) return dayAvail.availableRooms;
+    if (availability?.availableRooms?.length) return availability.availableRooms;
+    return allRooms;
+  };
+
   // ── Availability loader ───────────────────────────────────────────────────
 
-  const loadAvailability = useCallback(async (
-    rId: string, tId: string, gId: string, week: string
-  ) => {
+  const loadAvailability = useCallback(async () => {
     if (!organizationId) return;
     setIsLoadingAvailability(true);
     try {
-      const body: Record<string, string> = { organizationId, weekStart: week };
-      if (rId) body.roomId    = rId;
-      if (tId) body.teacherId = tId;
-      if (gId) body.groupId   = gId;
+      const body: Record<string, unknown> = { organizationId, weekStart };
+
+      // Per-day times (slotTimes) — only for slots that have both times set
+      const validSlots = slots.filter(s => s.startTime && s.endTime);
+      if (validSlots.length > 0) {
+        body.daysOfWeek = validSlots.map(s => s.day);
+        body.slotTimes  = validSlots.map(s => ({
+          weekDay:   s.day,
+          startTime: s.startTime.split(':').length === 2 ? `${s.startTime}:00` : s.startTime,
+          endTime:   s.endTime.split(':').length   === 2 ? `${s.endTime}:00`   : s.endTime,
+        }));
+      }
+
+      // Per-day rooms (slotRooms) — only for slots that have a room selected
+      const roomedSlots = validSlots.filter(s => s.roomId);
+      if (roomedSlots.length > 0) {
+        body.slotRooms = roomedSlots.map(s => ({ weekDay: s.day, roomId: s.roomId }));
+      }
+
+      if (teacherId) body.teacherId = teacherId;
+      if (groupId && mode === 'group') body.groupId = groupId;
+
       const result = await AuthenticatedApiService.post<ScheduleAvailabilityResult>(
         '/Schedule/availability', body
       );
@@ -409,16 +435,14 @@ export default function CreateScheduleDrawer({
     } finally {
       setIsLoadingAvailability(false);
     }
-  }, [organizationId]);
+  }, [organizationId, weekStart, slots, teacherId, groupId, mode]);
 
   useEffect(() => {
     if (!isOpen) return;
     if (debounceRef.current) clearTimeout(debounceRef.current);
-    debounceRef.current = setTimeout(() => {
-      loadAvailability(roomId, teacherId, mode === 'group' ? groupId : '', weekStart);
-    }, 300);
+    debounceRef.current = setTimeout(() => { loadAvailability(); }, 400);
     return () => { if (debounceRef.current) clearTimeout(debounceRef.current); };
-  }, [roomId, teacherId, groupId, mode, weekStart, isOpen, loadAvailability]);
+  }, [isOpen, loadAvailability]);
 
   // Reset on open
   useEffect(() => {
@@ -667,7 +691,7 @@ export default function CreateScheduleDrawer({
               <div className="flex flex-1 min-w-0">
                 {DAYS_NUMBERS.map((dayNum, idx) => {
                   const dayAvail = availability?.days.find(d => d.dayOfWeek === dayNum)
-                    ?? { dayOfWeek: dayNum, freeSlots: [], busySlots: [] };
+                    ?? { dayOfWeek: dayNum, freeSlots: [], busySlots: [], availableRooms: [] };
 
                   return (
                     <div key={dayNum} className="flex-1 min-w-0 flex flex-col">
@@ -931,7 +955,7 @@ export default function CreateScheduleDrawer({
                           ${errors.roomId && !s.roomId ? 'border-red-400 dark:border-red-500' : 'border-gray-300 dark:border-gray-600'}`}
                       >
                         <option value="">Выберите аудиторию</option>
-                        {roomOptions.map(r => <option key={r.id} value={r.id}>{r.name}</option>)}
+                        {getDayRoomOptions(s.day).map(r => <option key={r.id} value={r.id}>{r.name}</option>)}
                       </select>
                     </div>
                   ))}

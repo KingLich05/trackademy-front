@@ -1,311 +1,105 @@
-# Frontend Documentation: Room Logic in Schedule (Updated)
+# GET /api/Schedule/GetScheduleById/{id}
 
-## Purpose
-
-This document describes the updated room workflow for schedule creation/editing and how frontend should work with backend to avoid conflicts and validation errors.
-
-Scope:
-- rooms list API
-- schedule availability API
-- schedule create/update APIs
-- lesson/schedule responses with room
-- frontend UX flow and validation strategy
-
-Base API paths:
-- `/api/Room`
-- `/api/Schedule`
-- `/api/Lesson`
-
-Auth:
-- JWT required for all endpoints below.
-
-## Roles
-
-- Room list: `Teacher`, `Administrator`, `Owner`
-- Schedule create/update/availability: `Administrator` and above
-- Lesson read (by schedule): role-based handling in backend (student/teacher/admin)
-
-## Data Formats
-
-- `Guid`: UUID string
-- `DateOnly`: `YYYY-MM-DD`
-- `TimeSpan`: `HH:mm:ss` (recommended)
-- `WeekDay`: integer `1..7` (Mon..Sun)
+Возвращает **полную детальную информацию** по расписанию: шаблонные слоты, группа со студентами, преподаватель, статистика уроков и ближайшие предстоящие занятия.
 
 ---
 
-## 1) Get Rooms (source for room picker)
+## Endpoint
 
-### Endpoint
-`POST /api/Room/GetAllRooms`
-
-### Request
-```json
-{
-  "organizationId": "a7fa3e2b-6e30-4a7b-9d97-7a84ccf5f744",
-  "pageNumber": 1,
-  "pageSize": 100
-}
+```
+GET /api/Schedule/GetScheduleById/{id}
+Authorization: Bearer <token>   (роль: Administrator)
 ```
 
-### Response
-```json
-{
-  "items": [
-    {
-      "id": "8f51e5f0-8b8d-4687-9cf1-7f0324e0c0f5",
-      "name": "Room 101",
-      "capacity": 12,
-      "organizationId": "a7fa3e2b-6e30-4a7b-9d97-7a84ccf5f744"
-    }
-  ],
-  "totalCount": 1,
-  "pageNumber": 1,
-  "pageSize": 100
-}
-```
-
-Frontend notes:
-- Keep `id` as room value.
-- Display `name` in selects.
-- `capacity` is informational for UI hints; backend still enforces capacity checks.
+| Параметр | Тип  | Описание           |
+|----------|------|--------------------|
+| `id`     | Guid | ID расписания      |
 
 ---
 
-## 2) Check Availability (recommended before submit)
-
-### Endpoint
-`POST /api/Schedule/availability`
-
-### Request (all filters except organizationId/weekStart are optional)
-```json
-{
-  "organizationId": "a7fa3e2b-6e30-4a7b-9d97-7a84ccf5f744",
-  "weekStart": "2026-05-04",
-  "daysOfWeek": [1, 3, 5],
-  "startTime": "10:00:00",
-  "endTime": "14:00:00",
-  "roomId": null,
-  "teacherId": "83f4f60a-f087-4e88-ac68-20a7fa8453e7",
-  "groupId": "11fca3d9-77cc-4f87-9c4a-9f98b1696698",
-  "excludeScheduleId": null
-}
-```
-
-### Response (simplified)
-```json
-{
-  "days": [
-    {
-      "dayOfWeek": 1,
-      "freeSlots": [
-        { "startTime": "10:00:00", "endTime": "11:00:00" },
-        { "startTime": "12:30:00", "endTime": "14:00:00" }
-      ],
-      "busySlots": [
-        {
-          "startTime": "11:00:00",
-          "endTime": "12:30:00",
-          "scheduleId": "7a53a6a3-9dd8-4518-9933-18e0e0ff84d7",
-          "groupName": "Mandragora",
-          "teacherName": "Pomona",
-          "roomName": "Room 101"
-        }
-      ]
-    }
-  ],
-  "availableRooms": [
-    { "id": "8f51e5f0-8b8d-4687-9cf1-7f0324e0c0f5", "name": "Room 101" }
-  ],
-  "availableTeachers": [
-    { "id": "83f4f60a-f087-4e88-ac68-20a7fa8453e7", "name": "Pomona", "hasPhoto": false }
-  ],
-  "availableGroups": [
-    { "id": "11fca3d9-77cc-4f87-9c4a-9f98b1696698", "name": "Mandragora" }
-  ]
-}
-```
-
-Frontend notes:
-- Use `busySlots` to render conflicts visually in weekly grid.
-- Use `freeSlots` to suggest valid intervals.
-- Use `availableRooms` as dynamic room shortlist for selected filters.
-- On edit, pass `excludeScheduleId` to avoid false conflicts with current schedule.
-
----
-
-## 3) Create Schedule (room is required in each slot)
-
-## 3.0) Full frontend flow for creating schedule (recommended)
-
-This is the full sequence frontend should follow to create schedule with minimal user errors.
-
-### Step 1. Open create schedule screen
-
-Initialize form state:
+## Response 200 OK
 
 ```json
 {
-  "organizationId": "...",
-  "groupId": null,
-  "teacherId": null,
-  "effectiveFrom": null,
-  "effectiveTo": null,
-  "scheduleSlots": []
-}
-```
+  "id": "3fa85f64-5717-4562-b3fc-2c963f66afa6",
+  "effectiveFrom": "2025-09-01",
+  "effectiveTo": "2026-06-30",
+  "isDeleted": false,
 
-Where each slot has:
+  "subject": {
+    "subjectId": "...",
+    "subjectName": "English"
+  },
 
-```json
-{
-  "weekDay": 1,
-  "startTime": "11:00:00",
-  "endTime": "12:30:00",
-  "roomId": "..."
-}
-```
+  "teacher": {
+    "id": "...",
+    "name": "Иванов Иван Иванович",
+    "hasPhoto": true
+  },
 
-### Step 2. Fill required header fields
+  "group": {
+    "id": "...",
+    "name": "Beginner A",
+    "code": "ENG-001",
+    "level": "A1",
+    "students": [
+      {
+        "studentId": "...",
+        "studentName": "Алиса Смирнова",
+        "subjectPackage": {
+          "packageId": "...",
+          "packageName": "Стандарт 8 уроков"
+        },
+        "isFrozen": false,
+        "frozenFrom": null,
+        "frozenTo": null,
+        "freezeReason": null
+      }
+    ]
+  },
 
-User must select:
-- `groupId`
-- `teacherId`
-- `effectiveFrom`
-
-Optional:
-- `effectiveTo`
-
-### Step 3. Add at least one slot
-
-Each slot must include:
-- `weekDay` (1..7)
-- `startTime`
-- `endTime`
-- `roomId`
-
-### Step 4. Run local validation before API calls
-
-Client-side checks (fast fail in UI):
-- `scheduleSlots.length > 0`
-- `weekDay` in range `1..7`
-- `endTime > startTime`
-- all `roomId` are selected
-- `effectiveTo >= effectiveFrom` (if set)
-- prevent duplicated identical slots in the same request
-
-### Step 5. Availability pre-check (strongly recommended)
-
-Before submit (or on each slot change with debounce 400-600ms), call:
-
-`POST /api/Schedule/availability`
-
-Use this to:
-- show busy intervals in weekly grid
-- suggest valid free ranges
-- limit room dropdown to `availableRooms`
-
-### Step 6. Submit create request
-
-Send `POST /api/Schedule/create-schedule` with final payload.
-
-### Step 7. Handle response
-
-- if `200` with `{ scheduleId }`: success -> close modal -> refetch schedules/lessons
-- if `200` with `{ scheduleId, warning }`: success with warning -> show warning toast/banner
-- if `400`: show backend message near relevant fields and keep form data untouched
-
-### Step 8. Post-submit refresh
-
-After successful creation, refresh:
-- schedule list (`/api/Schedule/get-all-schedules`)
-- timetable view (`/api/Lesson/by-schedule`) if open
-
----
-
-### Endpoint
-`POST /api/Schedule/create-schedule`
-
-### Request
-```json
-{
   "scheduleSlots": [
     {
+      "id": "...",
       "weekDay": 1,
-      "startTime": "11:00:00",
-      "endTime": "12:30:00",
-      "roomId": "8f51e5f0-8b8d-4687-9cf1-7f0324e0c0f5"
-    }
-  ],
-  "effectiveFrom": "2026-05-04",
-  "effectiveTo": null,
-  "groupId": "11fca3d9-77cc-4f87-9c4a-9f98b1696698",
-  "teacherId": "83f4f60a-f087-4e88-ac68-20a7fa8453e7",
-  "organizationId": "a7fa3e2b-6e30-4a7b-9d97-7a84ccf5f744"
-}
-```
-
-### Success response
-```json
-{
-  "scheduleId": "7a53a6a3-9dd8-4518-9933-18e0e0ff84d7"
-}
-```
-
-Possible alternative response:
-```json
-{
-  "scheduleId": "7a53a6a3-9dd8-4518-9933-18e0e0ff84d7",
-  "warning": "..."
-}
-```
-
-### Submit-state UX recommendation
-
-During submit:
-- disable Save button
-- show progress indicator
-- prevent double click duplicate requests
-
-On success:
-- show `Расписание создано`
-- optionally deep-link to schedule details by `scheduleId`
-
-On failure:
-- keep form values
-- map known errors to fields:
-  - `Кабинет в это время занят.` -> slot room/time
-  - `Преподаватель в это время занят.` -> teacher/time
-  - `Количество студентов не вмещается в кабинет.` -> room picker
-  - `Один или несколько кабинетов не существуют.` -> room picker + force reload room list
-
----
-
-## 3.1) Ready-to-use payload builder (frontend)
-
-When user edits time via UI `HH:mm`, normalize to `HH:mm:ss` before submit.
-
-Example normalized payload:
-
-```json
-{
-  "organizationId": "a7fa3e2b-6e30-4a7b-9d97-7a84ccf5f744",
-  "groupId": "11fca3d9-77cc-4f87-9c4a-9f98b1696698",
-  "teacherId": "83f4f60a-f087-4e88-ac68-20a7fa8453e7",
-  "effectiveFrom": "2026-05-04",
-  "effectiveTo": null,
-  "scheduleSlots": [
-    {
-      "weekDay": 1,
-      "startTime": "11:00:00",
-      "endTime": "12:30:00",
-      "roomId": "8f51e5f0-8b8d-4687-9cf1-7f0324e0c0f5"
+      "startTime": "10:00:00",
+      "endTime": "11:30:00",
+      "room": {
+        "id": "...",
+        "name": "Кабинет 101"
+      }
     },
     {
+      "id": "...",
       "weekDay": 3,
-      "startTime": "11:00:00",
-      "endTime": "12:30:00",
-      "roomId": "8f51e5f0-8b8d-4687-9cf1-7f0324e0c0f5"
+      "startTime": "10:00:00",
+      "endTime": "11:30:00",
+      "room": {
+        "id": "...",
+        "name": "Кабинет 102"
+      }
+    }
+  ],
+
+  "lessonsStats": {
+    "total": 48,
+    "upcoming": 12,
+    "completed": 34,
+    "cancelled": 2
+  },
+
+  "upcomingLessons": [
+    {
+      "id": "...",
+      "date": "2025-11-18",
+      "startTime": "10:00:00",
+      "endTime": "11:30:00",
+      "status": "Planned",
+      "cancelReason": null,
+      "room": {
+        "id": "...",
+        "name": "Кабинет 101"
+      }
     }
   ]
 }
@@ -313,123 +107,87 @@ Example normalized payload:
 
 ---
 
-## 3.2) Edge cases frontend must handle during creation
+## Описание полей
 
-1. User changed `groupId` after selecting room/time:
-- clear slot warnings
-- rerun availability
-- optionally require room reselection
+### Корневой объект
 
-2. User changed `teacherId`:
-- rerun availability
-- highlight new conflicts immediately
+| Поле              | Тип       | Описание                                      |
+|-------------------|-----------|-----------------------------------------------|
+| `id`              | Guid      | ID расписания                                 |
+| `effectiveFrom`   | DateOnly  | Дата начала действия расписания               |
+| `effectiveTo`     | DateOnly? | Дата окончания действия (null = бессрочно)    |
+| `isDeleted`       | bool      | Мягкое удаление расписания                    |
+| `subject`         | object    | Предмет группы                                |
+| `teacher`         | object    | Преподаватель                                 |
+| `group`           | object    | Группа с деталями и списком студентов         |
+| `scheduleSlots`   | array     | Шаблонные слоты (день недели + время + зал)   |
+| `lessonsStats`    | object    | Статистика уроков по расписанию               |
+| `upcomingLessons` | array     | До 10 ближайших запланированных уроков        |
 
-3. User sets past `effectiveFrom`:
-- block submit client-side even before backend
+### `scheduleSlots[*]`
 
-4. `availableRooms` empty for selected filters:
-- show explicit hint: no rooms available in selected interval
+| Поле        | Тип      | Описание                                       |
+|-------------|----------|------------------------------------------------|
+| `weekDay`   | int      | День недели: 1=Пн, 2=Вт, 3=Ср, 4=Чт, 5=Пт, 6=Сб, 7=Вс |
+| `startTime` | TimeSpan | Время начала урока `"HH:mm:ss"`                |
+| `endTime`   | TimeSpan | Время конца урока `"HH:mm:ss"`                 |
+| `room`      | object   | Кабинет (id, name)                             |
 
-5. Backend race condition conflict (another user saved in parallel):
-- show backend error message
-- auto-trigger fresh availability request
+### `group.students[*]`
 
----
+| Поле             | Тип       | Описание                                  |
+|------------------|-----------|-------------------------------------------|
+| `studentId`      | Guid      | ID студента                               |
+| `studentName`    | string    | ФИО студента                              |
+| `subjectPackage` | object?   | Пакет занятий (null если не назначен)     |
+| `isFrozen`       | bool      | Заморожен ли студент                      |
+| `frozenFrom`     | DateOnly? | Начало заморозки                          |
+| `frozenTo`       | DateOnly? | Конец заморозки                           |
+| `freezeReason`   | string?   | Причина заморозки                         |
 
----
+### `lessonsStats`
 
-## 4) Update Schedule (room in each updated slot)
+| Поле        | Тип | Описание                            |
+|-------------|-----|-------------------------------------|
+| `total`     | int | Всего уроков в расписании           |
+| `upcoming`  | int | Предстоящих (статус Planned, дата ≥ сегодня) |
+| `completed` | int | Проведённых                         |
+| `cancelled` | int | Отменённых                          |
 
-### Endpoint
-`PUT /api/Schedule/update-schedule/{id}`
+### `upcomingLessons[*]`
 
-### Request
-```json
-{
-  "scheduleSlots": [
-    {
-      "id": "0f6ae5f8-ff61-4312-9b8f-e97e015deeb1",
-      "weekDay": 1,
-      "startTime": "11:00:00",
-      "endTime": "12:30:00",
-      "roomId": "8f51e5f0-8b8d-4687-9cf1-7f0324e0c0f5"
-    }
-  ],
-  "effectiveFrom": "2026-05-04",
-  "effectiveTo": null,
-  "groupId": "11fca3d9-77cc-4f87-9c4a-9f98b1696698",
-  "teacherId": "83f4f60a-f087-4e88-ac68-20a7fa8453e7"
-}
-```
-
-### Success response
-- `200 OK` with updated schedule id payload
-
----
-
-## 5) Get Schedule List and Details (room in response)
-
-### Get all schedules
-`POST /api/Schedule/get-all-schedules`
-
-Each slot in response includes:
-- `scheduleSlots[].room.id`
-- `scheduleSlots[].room.name`
-
-### Get single schedule
-`GET /api/Schedule/GetScheduleById/{id}`
-
-Also includes room object in each slot.
+| Поле           | Тип      | Описание                          |
+|----------------|----------|-----------------------------------|
+| `id`           | Guid     | ID урока                          |
+| `date`         | DateOnly | Дата урока                        |
+| `startTime`    | TimeSpan | Время начала                      |
+| `endTime`      | TimeSpan | Время конца                       |
+| `status`       | string   | `"Planned"` / `"Completed"` / `"Cancelled"` |
+| `cancelReason` | string?  | Причина отмены (если отменён)     |
+| `room`         | object   | Кабинет (id, name)                |
 
 ---
 
-## 6) Lessons API uses room object too
+## Возможные ошибки
 
-### Endpoint
-`POST /api/Lesson/by-schedule`
+| HTTP | Описание                              |
+|------|---------------------------------------|
+| 401  | Не авторизован                        |
+| 403  | Нет роли Administrator                |
+| 404  | Расписание не найдено (returns `null`) |
 
-Each lesson contains:
-- `room.id`
-- `room.name`
-
-Frontend can use lesson room directly for timetable/cards.
-
----
-
-## Backend rules frontend must respect
-
-1. `roomId` is required for every slot.
-2. `weekDay` must be `1..7`.
-3. `endTime` must be greater than `startTime`.
-4. Room must exist in organization.
-5. Room capacity must fit group student count.
-6. If another schedule occupies same room and overlapping time on same weekday, backend returns conflict.
-
-Typical error messages to display as-is:
-- `Кабинет в это время занят.`
-- `Один или несколько кабинетов не существуют.`
-- `Количество студентов не вмещается в кабинет.`
-- `Время окончания должно быть позже времени начала`
+> **Примечание:** если расписание не найдено, эндпоинт возвращает `200 OK` с телом `null`. Фронтенд должен проверять `response.data !== null`.
 
 ---
 
-## Recommended frontend UX (updated room logic)
+## Рекомендации для фронтенда
 
-1. Load room list once on page open.
-2. While editing slots, debounce-call availability API.
-3. For each slot:
-   - show conflict badge if intersects with `busySlots`
-   - auto-suggest nearest `freeSlots`
-4. Show dynamic room suggestions from `availableRooms`.
-5. Prevent submit if local validation fails.
-6. On submit failure, show backend message inline near conflicting slot.
+1. **Страница деталей расписания:**  загружайте этот эндпоинт при открытии расписания — он покрывает все нужные данные за один запрос.
 
----
+2. **Отображение статуса:**  используйте `isDeleted` для показа предупреждения "Расписание архивировано".
 
-## Integration checklist
+3. **Список студентов:**  используйте `group.students` — он уже содержит актуальных (не удалённых) студентов с информацией о заморозке и пакете.
 
-- Room select stores `roomId`, not room name.
-- Time values sent in `HH:mm:ss`.
-- Availability call includes `excludeScheduleId` in edit mode.
-- Conflict/error text from backend is visible to user.
-- Schedule/Lesson UI reads room from response object (`room.id`, `room.name`).
+4. **Статистика уроков:**  блок `lessonsStats` можно отобразить в виде карточек-счётчиков (всего / предстоящих / проведённых / отменённых).
+
+5. **Ближайшие уроки:**  `upcomingLessons` возвращает до 10 следующих занятий; для полного списка уроков используйте эндпоинт `GET /api/Lesson` с фильтром по `scheduleId`.
