@@ -373,13 +373,12 @@ export const SubjectForm: React.FC<SubjectFormProps> = ({
                       className="sr-only"
                     />
                     <div
-                      className={`w-9 h-5 rounded-full transition-colors cursor-pointer ${
+                      className={`relative w-9 h-5 rounded-full transition-colors cursor-pointer ${
                         pkg.isExemption ? 'bg-amber-500' : 'bg-gray-300 dark:bg-gray-600'
                       }`}
                     >
-                      <div className={`w-3.5 h-3.5 bg-white rounded-full shadow-sm absolute top-0.75 transition-transform ${
-                        pkg.isExemption ? 'translate-x-4' : 'translate-x-0.5'
-                      }`} style={{ top: '3px', left: '3px', position: 'absolute', transform: pkg.isExemption ? 'translateX(16px)' : 'translateX(0)' }} />
+                      <div className={`w-3.5 h-3.5 bg-white rounded-full shadow-sm absolute transition-transform`}
+                        style={{ top: '3px', left: '3px', transform: pkg.isExemption ? 'translateX(16px)' : 'translateX(0)' }} />
                     </div>
                   </div>
                   <div>

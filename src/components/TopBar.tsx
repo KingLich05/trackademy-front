@@ -266,13 +266,13 @@ const TopBar: React.FC = () => {
               <div className="flex items-center gap-2">
                 <span className="text-sm text-gray-600 dark:text-gray-400">Телефон:</span>
                 <div className="flex items-center gap-2">
-                  <a href="tel:+77474397079" className="text-lg font-semibold text-blue-600 dark:text-blue-400 hover:text-blue-800 dark:hover:text-blue-300 transition-colors">
-                    +7 747 439 7079
+                  <a href="tel:+77768344286" className="text-lg font-semibold text-blue-600 dark:text-blue-400 hover:text-blue-800 dark:hover:text-blue-300 transition-colors">
+                    +7 776 834 42 86
                   </a>
                   <button
                     onClick={async () => {
                       try {
-                        await navigator.clipboard.writeText('+77474397079');
+                        await navigator.clipboard.writeText('+77768344286');
                         setIsCopied(true);
                         // Сброс состояния через 2 секунды
                         setTimeout(() => {

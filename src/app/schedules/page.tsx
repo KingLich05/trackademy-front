@@ -67,6 +67,15 @@ export default function SchedulesPage() {
   const [deletingSchedule, setDeletingSchedule] = useState<Schedule | null>(null);
   const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false);
   const [isScheduleDrawerOpen, setIsScheduleDrawerOpen] = useState(false);
+  const [editingScheduleId, setEditingScheduleId] = useState<string | null>(null);
+  const [drawerInitialSchedule, setDrawerInitialSchedule] = useState<{
+    slots: { day: number; startTime: string; endTime: string; roomId: string }[];
+    groupId: string;
+    teacherId: string;
+    roomId: string;
+    effectiveFrom: string;
+    effectiveTo: string;
+  } | null>(null);
   const [isMakeUpModalOpen, setIsMakeUpModalOpen] = useState(false);
   const [detailScheduleId, setDetailScheduleId] = useState<string | null>(null);
 
@@ -477,19 +486,21 @@ export default function SchedulesPage() {
   const handleEditUniversal = (id: string) => {
     const schedule = schedules.find(s => s.id === id);
     if (schedule) {
-      const firstSlot = schedule.scheduleSlots[0];
-      scheduleModal.openEditModal({
-        scheduleId: schedule.id,
-        daysOfWeek: schedule.scheduleSlots.map(s => s.weekDay).join(','),
-        startTime: firstSlot ? formatTimeForDisplay(firstSlot.startTime) : '',
-        endTime: firstSlot ? formatTimeForDisplay(firstSlot.endTime) : '',
-        effectiveFrom: schedule.effectiveFrom,
-        effectiveTo: schedule.effectiveTo || '',
+      setEditingScheduleId(schedule.id);
+      setDrawerInitialSchedule({
+        slots: schedule.scheduleSlots.map(s => ({
+          day: s.weekDay,
+          startTime: formatTimeForDisplay(s.startTime),
+          endTime: formatTimeForDisplay(s.endTime),
+          roomId: s.room?.id || schedule.room?.id || '',
+        })),
         groupId: schedule.group.id,
         teacherId: schedule.teacher.id,
-        roomId: (schedule.room?.id) || schedule.scheduleSlots[0]?.room?.id || '',
-        organizationId: user?.organizationId || ''
+        roomId: schedule.room?.id || schedule.scheduleSlots[0]?.room?.id || '',
+        effectiveFrom: schedule.effectiveFrom,
+        effectiveTo: schedule.effectiveTo || '',
       });
+      setIsScheduleDrawerOpen(true);
     }
   };
 
@@ -622,6 +633,7 @@ export default function SchedulesPage() {
     if (!scheduleToEdit) return;
 
     const updateData = {
+      excludeScheduleId: scheduleToEdit.id,
       scheduleSlots: daysOfWeekArray.map(day => {
         const existing = scheduleToEdit.scheduleSlots.find(s => s.weekDay === day);
         return {
@@ -643,6 +655,40 @@ export default function SchedulesPage() {
       await updateOperation(() => Promise.resolve(), 'расписание');
       await loadSchedules(currentPage, true);
       scheduleModal.closeModal();
+    } catch (error) {
+      await updateOperation(() => Promise.reject(error), 'расписание');
+      throw error;
+    }
+  };
+
+  const handleSaveEditFromDrawer = async (formData: Record<string, unknown>) => {
+    if (!editingScheduleId) return;
+    const scheduleToEdit = schedules.find(s => s.id === editingScheduleId);
+    if (!scheduleToEdit) return;
+
+    const directSlots = formData.scheduleSlots as { weekDay: number; startTime: string; endTime: string; roomId?: string }[];
+    const updateData = {
+      excludeScheduleId: scheduleToEdit.id,
+      scheduleSlots: directSlots.map(s => {
+        const existing = scheduleToEdit.scheduleSlots.find(slot => slot.weekDay === s.weekDay);
+        return {
+          id: existing?.id ?? '00000000-0000-0000-0000-000000000000',
+          weekDay: s.weekDay,
+          startTime: formatTimeWithSeconds(s.startTime) || '',
+          endTime: formatTimeWithSeconds(s.endTime) || '',
+          roomId: s.roomId || (formData.roomId as string) || existing?.room?.id || '',
+        };
+      }),
+      effectiveFrom: formData.effectiveFrom && (formData.effectiveFrom as string).trim() !== '' ? formData.effectiveFrom as string : null,
+      effectiveTo: formData.effectiveTo && (formData.effectiveTo as string).trim() !== '' ? formData.effectiveTo as string : null,
+      groupId: formData.groupId && (formData.groupId as string).trim() !== '' ? formData.groupId as string : null,
+      teacherId: formData.teacherId && (formData.teacherId as string).trim() !== '' ? formData.teacherId as string : null,
+    };
+
+    try {
+      await AuthenticatedApiService.put(`/Schedule/update-schedule/${scheduleToEdit.id}`, updateData);
+      await updateOperation(() => Promise.resolve(), 'расписание');
+      await loadSchedules(currentPage, true);
     } catch (error) {
       await updateOperation(() => Promise.reject(error), 'расписание');
       throw error;
@@ -1343,13 +1389,23 @@ export default function SchedulesPage() {
         {renderPagination()}
         </div>
 
-        {/* Create Schedule Drawer */}
+        {/* Create / Edit Schedule Drawer */}
         <CreateScheduleDrawer
           isOpen={isScheduleDrawerOpen}
-          onClose={() => setIsScheduleDrawerOpen(false)}
-          onSave={async (formData) => {
-            await handleSaveCreate(formData);
+          onClose={() => {
             setIsScheduleDrawerOpen(false);
+            setEditingScheduleId(null);
+            setDrawerInitialSchedule(null);
+          }}
+          onSave={async (formData) => {
+            if (editingScheduleId) {
+              await handleSaveEditFromDrawer(formData);
+            } else {
+              await handleSaveCreate(formData);
+            }
+            setIsScheduleDrawerOpen(false);
+            setEditingScheduleId(null);
+            setDrawerInitialSchedule(null);
           }}
           groups={groups}
           teachers={teachers}
@@ -1357,6 +1413,8 @@ export default function SchedulesPage() {
           subjects={subjects}
           students={students}
           organizationId={user?.organizationId || ''}
+          excludeScheduleId={editingScheduleId || undefined}
+          initialSchedule={drawerInitialSchedule || undefined}
         />
 
         {/* Create Make-Up Lesson Modal */}

@@ -51,6 +51,15 @@ interface ScheduleAvailabilityResult {
 
 // ─── Props ─────────────────────────────────────────────────────────────────────
 
+export interface InitialScheduleData {
+  slots: { day: number; startTime: string; endTime: string; roomId: string }[];
+  groupId: string;
+  teacherId: string;
+  roomId: string;
+  effectiveFrom: string;
+  effectiveTo: string;
+}
+
 interface CreateScheduleDrawerProps {
   isOpen: boolean;
   onClose: () => void;
@@ -61,6 +70,8 @@ interface CreateScheduleDrawerProps {
   subjects: Subject[];
   students: User[];
   organizationId: string;
+  excludeScheduleId?: string;
+  initialSchedule?: InitialScheduleData;
 }
 
 // ─── Calendar constants ────────────────────────────────────────────────────────
@@ -352,6 +363,8 @@ export default function CreateScheduleDrawer({
   subjects,
   students,
   organizationId,
+  excludeScheduleId,
+  initialSchedule,
 }: CreateScheduleDrawerProps) {
   // Mode: 'group' or 'individual'
   const [mode, setMode] = useState<'group' | 'individual'>('group');
@@ -428,6 +441,7 @@ export default function CreateScheduleDrawer({
 
       if (teacherId) body.teacherId = teacherId;
       if (groupId && mode === 'group') body.groupId = groupId;
+      if (excludeScheduleId) body.excludeScheduleId = excludeScheduleId;
 
       const result = await AuthenticatedApiService.post<ScheduleAvailabilityResult>(
         '/Schedule/availability', body
@@ -438,7 +452,7 @@ export default function CreateScheduleDrawer({
     } finally {
       setIsLoadingAvailability(false);
     }
-  }, [organizationId, weekStart, slots, teacherId, groupId, mode, roomId]);
+  }, [organizationId, weekStart, slots, teacherId, groupId, mode, roomId, excludeScheduleId]);
 
   useEffect(() => {
     if (!isOpen) return;
@@ -450,13 +464,23 @@ export default function CreateScheduleDrawer({
   // Reset on open
   useEffect(() => {
     if (isOpen) {
-      setMode('group');
-      setSlots([]);
-      setEffectiveFrom('');
-      setEffectiveTo('');
-      setGroupId('');
-      setTeacherId('');
-      setRoomId('');
+      if (initialSchedule) {
+        setMode('group');
+        setSlots(initialSchedule.slots);
+        setEffectiveFrom(initialSchedule.effectiveFrom);
+        setEffectiveTo(initialSchedule.effectiveTo);
+        setGroupId(initialSchedule.groupId);
+        setTeacherId(initialSchedule.teacherId);
+        setRoomId(initialSchedule.roomId);
+      } else {
+        setMode('group');
+        setSlots([]);
+        setEffectiveFrom('');
+        setEffectiveTo('');
+        setGroupId('');
+        setTeacherId('');
+        setRoomId('');
+      }
       setErrors({});
       setWeekStart(getCurrentMonday());
       setAvailability(null);
@@ -735,7 +759,7 @@ export default function CreateScheduleDrawer({
           {/* Form header */}
           <div className="flex items-center justify-between px-6 py-4 border-b border-gray-200 dark:border-gray-700 bg-gradient-to-r from-violet-600 to-indigo-600 shrink-0">
             <div>
-              <h2 className="text-base font-semibold text-white">Новое расписание</h2>
+              <h2 className="text-base font-semibold text-white">{excludeScheduleId ? 'Редактировать расписание' : 'Новое расписание'}</h2>
               <p className="text-xs text-violet-200 mt-0.5">
                 {mode === 'group' ? 'Групповое занятие' : 'Индивидуальное занятие'}
               </p>
@@ -1023,7 +1047,7 @@ export default function CreateScheduleDrawer({
                   <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" />
                   Сохранение…
                 </>
-              ) : 'Создать расписание'}
+              ) : (excludeScheduleId ? 'Сохранить изменения' : 'Создать расписание')}
             </button>
           </div>
         </div>
