@@ -423,6 +423,9 @@ export default function CreateScheduleDrawer({
         body.slotRooms = roomedSlots.map(s => ({ weekDay: s.day, roomId: s.roomId }));
       }
 
+      // Global default roomId
+      if (roomId) body.roomId = roomId;
+
       if (teacherId) body.teacherId = teacherId;
       if (groupId && mode === 'group') body.groupId = groupId;
 
@@ -435,7 +438,7 @@ export default function CreateScheduleDrawer({
     } finally {
       setIsLoadingAvailability(false);
     }
-  }, [organizationId, weekStart, slots, teacherId, groupId, mode]);
+  }, [organizationId, weekStart, slots, teacherId, groupId, mode, roomId]);
 
   useEffect(() => {
     if (!isOpen) return;

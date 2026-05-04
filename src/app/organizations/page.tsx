@@ -4,7 +4,7 @@ import React, { useState, useEffect } from 'react';
 import { Organization, OrganizationDetail, OrganizationFormData } from '../../types/Organization';
 import { UserFormData } from '../../types/User';
 import { AuthenticatedApiService } from '../../services/AuthenticatedApiService';
-import { PhoneIcon, MapPinIcon, PencilIcon, TrashIcon, PlusIcon, BuildingOfficeIcon, UserPlusIcon, EyeIcon } from '@heroicons/react/24/outline';
+import { PhoneIcon, MapPinIcon, PencilIcon, TrashIcon, PlusIcon, BuildingOfficeIcon, UserPlusIcon, EyeIcon, SparklesIcon } from '@heroicons/react/24/outline';
 import { useAuth } from '../../contexts/AuthContext';
 import Link from 'next/link';
 
@@ -52,9 +52,10 @@ function OrganizationsPage() {
   });
 
   const [selectedOrganizationId, setSelectedOrganizationId] = useState<string | null>(null);
+  const [generatingLessonsId, setGeneratingLessonsId] = useState<string | null>(null);
   
   // Toast уведомления для API операций
-  const { createOperation, updateOperation, deleteOperation, loadOperation } = useApiToast();
+  const { createOperation, updateOperation, deleteOperation, loadOperation, handleApiOperation } = useApiToast();
 
   const loadOrganizations = async () => {
     setLoading(true);
@@ -219,6 +220,15 @@ function OrganizationsPage() {
     setDeletingOrganization(null);
   };
 
+  const handleGenerateLessons = async (organizationId: string) => {
+    setGeneratingLessonsId(organizationId);
+    await handleApiOperation(
+      () => AuthenticatedApiService.generateLessons(organizationId),
+      { successMessage: 'Уроки успешно сгенерированы', errorMessage: 'Не удалось сгенерировать уроки' }
+    );
+    setGeneratingLessonsId(null);
+  };
+
   if (loading) {
     return (
       <div className="animate-fade-in">
@@ -342,6 +352,21 @@ function OrganizationsPage() {
                           title="Добавить администратора"
                         >
                           <UserPlusIcon className="h-4 w-4" />
+                        </button>
+                        <button
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            handleGenerateLessons(organization.id.toString());
+                          }}
+                          disabled={generatingLessonsId === organization.id.toString()}
+                          className="text-amber-600 hover:text-amber-900 dark:text-amber-400 dark:hover:text-amber-300 p-2 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors duration-200 disabled:opacity-50 disabled:cursor-not-allowed"
+                          title="Сгенерировать уроки"
+                        >
+                          {generatingLessonsId === organization.id.toString() ? (
+                            <div className="h-4 w-4 border-2 border-amber-500 border-t-transparent rounded-full animate-spin" />
+                          ) : (
+                            <SparklesIcon className="h-4 w-4" />
+                          )}
                         </button>
                         <button
                           onClick={(e) => {
