@@ -1231,7 +1231,7 @@ export default function SchedulesPage() {
                           </th>
                         )}
                         {isColumnVisible('time') && (
-                          <th className="px-3 py-3 text-left text-xs font-semibold text-gray-700 dark:text-gray-200 uppercase tracking-wider" style={{ width: '20%' }}>
+                          <th className="px-3 py-3 text-left text-xs font-semibold text-gray-700 dark:text-gray-200 uppercase tracking-wider" style={{ width: '120px' }}>
                             Время
                           </th>
                         )}
@@ -1311,7 +1311,6 @@ export default function SchedulesPage() {
                                 if (allSame) {
                                   return (
                                     <span className="whitespace-nowrap">
-                                      {slots.map(s => getDayShortName(s.weekDay)).join(', ')}{' '}
                                       {formatTime(slots[0].startTime)}–{formatTime(slots[0].endTime)}
                                     </span>
                                   );

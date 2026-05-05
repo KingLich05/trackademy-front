@@ -8,6 +8,7 @@ export enum SettingType {
 
 export type AllowedSettingKey =
   | 'attendance.allow_backdate'
+  | 'attendance.backdate_limit_days'
   | 'qr.allow_trial_registration'
   | 'scores.allow_edit_after_grading'
   | 'notifications.on_absent'
@@ -44,6 +45,7 @@ export interface BulkUpsertSettingsRequest {
 
 export interface SettingsForm {
   attendanceAllowBackdate: boolean;
+  attendanceBackdateLimitDays: number;
   qrAllowTrialRegistration: boolean;
   scoresAllowEditAfterGrading: boolean;
   notificationsOnAbsent: boolean;
@@ -54,6 +56,7 @@ export interface SettingsForm {
 
 export const DEFAULT_SETTINGS_FORM: SettingsForm = {
   attendanceAllowBackdate: false,
+  attendanceBackdateLimitDays: 0,
   qrAllowTrialRegistration: true,
   scoresAllowEditAfterGrading: true,
   notificationsOnAbsent: true,
@@ -66,6 +69,7 @@ export function mapSettingsToForm(settings: SettingDto[]): SettingsForm {
   const byKey = Object.fromEntries(settings.map(item => [item.key, item.value]));
   return {
     attendanceAllowBackdate: Boolean(byKey['attendance.allow_backdate'] ?? false),
+    attendanceBackdateLimitDays: Number(byKey['attendance.backdate_limit_days'] ?? 0),
     qrAllowTrialRegistration: Boolean(byKey['qr.allow_trial_registration'] ?? true),
     scoresAllowEditAfterGrading: Boolean(byKey['scores.allow_edit_after_grading'] ?? true),
     notificationsOnAbsent: Boolean(byKey['notifications.on_absent'] ?? true),
@@ -78,6 +82,7 @@ export function mapSettingsToForm(settings: SettingDto[]): SettingsForm {
 export function mapFormToSettings(form: SettingsForm): UpsertSettingRequest[] {
   return [
     { key: 'attendance.allow_backdate', type: SettingType.Boolean, value: form.attendanceAllowBackdate },
+    { key: 'attendance.backdate_limit_days', type: SettingType.Integer, value: form.attendanceBackdateLimitDays },
     { key: 'qr.allow_trial_registration', type: SettingType.Boolean, value: form.qrAllowTrialRegistration },
     { key: 'scores.allow_edit_after_grading', type: SettingType.Boolean, value: form.scoresAllowEditAfterGrading },
     { key: 'notifications.on_absent', type: SettingType.Boolean, value: form.notificationsOnAbsent },

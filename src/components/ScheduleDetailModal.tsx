@@ -103,21 +103,6 @@ export default function ScheduleDetailModal({ scheduleId, onClose }: ScheduleDet
                 </div>
               )}
 
-              {/* Stats */}
-              <div className="grid grid-cols-4 gap-3">
-                {[
-                  { label: 'Всего',       value: detail.lessonsStats.total,     cls: 'bg-gray-50 dark:bg-gray-800 text-gray-700 dark:text-gray-300' },
-                  { label: 'Предстоящих', value: detail.lessonsStats.upcoming,  cls: 'bg-blue-50 dark:bg-blue-900/20 text-blue-700 dark:text-blue-300' },
-                  { label: 'Проведено',   value: detail.lessonsStats.completed, cls: 'bg-green-50 dark:bg-green-900/20 text-green-700 dark:text-green-300' },
-                  { label: 'Отменено',    value: detail.lessonsStats.cancelled, cls: 'bg-red-50 dark:bg-red-900/20 text-red-700 dark:text-red-300' },
-                ].map(s => (
-                  <div key={s.label} className={`rounded-xl p-3 text-center ${s.cls}`}>
-                    <div className="text-2xl font-bold">{s.value}</div>
-                    <div className="text-xs mt-0.5 opacity-80">{s.label}</div>
-                  </div>
-                ))}
-              </div>
-
               {/* Main info */}
               <div className="grid grid-cols-2 gap-4">
 

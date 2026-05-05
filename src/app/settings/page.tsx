@@ -13,7 +13,7 @@ import { BaseModal } from '../../components/ui/BaseModal';
 import { SettingsForm, DEFAULT_SETTINGS_FORM, mapSettingsToForm, mapFormToSettings } from '../../types/Setting';
 
 export default function SettingsPage() {
-  const { isAuthenticated, user } = useAuth();
+  const { isAuthenticated, user, isLoading } = useAuth();
   const { showSuccess, showError } = useToast();
   const router = useRouter();
   const [activeTab, setActiveTab] = useState('system-settings');
@@ -42,6 +42,8 @@ export default function SettingsPage() {
   const [newHolidayDate, setNewHolidayDate] = useState('');
 
   useEffect(() => {
+    if (isLoading) return;
+
     if (!isAuthenticated) {
       router.push('/login');
       return;
@@ -60,7 +62,7 @@ export default function SettingsPage() {
     } else if (activeTab === 'system-settings') {
       loadSystemSettings();
     }
-  }, [isAuthenticated, user, router, activeTab]);
+  }, [isAuthenticated, isLoading, user, router, activeTab]);
 
   const loadSystemSettings = async () => {
     if (!user?.organizationId) return;
@@ -303,6 +305,14 @@ export default function SettingsPage() {
       description: 'Настройки WhatsApp уведомлений'
     }
   ];
+
+  if (isLoading) {
+    return (
+      <div className="min-h-screen bg-gray-50 dark:bg-gray-900 flex items-center justify-center">
+        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600" />
+      </div>
+    );
+  }
 
   if (!isAuthenticated || (user?.role !== 'Administrator' && user?.role !== 'Owner')) {
     return (
@@ -673,20 +683,38 @@ export default function SettingsPage() {
                         { key: 'notificationsOnLowBalance' as const, label: 'Финансовые уведомления', description: 'Отправлять уведомления о низком балансе' },
                         { key: 'attendanceAutoCharge' as const, label: 'Платные/бесплатные уроки', description: 'Автоматически списывать баланс при отметке посещаемости' },
                       ] as const).map(({ key, label, description }) => (
-                        <div key={key} className="border border-gray-200 dark:border-gray-700 rounded-lg p-4 flex items-center justify-between gap-4">
-                          <div>
-                            <p className="font-medium text-gray-900 dark:text-white text-sm">{label}</p>
-                            <p className="text-xs text-gray-500 dark:text-gray-400 mt-0.5">{description}</p>
+                        <div key={key}>
+                          <div className="border border-gray-200 dark:border-gray-700 rounded-lg p-4 flex items-center justify-between gap-4">
+                            <div>
+                              <p className="font-medium text-gray-900 dark:text-white text-sm">{label}</p>
+                              <p className="text-xs text-gray-500 dark:text-gray-400 mt-0.5">{description}</p>
+                            </div>
+                            <label className="relative inline-flex items-center cursor-pointer shrink-0">
+                              <input
+                                type="checkbox"
+                                className="sr-only peer"
+                                checked={settingsForm[key]}
+                                onChange={e => handleSettingChange(key, e.target.checked)}
+                              />
+                              <div className="w-11 h-6 bg-gray-200 dark:bg-gray-700 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-blue-600"></div>
+                            </label>
                           </div>
-                          <label className="relative inline-flex items-center cursor-pointer shrink-0">
-                            <input
-                              type="checkbox"
-                              className="sr-only peer"
-                              checked={settingsForm[key]}
-                              onChange={e => handleSettingChange(key, e.target.checked)}
-                            />
-                            <div className="w-11 h-6 bg-gray-200 dark:bg-gray-700 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-blue-600"></div>
-                          </label>
+                          {/* Лимит дней задним числом — только когда разрешено */}
+                          {key === 'attendanceAllowBackdate' && settingsForm.attendanceAllowBackdate && (
+                            <div className="border border-gray-200 dark:border-gray-700 border-t-0 rounded-b-lg px-4 pb-4 pt-3 bg-gray-50 dark:bg-gray-800/50 flex items-center justify-between gap-4">
+                              <div>
+                                <p className="font-medium text-gray-900 dark:text-white text-sm">Лимит дней задним числом</p>
+                                <p className="text-xs text-gray-500 dark:text-gray-400 mt-0.5">Максимальное кол-во дней в прошлом. 0 — без ограничений</p>
+                              </div>
+                              <input
+                                type="number"
+                                min={0}
+                                value={settingsForm.attendanceBackdateLimitDays}
+                                onChange={e => handleSettingChange('attendanceBackdateLimitDays', Math.max(0, isNaN(e.target.valueAsNumber) ? 0 : e.target.valueAsNumber))}
+                                className="w-20 px-3 py-1.5 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white text-sm text-center focus:ring-2 focus:ring-blue-500 shrink-0"
+                              />
+                            </div>
+                          )}
                         </div>
                       ))}
 
